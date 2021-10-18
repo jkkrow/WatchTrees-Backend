@@ -1,1 +1,0 @@
-exports.getVideo = (req, res) => {};
