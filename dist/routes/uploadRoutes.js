@@ -29,5 +29,5 @@ var router = (0, express_1.Router)();
 router.get('/initiate-upload', auth_middleware_1.default, uploadController.initiateUpload);
 router.get('/get-upload-url', auth_middleware_1.default, uploadController.getUploadUrl);
 router.post('/complete-upload', auth_middleware_1.default, uploadController.completeUpload);
-router.post('/save-upload', auth_middleware_1.default, uploadController.saveUpload);
+// router.post('/save-upload', authMiddleware, uploadController.saveUpload);
 exports.default = router;

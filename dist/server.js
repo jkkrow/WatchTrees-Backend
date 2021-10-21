@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = __importDefault(require("express"));
 var cors_1 = __importDefault(require("cors"));
-var dotenv_1 = require("dotenv");
+require("dotenv/config");
 var db_1 = __importDefault(require("./config/db"));
 var HttpError_1 = __importDefault(require("./models/common/HttpError"));
 var videoRoutes_1 = __importDefault(require("./routes/videoRoutes"));
@@ -13,7 +13,6 @@ var uploadRoutes_1 = __importDefault(require("./routes/uploadRoutes"));
 var authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 var error_middleware_1 = __importDefault(require("./middlewares/error-middleware"));
 // Server and DB Setups
-(0, dotenv_1.config)();
 (0, db_1.default)();
 var PORT = process.env.PORT || 5000;
 var app = (0, express_1.default)();

@@ -85,6 +85,8 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
 
     if (!user) return;
 
+    user.videos;
+
     let video = user.videos.find((item) => item.root.id === tree.root.id);
 
     if (!video) {
@@ -95,7 +97,7 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
       video.status = VideoStatus.Progressing;
     }
 
-    await user.save();
+    await Promise.all([user.save(), video.save()]);
 
     res.json({ message: 'Saved video successfully.' });
   } catch (err) {

@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { config } from 'dotenv';
+import 'dotenv/config';
 
 import connectDB from './config/db';
 import HttpError from './models/common/HttpError';
@@ -10,7 +10,6 @@ import authRoutes from './routes/authRoutes';
 import errorMiddleware from './middlewares/error-middleware';
 
 // Server and DB Setups
-config();
 connectDB();
 
 const PORT = process.env.PORT! || 5000;

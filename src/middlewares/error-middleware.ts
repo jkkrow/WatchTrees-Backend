@@ -1,6 +1,6 @@
 import { ErrorRequestHandler } from 'express';
 
-const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
+const errorMiddleware: ErrorRequestHandler = (error, req, res, next) => {
   console.log(error);
 
   if (res.headersSent) {
@@ -12,4 +12,4 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     .json({ message: error.message || 'An unknown error occurred!' });
 };
 
-export default errorHandler;
+export default errorMiddleware;

@@ -13,7 +13,7 @@ export enum VideoStatus {
   Completed = 'Completed',
 }
 
-export interface VideoType {
+export interface VideoDocument extends mongoose.Document {
   root: VideoNode;
   title: string;
   description: string;
@@ -24,7 +24,7 @@ export interface VideoType {
   status: VideoStatus;
 }
 
-const VideoSchema = new mongoose.Schema<VideoType>({
+const VideoSchema = new mongoose.Schema({
   root: {
     id: { type: String, required: true },
     layer: { type: Number, required: false },
@@ -40,4 +40,4 @@ const VideoSchema = new mongoose.Schema<VideoType>({
   status: { type: String, required: true },
 });
 
-export default mongoose.model<VideoType>('Video', VideoSchema);
+export default mongoose.model<VideoDocument>('Video', VideoSchema);

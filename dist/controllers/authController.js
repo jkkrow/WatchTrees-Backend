@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.putResetPassword = exports.getResetPassword = exports.sendRecoveryEmail = exports.verifyEmail = exports.sendVerifyEmail = exports.updateAccessToken = exports.updateRefreshToken = exports.googleLogin = exports.login = exports.register = void 0;
+exports.putResetPassword = exports.getResetPassword = exports.sendRecoveryEmail = exports.verifyEmail = exports.sendVerifyEmail = exports.updateAccessToken = exports.updateRefreshToken = exports.login = exports.register = void 0;
 var bcrypt_1 = __importDefault(require("bcrypt"));
 var crypto_1 = __importDefault(require("crypto"));
 var uuid_1 = require("uuid");
@@ -104,111 +104,59 @@ var register = function (req, res, next) { return __awaiter(void 0, void 0, void
 }); };
 exports.register = register;
 var login = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, email, password, user, correctPassword, accessToken, refreshToken, storedRefreshToken, newRefreshToken, err_2;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var _a, email, password, tokenId, user, correctPassword, client, result, _b, email_verified, email_1, name_2, hashedPassword, accessToken, refreshToken, storedRefreshToken, newRefreshToken, err_2;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
             case 0:
-                _b.trys.push([0, 8, , 9]);
-                _a = req.body, email = _a.email, password = _a.password;
+                _c.trys.push([0, 14, , 15]);
+                _a = req.body, email = _a.email, password = _a.password, tokenId = _a.tokenId;
+                user = void 0;
+                if (!!tokenId) return [3 /*break*/, 3];
                 return [4 /*yield*/, User_1.default.findOne({ email: email })];
             case 1:
-                user = _b.sent();
+                // Native login //
+                user = _c.sent();
                 if (!user) {
                     throw new HttpError_1.default(401, 'Invalid email or password.');
                 }
                 return [4 /*yield*/, bcrypt_1.default.compare(password, user.password)];
             case 2:
-                correctPassword = _b.sent();
+                correctPassword = _c.sent();
                 if (!correctPassword) {
                     throw new HttpError_1.default(401, 'Invalid email or password.');
                 }
-                accessToken = (0, jwt_token_1.createAccessToken)({
-                    userId: user._id,
-                });
-                refreshToken = (0, jwt_token_1.createRefreshToken)({
-                    userId: user._id,
-                });
-                return [4 /*yield*/, RefreshToken_1.default.findOne({
-                        key: user._id,
-                    })];
+                return [3 /*break*/, 8];
             case 3:
-                storedRefreshToken = _b.sent();
-                if (!!storedRefreshToken) return [3 /*break*/, 5];
-                newRefreshToken = new RefreshToken_1.default({
-                    key: user._id,
-                    value: refreshToken,
-                });
-                return [4 /*yield*/, newRefreshToken.save()];
-            case 4:
-                _b.sent();
-                return [3 /*break*/, 7];
-            case 5:
-                storedRefreshToken.value = refreshToken;
-                return [4 /*yield*/, storedRefreshToken.save()];
-            case 6:
-                _b.sent();
-                _b.label = 7;
-            case 7:
-                res.json({
-                    accessToken: accessToken,
-                    refreshToken: {
-                        value: refreshToken,
-                        expiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
-                    },
-                    userData: {
-                        email: user.email,
-                        name: user.name,
-                        picture: user.picture,
-                        isVerified: user.isVerified,
-                        isPremium: user.isPremium,
-                    },
-                });
-                return [3 /*break*/, 9];
-            case 8:
-                err_2 = _b.sent();
-                return [2 /*return*/, next(err_2)];
-            case 9: return [2 /*return*/];
-        }
-    });
-}); };
-exports.login = login;
-var googleLogin = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var tokenId, client, result, _a, email_verified, email, name_2, user, hashedPassword, accessToken, refreshToken, storedRefreshToken, newRefreshToken, err_3;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0:
-                _b.trys.push([0, 11, , 12]);
-                tokenId = req.body.tokenId;
                 client = new google_auth_library_1.OAuth2Client(process.env.GOOGLE_CLIENT_ID);
                 return [4 /*yield*/, client.verifyIdToken({
                         idToken: tokenId,
                         audience: process.env.GOOGLE_CLIENT_ID,
                     })];
-            case 1:
-                result = _b.sent();
-                _a = result.getPayload(), email_verified = _a.email_verified, email = _a.email, name_2 = _a.name;
+            case 4:
+                result = _c.sent();
+                _b = result.getPayload(), email_verified = _b.email_verified, email_1 = _b.email, name_2 = _b.name;
                 if (!email_verified) {
                     throw new HttpError_1.default(401, 'Google account not verified.');
                 }
-                return [4 /*yield*/, User_1.default.findOne({ email: email })];
-            case 2:
-                user = _b.sent();
-                if (!!user) return [3 /*break*/, 5];
-                return [4 /*yield*/, bcrypt_1.default.hash((0, uuid_1.v1)() + email, 12)];
-            case 3:
-                hashedPassword = _b.sent();
+                return [4 /*yield*/, User_1.default.findOne({ email: email_1 })];
+            case 5:
+                user = _c.sent();
+                if (!!user) return [3 /*break*/, 8];
+                return [4 /*yield*/, bcrypt_1.default.hash((0, uuid_1.v1)() + email_1, 12)];
+            case 6:
+                hashedPassword = _c.sent();
                 user = new User_1.default({
-                    email: email,
+                    email: email_1,
                     password: hashedPassword,
                     name: name_2,
                     isVerified: true,
                 });
                 return [4 /*yield*/, user.save()];
-            case 4:
-                _b.sent();
+            case 7:
+                _c.sent();
                 res.status(201);
-                _b.label = 5;
-            case 5:
+                _c.label = 8;
+            case 8:
                 accessToken = (0, jwt_token_1.createAccessToken)({
                     userId: user._id,
                 });
@@ -218,24 +166,24 @@ var googleLogin = function (req, res, next) { return __awaiter(void 0, void 0, v
                 return [4 /*yield*/, RefreshToken_1.default.findOne({
                         key: user._id,
                     })];
-            case 6:
-                storedRefreshToken = _b.sent();
-                if (!!storedRefreshToken) return [3 /*break*/, 8];
+            case 9:
+                storedRefreshToken = _c.sent();
+                if (!!storedRefreshToken) return [3 /*break*/, 11];
                 newRefreshToken = new RefreshToken_1.default({
                     key: user._id,
                     value: refreshToken,
                 });
                 return [4 /*yield*/, newRefreshToken.save()];
-            case 7:
-                _b.sent();
-                return [3 /*break*/, 10];
-            case 8:
+            case 10:
+                _c.sent();
+                return [3 /*break*/, 13];
+            case 11:
                 storedRefreshToken.value = refreshToken;
                 return [4 /*yield*/, storedRefreshToken.save()];
-            case 9:
-                _b.sent();
-                _b.label = 10;
-            case 10:
+            case 12:
+                _c.sent();
+                _c.label = 13;
+            case 13:
                 res.json({
                     accessToken: accessToken,
                     refreshToken: {
@@ -250,17 +198,17 @@ var googleLogin = function (req, res, next) { return __awaiter(void 0, void 0, v
                         isPremium: user.isPremium,
                     },
                 });
-                return [3 /*break*/, 12];
-            case 11:
-                err_3 = _b.sent();
-                return [2 /*return*/, next(err_3)];
-            case 12: return [2 /*return*/];
+                return [3 /*break*/, 15];
+            case 14:
+                err_2 = _c.sent();
+                return [2 /*return*/, next(err_2)];
+            case 15: return [2 /*return*/];
         }
     });
 }); };
-exports.googleLogin = googleLogin;
+exports.login = login;
 var updateRefreshToken = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var authorization, refreshToken, decodedToken, storedToken, newAccessToken, newRefreshToken, err_4;
+    var authorization, refreshToken, decodedToken, storedToken, newAccessToken, newRefreshToken, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -298,15 +246,15 @@ var updateRefreshToken = function (req, res, next) { return __awaiter(void 0, vo
                 });
                 return [3 /*break*/, 4];
             case 3:
-                err_4 = _a.sent();
-                return [2 /*return*/, next(err_4)];
+                err_3 = _a.sent();
+                return [2 /*return*/, next(err_3)];
             case 4: return [2 /*return*/];
         }
     });
 }); };
 exports.updateRefreshToken = updateRefreshToken;
 var updateAccessToken = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var authorization, refreshToken, decodedToken, storedToken, newAccessToken, err_5;
+    var authorization, refreshToken, decodedToken, storedToken, newAccessToken, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -334,15 +282,15 @@ var updateAccessToken = function (req, res, next) { return __awaiter(void 0, voi
                 res.json({ accessToken: newAccessToken });
                 return [3 /*break*/, 3];
             case 2:
-                err_5 = _a.sent();
-                return [2 /*return*/, next(err_5)];
+                err_4 = _a.sent();
+                return [2 /*return*/, next(err_4)];
             case 3: return [2 /*return*/];
         }
     });
 }); };
 exports.updateAccessToken = updateAccessToken;
 var sendVerifyEmail = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var email, user, err_6;
+    var email, user, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -375,15 +323,15 @@ var sendVerifyEmail = function (req, res, next) { return __awaiter(void 0, void 
                 });
                 return [3 /*break*/, 5];
             case 4:
-                err_6 = _a.sent();
-                return [2 /*return*/, next(err_6)];
+                err_5 = _a.sent();
+                return [2 /*return*/, next(err_5)];
             case 5: return [2 /*return*/];
         }
     });
 }); };
 exports.sendVerifyEmail = sendVerifyEmail;
 var verifyEmail = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var token, user, err_7;
+    var token, user, err_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -411,15 +359,15 @@ var verifyEmail = function (req, res, next) { return __awaiter(void 0, void 0, v
                 res.json({ message: 'Your account has been successfully verified.' });
                 return [3 /*break*/, 4];
             case 3:
-                err_7 = _a.sent();
-                return [2 /*return*/, next(err_7)];
+                err_6 = _a.sent();
+                return [2 /*return*/, next(err_6)];
             case 4: return [2 /*return*/];
         }
     });
 }); };
 exports.verifyEmail = verifyEmail;
 var sendRecoveryEmail = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var email, user, err_8;
+    var email, user, err_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -450,15 +398,15 @@ var sendRecoveryEmail = function (req, res, next) { return __awaiter(void 0, voi
                 res.json({ message: 'Recovery email has sent successfully.' });
                 return [3 /*break*/, 5];
             case 4:
-                err_8 = _a.sent();
-                return [2 /*return*/, next(err_8)];
+                err_7 = _a.sent();
+                return [2 /*return*/, next(err_7)];
             case 5: return [2 /*return*/];
         }
     });
 }); };
 exports.sendRecoveryEmail = sendRecoveryEmail;
 var getResetPassword = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var token, user, err_9;
+    var token, user, err_8;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -479,15 +427,15 @@ var getResetPassword = function (req, res, next) { return __awaiter(void 0, void
                 res.json();
                 return [3 /*break*/, 3];
             case 2:
-                err_9 = _a.sent();
-                return [2 /*return*/, next(err_9)];
+                err_8 = _a.sent();
+                return [2 /*return*/, next(err_8)];
             case 3: return [2 /*return*/];
         }
     });
 }); };
 exports.getResetPassword = getResetPassword;
 var putResetPassword = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var token, password, errors, user, newPassword, err_10;
+    var token, password, errors, user, newPassword, err_9;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -507,6 +455,9 @@ var putResetPassword = function (req, res, next) { return __awaiter(void 0, void
                 if (!user) {
                     throw new HttpError_1.default(404);
                 }
+                if (user.token.expiresIn < Date.now()) {
+                    throw new HttpError_1.default(400, 'This link has been expired. Please send another email to reset password.');
+                }
                 return [4 /*yield*/, bcrypt_1.default.hash(password, 12)];
             case 2:
                 newPassword = _a.sent();
@@ -517,8 +468,8 @@ var putResetPassword = function (req, res, next) { return __awaiter(void 0, void
                 res.json({ message: 'Password has changed successfully.' });
                 return [3 /*break*/, 5];
             case 4:
-                err_10 = _a.sent();
-                return [2 /*return*/, next(err_10)];
+                err_9 = _a.sent();
+                return [2 /*return*/, next(err_9)];
             case 5: return [2 /*return*/];
         }
     });

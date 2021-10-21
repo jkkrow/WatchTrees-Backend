@@ -4,20 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:build": "tsc -w",
-    "start:run": "nodemon dist/server.js",
-    "start": "concurrently npm:start:*"
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "prod": "tsc & node dist/server.js",
+    "start": "npm run dev"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/bcrypt": "^5.0.0",
-    "@types/cors": "^2.8.12",
-    "@types/express": "^4.17.13",
-    "@types/jsonwebtoken": "^8.5.5",
-    "@types/node": "^16.11.1",
-    "@types/nodemailer": "^6.4.4",
-    "@types/uuid": "^8.3.1",
     "aws-sdk": "^2.994.0",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
@@ -31,7 +25,13 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "concurrently": "^6.3.0",
-    "nodemon": "^2.0.13"
+    "@types/bcrypt": "^5.0.0",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/jsonwebtoken": "^8.5.5",
+    "@types/node": "^16.11.1",
+    "@types/nodemailer": "^6.4.4",
+    "@types/uuid": "^8.3.1",
+    "ts-node-dev": "^1.1.8"
   }
 }

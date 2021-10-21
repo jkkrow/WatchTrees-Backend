@@ -74,95 +74,56 @@ export const register: RequestHandler = async (req, res, next) => {
 
 export const login: RequestHandler = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, tokenId } = req.body;
 
-    const user = await User.findOne({ email });
+    let user;
 
-    if (!user) {
-      throw new HttpError(401, 'Invalid email or password.');
-    }
+    if (!tokenId) {
+      // Native login //
 
-    const correctPassword = await bcrypt.compare(password, user.password);
+      user = await User.findOne({ email });
 
-    if (!correctPassword) {
-      throw new HttpError(401, 'Invalid email or password.');
-    }
+      if (!user) {
+        throw new HttpError(401, 'Invalid email or password.');
+      }
 
-    const accessToken = createAccessToken({
-      userId: user._id,
-    });
-    const refreshToken = createRefreshToken({
-      userId: user._id,
-    });
+      const correctPassword = await bcrypt.compare(password, user.password);
 
-    const storedRefreshToken = await RefreshToken.findOne({
-      key: user._id,
-    });
-
-    if (!storedRefreshToken) {
-      const newRefreshToken = new RefreshToken({
-        key: user._id,
-        value: refreshToken,
-      });
-
-      await newRefreshToken.save();
+      if (!correctPassword) {
+        throw new HttpError(401, 'Invalid email or password.');
+      }
     } else {
-      storedRefreshToken.value = refreshToken;
+      // Google login //
 
-      await storedRefreshToken.save();
-    }
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-    res.json({
-      accessToken,
-      refreshToken: {
-        value: refreshToken,
-        expiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
-      },
-      userData: {
-        email: user.email,
-        name: user.name,
-        picture: user.picture,
-        isVerified: user.isVerified,
-        isPremium: user.isPremium,
-      },
-    });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const googleLogin: RequestHandler = async (req, res, next) => {
-  try {
-    const { tokenId } = req.body;
-
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-    const result = await client.verifyIdToken({
-      idToken: tokenId,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const { email_verified, email, name } = result.getPayload()!;
-
-    if (!email_verified) {
-      throw new HttpError(401, 'Google account not verified.');
-    }
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      const hashedPassword = await bcrypt.hash(uuidv1() + email, 12);
-
-      user = new User({
-        email,
-        password: hashedPassword,
-        name,
-        isVerified: true,
+      const result = await client.verifyIdToken({
+        idToken: tokenId,
+        audience: process.env.GOOGLE_CLIENT_ID,
       });
 
-      await user.save();
+      const { email_verified, email, name } = result.getPayload()!;
 
-      res.status(201);
+      if (!email_verified) {
+        throw new HttpError(401, 'Google account not verified.');
+      }
+
+      user = await User.findOne({ email });
+
+      if (!user) {
+        const hashedPassword = await bcrypt.hash(uuidv1() + email, 12);
+
+        user = new User({
+          email,
+          password: hashedPassword,
+          name,
+          isVerified: true,
+        });
+
+        await user.save();
+
+        res.status(201);
+      }
     }
 
     const accessToken = createAccessToken({
@@ -209,36 +170,16 @@ export const googleLogin: RequestHandler = async (req, res, next) => {
 };
 
 export const updateRefreshToken: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
   try {
-    const { authorization } = req.headers;
-
-    if (!authorization) {
-      throw new HttpError(403);
-    }
-
-    const refreshToken = authorization.split(' ')[1];
-
-    const decodedToken = verifyToken(refreshToken);
-
-    const storedToken = await RefreshToken.findOne({
-      key: decodedToken.userId,
-    });
-
-    if (!storedToken) {
-      throw new HttpError(404);
-    }
-
     const newAccessToken = createAccessToken({
-      userId: decodedToken.userId,
+      userId: req.user.id,
     });
 
     const newRefreshToken = createRefreshToken({
-      userId: decodedToken.userId,
+      userId: req.user.id,
     });
-
-    storedToken.value = newRefreshToken;
-
-    await storedToken.save();
 
     res.json({
       accessToken: newAccessToken,
@@ -253,31 +194,11 @@ export const updateRefreshToken: RequestHandler = async (req, res, next) => {
 };
 
 export const updateAccessToken: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
   try {
-    const { authorization } = req.headers;
-
-    if (!authorization) {
-      throw new HttpError(403);
-    }
-
-    const refreshToken = authorization.split(' ')[1];
-
-    const decodedToken = verifyToken(refreshToken);
-
-    const storedToken = await RefreshToken.findOne({
-      key: decodedToken.userId,
-    });
-
-    if (!storedToken) {
-      throw new HttpError(404);
-    }
-
-    if (storedToken.value !== refreshToken) {
-      throw new HttpError(403, 'Expired refresh token.');
-    }
-
     const newAccessToken = createAccessToken({
-      userId: decodedToken.userId,
+      userId: req.user.id,
     });
 
     res.json({ accessToken: newAccessToken });
@@ -350,7 +271,7 @@ export const verifyEmail: RequestHandler = async (req, res, next) => {
       return res.json({ message: "You've already been verified." });
     }
 
-    if (user.token.expiresIn < Date.now()) {
+    if ((user.token.expiresIn as number) < Date.now()) {
       throw new HttpError(
         400,
         'This verification link has expired. Please send another email from Account Settings page.'
@@ -426,7 +347,7 @@ export const getResetPassword: RequestHandler = async (req, res, next) => {
       throw new HttpError(404);
     }
 
-    if (user.token.expiresIn < Date.now()) {
+    if ((user.token.expiresIn as number) < Date.now()) {
       throw new HttpError(
         400,
         'This link has been expired. Please send another email to reset password.'
@@ -457,6 +378,13 @@ export const putResetPassword: RequestHandler = async (req, res, next) => {
 
     if (!user) {
       throw new HttpError(404);
+    }
+
+    if ((user.token.expiresIn as number) < Date.now()) {
+      throw new HttpError(
+        400,
+        'This link has been expired. Please send another email to reset password.'
+      );
     }
 
     const newPassword = await bcrypt.hash(password, 12);

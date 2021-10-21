@@ -156,6 +156,7 @@ var saveUpload = function (req, res, next) { return __awaiter(void 0, void 0, vo
                 user = _a.sent();
                 if (!user)
                     return [2 /*return*/];
+                user.videos;
                 video = user.videos.find(function (item) { return item.root.id === tree_1.root.id; });
                 if (!video) {
                     video = new Video_1.default(tree_1);
@@ -165,7 +166,7 @@ var saveUpload = function (req, res, next) { return __awaiter(void 0, void 0, vo
                     video.root = tree_1.root;
                     video.status = Video_2.VideoStatus.Progressing;
                 }
-                return [4 /*yield*/, user.save()];
+                return [4 /*yield*/, Promise.all([user.save(), video.save()])];
             case 3:
                 _a.sent();
                 res.json({ message: 'Saved video successfully.' });

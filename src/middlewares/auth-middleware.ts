@@ -3,7 +3,7 @@ import { RequestHandler } from 'express';
 import HttpError from '../models/common/HttpError';
 import { verifyToken } from '../services/jwt-token';
 
-const authHandler: RequestHandler = (req, res, next) => {
+const authMiddleware: RequestHandler = (req, res, next) => {
   if (req.method === 'OPTIONS') return next();
 
   try {
@@ -25,4 +25,4 @@ const authHandler: RequestHandler = (req, res, next) => {
   }
 };
 
-export default authHandler;
+export default authMiddleware;

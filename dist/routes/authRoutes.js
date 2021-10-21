@@ -24,6 +24,7 @@ var express_validator_1 = require("express-validator");
 var authController = __importStar(require("../controllers/authController"));
 var router = (0, express_1.Router)();
 // Signup & Signin
+router.post('/login', authController.login);
 router.post('/register', [
     (0, express_validator_1.body)('name').trim().isLength({ min: 4 }),
     (0, express_validator_1.body)('email').normalizeEmail().isEmail(),
@@ -33,11 +34,9 @@ router.post('/register', [
         return value === req.body.password;
     }),
 ], authController.register);
-router.post('/login', authController.login);
-router.post('/google-login', authController.googleLogin);
 // Update Token
-router.get('/update-refresh-token', authController.updateRefreshToken);
-router.get('/update-access-token', authController.updateAccessToken);
+router.get('/refresh-token', authController.updateRefreshToken);
+router.get('/access-token', authController.updateAccessToken);
 // Email Verification
 router.post('/send-verify-email', authController.sendVerifyEmail);
 router.get('/verify-email/:token', authController.verifyEmail);
