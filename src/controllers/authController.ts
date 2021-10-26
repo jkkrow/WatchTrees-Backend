@@ -6,8 +6,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { validationResult } from 'express-validator';
 
 import HttpError from '../models/common/HttpError';
-import User from '../models/data/User';
-import RefreshToken from '../models/data/RefreshToken';
+import User from '../models/data/User.model';
 import {
   createAccessToken,
   createRefreshToken,
@@ -132,23 +131,6 @@ export const login: RequestHandler = async (req, res, next) => {
     const refreshToken = createRefreshToken({
       userId: user._id,
     });
-
-    const storedRefreshToken = await RefreshToken.findOne({
-      key: user._id,
-    });
-
-    if (!storedRefreshToken) {
-      const newRefreshToken = new RefreshToken({
-        key: user._id,
-        value: refreshToken,
-      });
-
-      await newRefreshToken.save();
-    } else {
-      storedRefreshToken.value = refreshToken;
-
-      await storedRefreshToken.save();
-    }
 
     res.json({
       accessToken,

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { VideoDocument } from './Video';
+import { VideoDocument } from './Video.model';
 
 export interface UserDocument extends mongoose.Document {
   name: string;

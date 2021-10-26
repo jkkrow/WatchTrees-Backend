@@ -1,9 +1,9 @@
 import { RequestHandler } from 'express';
 import AWS from 'aws-sdk';
 
-import User from '../models/data/User';
-import Video from '../models/data/Video';
-import { VideoStatus } from '../models/data/Video';
+import User from '../models/data/User.model';
+import Video from '../models/data/Video.model';
+import { VideoStatus } from '../models/data/Video.model';
 
 const s3 = new AWS.S3({
   credentials: {
