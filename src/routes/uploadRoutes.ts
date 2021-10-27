@@ -12,6 +12,6 @@ router.post(
   authMiddleware,
   uploadController.completeUpload
 );
-// router.post('/save-upload', authMiddleware, uploadController.saveUpload);
+router.post('/save-upload', authMiddleware, uploadController.saveUpload);
 
 export default router;

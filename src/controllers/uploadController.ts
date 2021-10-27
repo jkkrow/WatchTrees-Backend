@@ -4,6 +4,7 @@ import AWS from 'aws-sdk';
 import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
 import { VideoStatus } from '../models/data/Video.model';
+import { traverseNodes } from '../util/tree';
 
 const s3 = new AWS.S3({
   credentials: {
@@ -79,22 +80,35 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { tree } = req.body;
+    const { savedTree } = req.body;
 
     const user = await User.findById(req.user.id).populate('videos');
 
     if (!user) return;
 
-    user.videos;
+    // Change Nodes with unfinished progress to null
+    const nodes = traverseNodes(savedTree.root);
 
-    let video = user.videos.find((item) => item.root.id === tree.root.id);
+    nodes.forEach((node) => {
+      if (node.info && node.info.progress > 0 && node.info.progress < 100) {
+        node.info = null;
+      }
+    });
+
+    let video = user.videos.find((item) => item.root.id === savedTree.root.id);
 
     if (!video) {
-      video = new Video(tree);
+      video = new Video(savedTree);
       user.videos.push(video);
     } else {
-      video.root = tree.root;
-      video.status = VideoStatus.Progressing;
+      video.root = savedTree.root;
+      video.title = savedTree.title;
+      video.description = savedTree.description;
+      video.tags = savedTree.tags;
+      video.size = savedTree.size;
+      video.maxDuration = savedTree.maxDuration;
+      video.minDuration = savedTree.minDuration;
+      video.status = savedTree.status;
     }
 
     await Promise.all([user.save(), video.save()]);
