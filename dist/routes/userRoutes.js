@@ -23,11 +23,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
-var uploadController = __importStar(require("controllers/uploadController"));
+var userController = __importStar(require("controllers/userController"));
 var auth_middleware_1 = __importDefault(require("middlewares/auth-middleware"));
 var router = (0, express_1.Router)();
-router.get('/initiate-upload', auth_middleware_1.default, uploadController.initiateUpload);
-router.get('/get-upload-url', auth_middleware_1.default, uploadController.getUploadUrl);
-router.post('/complete-upload', auth_middleware_1.default, uploadController.completeUpload);
-router.post('/save-upload', auth_middleware_1.default, uploadController.saveUpload);
+router.get('/videos', auth_middleware_1.default, userController.fetchVideos);
 exports.default = router;

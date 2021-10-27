@@ -3,7 +3,6 @@ import AWS from 'aws-sdk';
 
 import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
-import { VideoStatus } from '../models/data/Video.model';
 import { traverseNodes } from '../util/tree';
 
 const s3 = new AWS.S3({

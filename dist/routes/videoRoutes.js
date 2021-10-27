@@ -20,7 +20,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
-var videoController = __importStar(require("../controllers/videoController"));
+var videoController = __importStar(require("controllers/videoController"));
 var router = (0, express_1.Router)();
 router.get('/', videoController.getVideo);
 exports.default = router;

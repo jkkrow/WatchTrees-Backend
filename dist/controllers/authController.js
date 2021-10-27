@@ -45,11 +45,10 @@ var crypto_1 = __importDefault(require("crypto"));
 var uuid_1 = require("uuid");
 var google_auth_library_1 = require("google-auth-library");
 var express_validator_1 = require("express-validator");
-var HttpError_1 = __importDefault(require("../models/common/HttpError"));
-var User_1 = __importDefault(require("../models/data/User"));
-var RefreshToken_1 = __importDefault(require("../models/data/RefreshToken"));
-var jwt_token_1 = require("../services/jwt-token");
-var send_email_1 = __importDefault(require("../services/send-email"));
+var HttpError_1 = __importDefault(require("models/common/HttpError"));
+var User_model_1 = __importDefault(require("models/data/User.model"));
+var jwt_token_1 = require("services/jwt-token");
+var send_email_1 = __importDefault(require("services/send-email"));
 var register = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, name_1, email, password, errors, existingEmail, hashedPassword, user, err_1;
     return __generator(this, function (_b) {
@@ -61,7 +60,7 @@ var register = function (req, res, next) { return __awaiter(void 0, void 0, void
                 if (!errors.isEmpty()) {
                     throw new HttpError_1.default(422, 'Invalid inputs.');
                 }
-                return [4 /*yield*/, User_1.default.findOne({ email: email })];
+                return [4 /*yield*/, User_model_1.default.findOne({ email: email })];
             case 1:
                 existingEmail = _b.sent();
                 if (existingEmail) {
@@ -70,7 +69,7 @@ var register = function (req, res, next) { return __awaiter(void 0, void 0, void
                 return [4 /*yield*/, bcrypt_1.default.hash(password, 12)];
             case 2:
                 hashedPassword = _b.sent();
-                user = new User_1.default({
+                user = new User_model_1.default({
                     email: email,
                     password: hashedPassword,
                     name: name_1,
@@ -104,15 +103,15 @@ var register = function (req, res, next) { return __awaiter(void 0, void 0, void
 }); };
 exports.register = register;
 var login = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, email, password, tokenId, user, correctPassword, client, result, _b, email_verified, email_1, name_2, hashedPassword, accessToken, refreshToken, storedRefreshToken, newRefreshToken, err_2;
+    var _a, email, password, tokenId, user, correctPassword, client, result, _b, email_verified, email_1, name_2, hashedPassword, accessToken, refreshToken, err_2;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
-                _c.trys.push([0, 14, , 15]);
+                _c.trys.push([0, 9, , 10]);
                 _a = req.body, email = _a.email, password = _a.password, tokenId = _a.tokenId;
                 user = void 0;
                 if (!!tokenId) return [3 /*break*/, 3];
-                return [4 /*yield*/, User_1.default.findOne({ email: email })];
+                return [4 /*yield*/, User_model_1.default.findOne({ email: email })];
             case 1:
                 // Native login //
                 user = _c.sent();
@@ -138,14 +137,14 @@ var login = function (req, res, next) { return __awaiter(void 0, void 0, void 0,
                 if (!email_verified) {
                     throw new HttpError_1.default(401, 'Google account not verified.');
                 }
-                return [4 /*yield*/, User_1.default.findOne({ email: email_1 })];
+                return [4 /*yield*/, User_model_1.default.findOne({ email: email_1 })];
             case 5:
                 user = _c.sent();
                 if (!!user) return [3 /*break*/, 8];
                 return [4 /*yield*/, bcrypt_1.default.hash((0, uuid_1.v1)() + email_1, 12)];
             case 6:
                 hashedPassword = _c.sent();
-                user = new User_1.default({
+                user = new User_model_1.default({
                     email: email_1,
                     password: hashedPassword,
                     name: name_2,
@@ -163,27 +162,6 @@ var login = function (req, res, next) { return __awaiter(void 0, void 0, void 0,
                 refreshToken = (0, jwt_token_1.createRefreshToken)({
                     userId: user._id,
                 });
-                return [4 /*yield*/, RefreshToken_1.default.findOne({
-                        key: user._id,
-                    })];
-            case 9:
-                storedRefreshToken = _c.sent();
-                if (!!storedRefreshToken) return [3 /*break*/, 11];
-                newRefreshToken = new RefreshToken_1.default({
-                    key: user._id,
-                    value: refreshToken,
-                });
-                return [4 /*yield*/, newRefreshToken.save()];
-            case 10:
-                _c.sent();
-                return [3 /*break*/, 13];
-            case 11:
-                storedRefreshToken.value = refreshToken;
-                return [4 /*yield*/, storedRefreshToken.save()];
-            case 12:
-                _c.sent();
-                _c.label = 13;
-            case 13:
                 res.json({
                     accessToken: accessToken,
                     refreshToken: {
@@ -198,105 +176,68 @@ var login = function (req, res, next) { return __awaiter(void 0, void 0, void 0,
                         isPremium: user.isPremium,
                     },
                 });
-                return [3 /*break*/, 15];
-            case 14:
+                return [3 /*break*/, 10];
+            case 9:
                 err_2 = _c.sent();
                 return [2 /*return*/, next(err_2)];
-            case 15: return [2 /*return*/];
+            case 10: return [2 /*return*/];
         }
     });
 }); };
 exports.login = login;
 var updateRefreshToken = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var authorization, refreshToken, decodedToken, storedToken, newAccessToken, newRefreshToken, err_3;
+    var newAccessToken, newRefreshToken;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                _a.trys.push([0, 3, , 4]);
-                authorization = req.headers.authorization;
-                if (!authorization) {
-                    throw new HttpError_1.default(403);
-                }
-                refreshToken = authorization.split(' ')[1];
-                decodedToken = (0, jwt_token_1.verifyToken)(refreshToken);
-                return [4 /*yield*/, RefreshToken_1.default.findOne({
-                        key: decodedToken.userId,
-                    })];
-            case 1:
-                storedToken = _a.sent();
-                if (!storedToken) {
-                    throw new HttpError_1.default(404);
-                }
-                newAccessToken = (0, jwt_token_1.createAccessToken)({
-                    userId: decodedToken.userId,
-                });
-                newRefreshToken = (0, jwt_token_1.createRefreshToken)({
-                    userId: decodedToken.userId,
-                });
-                storedToken.value = newRefreshToken;
-                return [4 /*yield*/, storedToken.save()];
-            case 2:
-                _a.sent();
-                res.json({
-                    accessToken: newAccessToken,
-                    refreshToken: {
-                        value: newRefreshToken,
-                        expiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
-                    },
-                });
-                return [3 /*break*/, 4];
-            case 3:
-                err_3 = _a.sent();
-                return [2 /*return*/, next(err_3)];
-            case 4: return [2 /*return*/];
+        if (!req.user)
+            return [2 /*return*/];
+        try {
+            newAccessToken = (0, jwt_token_1.createAccessToken)({
+                userId: req.user.id,
+            });
+            newRefreshToken = (0, jwt_token_1.createRefreshToken)({
+                userId: req.user.id,
+            });
+            res.json({
+                accessToken: newAccessToken,
+                refreshToken: {
+                    value: newRefreshToken,
+                    expiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
+                },
+            });
         }
+        catch (err) {
+            return [2 /*return*/, next(err)];
+        }
+        return [2 /*return*/];
     });
 }); };
 exports.updateRefreshToken = updateRefreshToken;
 var updateAccessToken = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var authorization, refreshToken, decodedToken, storedToken, newAccessToken, err_4;
+    var newAccessToken;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                _a.trys.push([0, 2, , 3]);
-                authorization = req.headers.authorization;
-                if (!authorization) {
-                    throw new HttpError_1.default(403);
-                }
-                refreshToken = authorization.split(' ')[1];
-                decodedToken = (0, jwt_token_1.verifyToken)(refreshToken);
-                return [4 /*yield*/, RefreshToken_1.default.findOne({
-                        key: decodedToken.userId,
-                    })];
-            case 1:
-                storedToken = _a.sent();
-                if (!storedToken) {
-                    throw new HttpError_1.default(404);
-                }
-                if (storedToken.value !== refreshToken) {
-                    throw new HttpError_1.default(403, 'Expired refresh token.');
-                }
-                newAccessToken = (0, jwt_token_1.createAccessToken)({
-                    userId: decodedToken.userId,
-                });
-                res.json({ accessToken: newAccessToken });
-                return [3 /*break*/, 3];
-            case 2:
-                err_4 = _a.sent();
-                return [2 /*return*/, next(err_4)];
-            case 3: return [2 /*return*/];
+        if (!req.user)
+            return [2 /*return*/];
+        try {
+            newAccessToken = (0, jwt_token_1.createAccessToken)({
+                userId: req.user.id,
+            });
+            res.json({ accessToken: newAccessToken });
         }
+        catch (err) {
+            return [2 /*return*/, next(err)];
+        }
+        return [2 /*return*/];
     });
 }); };
 exports.updateAccessToken = updateAccessToken;
 var sendVerifyEmail = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var email, user, err_5;
+    var email, user, err_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 4, , 5]);
                 email = req.body.email;
-                return [4 /*yield*/, User_1.default.findOne({ email: email })];
+                return [4 /*yield*/, User_model_1.default.findOne({ email: email })];
             case 1:
                 user = _a.sent();
                 if (!user) {
@@ -323,21 +264,21 @@ var sendVerifyEmail = function (req, res, next) { return __awaiter(void 0, void 
                 });
                 return [3 /*break*/, 5];
             case 4:
-                err_5 = _a.sent();
-                return [2 /*return*/, next(err_5)];
+                err_3 = _a.sent();
+                return [2 /*return*/, next(err_3)];
             case 5: return [2 /*return*/];
         }
     });
 }); };
 exports.sendVerifyEmail = sendVerifyEmail;
 var verifyEmail = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var token, user, err_6;
+    var token, user, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 3, , 4]);
                 token = req.params.token;
-                return [4 /*yield*/, User_1.default.findOne({
+                return [4 /*yield*/, User_model_1.default.findOne({
                         'token.type': 'verify-email',
                         'token.value': token,
                     })];
@@ -359,21 +300,21 @@ var verifyEmail = function (req, res, next) { return __awaiter(void 0, void 0, v
                 res.json({ message: 'Your account has been successfully verified.' });
                 return [3 /*break*/, 4];
             case 3:
-                err_6 = _a.sent();
-                return [2 /*return*/, next(err_6)];
+                err_4 = _a.sent();
+                return [2 /*return*/, next(err_4)];
             case 4: return [2 /*return*/];
         }
     });
 }); };
 exports.verifyEmail = verifyEmail;
 var sendRecoveryEmail = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var email, user, err_7;
+    var email, user, err_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 4, , 5]);
                 email = req.body.email;
-                return [4 /*yield*/, User_1.default.findOne({ email: email })];
+                return [4 /*yield*/, User_model_1.default.findOne({ email: email })];
             case 1:
                 user = _a.sent();
                 if (!user) {
@@ -398,21 +339,21 @@ var sendRecoveryEmail = function (req, res, next) { return __awaiter(void 0, voi
                 res.json({ message: 'Recovery email has sent successfully.' });
                 return [3 /*break*/, 5];
             case 4:
-                err_7 = _a.sent();
-                return [2 /*return*/, next(err_7)];
+                err_5 = _a.sent();
+                return [2 /*return*/, next(err_5)];
             case 5: return [2 /*return*/];
         }
     });
 }); };
 exports.sendRecoveryEmail = sendRecoveryEmail;
 var getResetPassword = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var token, user, err_8;
+    var token, user, err_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
                 token = req.params.token;
-                return [4 /*yield*/, User_1.default.findOne({
+                return [4 /*yield*/, User_model_1.default.findOne({
                         'token.type': 'reset-password',
                         'token.value': token,
                     })];
@@ -427,15 +368,15 @@ var getResetPassword = function (req, res, next) { return __awaiter(void 0, void
                 res.json();
                 return [3 /*break*/, 3];
             case 2:
-                err_8 = _a.sent();
-                return [2 /*return*/, next(err_8)];
+                err_6 = _a.sent();
+                return [2 /*return*/, next(err_6)];
             case 3: return [2 /*return*/];
         }
     });
 }); };
 exports.getResetPassword = getResetPassword;
 var putResetPassword = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var token, password, errors, user, newPassword, err_9;
+    var token, password, errors, user, newPassword, err_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -446,7 +387,7 @@ var putResetPassword = function (req, res, next) { return __awaiter(void 0, void
                 if (!errors.isEmpty()) {
                     throw new HttpError_1.default(422, 'Invalid inputs.');
                 }
-                return [4 /*yield*/, User_1.default.findOne({
+                return [4 /*yield*/, User_model_1.default.findOne({
                         'token.type': 'reset-password',
                         'token.value': token,
                     })];
@@ -468,8 +409,8 @@ var putResetPassword = function (req, res, next) { return __awaiter(void 0, void
                 res.json({ message: 'Password has changed successfully.' });
                 return [3 /*break*/, 5];
             case 4:
-                err_9 = _a.sent();
-                return [2 /*return*/, next(err_9)];
+                err_7 = _a.sent();
+                return [2 /*return*/, next(err_7)];
             case 5: return [2 /*return*/];
         }
     });

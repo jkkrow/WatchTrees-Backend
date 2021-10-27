@@ -41,9 +41,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelUpload = exports.saveUpload = exports.completeUpload = exports.getUploadUrl = exports.initiateUpload = void 0;
 var aws_sdk_1 = __importDefault(require("aws-sdk"));
-var User_1 = __importDefault(require("../models/data/User"));
-var Video_1 = __importDefault(require("../models/data/Video"));
-var Video_2 = require("../models/data/Video");
+var User_model_1 = __importDefault(require("models/data/User.model"));
+var Video_model_1 = __importDefault(require("models/data/Video.model"));
+var tree_1 = require("util/tree");
 var s3 = new aws_sdk_1.default.S3({
     credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID,
@@ -141,7 +141,7 @@ var completeUpload = function (req, res, next) { return __awaiter(void 0, void 0
 }); };
 exports.completeUpload = completeUpload;
 var saveUpload = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var tree_1, user, video, err_4;
+    var savedTree_1, user, nodes, video, err_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -150,21 +150,32 @@ var saveUpload = function (req, res, next) { return __awaiter(void 0, void 0, vo
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 4, , 5]);
-                tree_1 = req.body.tree;
-                return [4 /*yield*/, User_1.default.findById(req.user.id).populate('videos')];
+                savedTree_1 = req.body.savedTree;
+                return [4 /*yield*/, User_model_1.default.findById(req.user.id).populate('videos')];
             case 2:
                 user = _a.sent();
                 if (!user)
                     return [2 /*return*/];
-                user.videos;
-                video = user.videos.find(function (item) { return item.root.id === tree_1.root.id; });
+                nodes = (0, tree_1.traverseNodes)(savedTree_1.root);
+                nodes.forEach(function (node) {
+                    if (node.info && node.info.progress > 0 && node.info.progress < 100) {
+                        node.info = null;
+                    }
+                });
+                video = user.videos.find(function (item) { return item.root.id === savedTree_1.root.id; });
                 if (!video) {
-                    video = new Video_1.default(tree_1);
+                    video = new Video_model_1.default(savedTree_1);
                     user.videos.push(video);
                 }
                 else {
-                    video.root = tree_1.root;
-                    video.status = Video_2.VideoStatus.Progressing;
+                    video.root = savedTree_1.root;
+                    video.title = savedTree_1.title;
+                    video.description = savedTree_1.description;
+                    video.tags = savedTree_1.tags;
+                    video.size = savedTree_1.size;
+                    video.maxDuration = savedTree_1.maxDuration;
+                    video.minDuration = savedTree_1.minDuration;
+                    video.status = savedTree_1.status;
                 }
                 return [4 /*yield*/, Promise.all([user.save(), video.save()])];
             case 3:

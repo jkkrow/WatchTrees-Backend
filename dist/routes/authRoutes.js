@@ -18,10 +18,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var express_validator_1 = require("express-validator");
-var authController = __importStar(require("../controllers/authController"));
+var authController = __importStar(require("controllers/authController"));
+var auth_middleware_1 = __importDefault(require("middlewares/auth-middleware"));
 var router = (0, express_1.Router)();
 // Signup & Signin
 router.post('/login', authController.login);
@@ -34,9 +38,6 @@ router.post('/register', [
         return value === req.body.password;
     }),
 ], authController.register);
-// Update Token
-router.get('/refresh-token', authController.updateRefreshToken);
-router.get('/access-token', authController.updateAccessToken);
 // Email Verification
 router.post('/send-verify-email', authController.sendVerifyEmail);
 router.get('/verify-email/:token', authController.verifyEmail);
@@ -50,4 +51,7 @@ router.put('/reset-password/:token', [
         return value === req.body.password;
     }),
 ], authController.putResetPassword);
+// Update Token
+router.get('/refresh-token', auth_middleware_1.default, authController.updateRefreshToken);
+router.get('/access-token', auth_middleware_1.default, authController.updateAccessToken);
 exports.default = router;

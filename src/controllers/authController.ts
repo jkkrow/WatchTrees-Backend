@@ -7,11 +7,7 @@ import { validationResult } from 'express-validator';
 
 import HttpError from '../models/common/HttpError';
 import User from '../models/data/User.model';
-import {
-  createAccessToken,
-  createRefreshToken,
-  verifyToken,
-} from '../services/jwt-token';
+import { createAccessToken, createRefreshToken } from '../services/jwt-token';
 import sendEmail from '../services/send-email';
 
 export const register: RequestHandler = async (req, res, next) => {
