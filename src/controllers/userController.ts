@@ -7,7 +7,10 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const user = await User.findById(req.user.id).populate('videos');
+    const user = await User.findById(req.user.id).populate({
+      path: 'videos',
+      options: { limit: 10, select: '-root -__v' },
+    });
 
     if (!user) {
       throw new HttpError(404, 'No user found.');

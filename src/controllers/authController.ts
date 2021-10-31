@@ -59,8 +59,7 @@ export const register: RequestHandler = async (req, res, next) => {
     });
 
     res.status(201).json({
-      message:
-        'Verification email has sent. Please check your email and confirm signup.',
+      message: 'Verification email has sent. Please check your email and confirm signup.',
     });
   } catch (err) {
     return next(err);
@@ -138,6 +137,7 @@ export const login: RequestHandler = async (req, res, next) => {
         email: user.email,
         name: user.name,
         picture: user.picture,
+        videos: [],
         isVerified: user.isVerified,
         isPremium: user.isPremium,
       },
@@ -192,10 +192,7 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new HttpError(
-        404,
-        'No user found with this email. Please sign up.'
-      );
+      throw new HttpError(404, 'No user found with this email. Please sign up.');
     }
 
     user.token = {
@@ -224,8 +221,7 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
     });
 
     res.json({
-      message:
-        'Verification email has sent. Please check your email and confirm signup.',
+      message: 'Verification email has sent. Please check your email and confirm signup.',
     });
   } catch (err) {
     return next(err);
@@ -273,10 +269,7 @@ export const sendRecoveryEmail: RequestHandler = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new HttpError(
-        404,
-        'No user found with this email. Please sign up.'
-      );
+      throw new HttpError(404, 'No user found with this email. Please sign up.');
     }
 
     user.token = {
