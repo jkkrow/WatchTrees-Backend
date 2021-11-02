@@ -4,13 +4,14 @@ interface VideoNode {
   id: string;
   prevId?: string;
   layer: number;
-  info: Object;
+  info: any;
   children: VideoNode[];
 }
 
 export enum VideoStatus {
-  Progressing = 'Progressing',
-  Completed = 'Completed',
+  Progressing = 'PROGRESSING',
+  Public = 'PUBLIC',
+  Private = 'PRIVATE',
 }
 
 export interface VideoDocument extends mongoose.Document {

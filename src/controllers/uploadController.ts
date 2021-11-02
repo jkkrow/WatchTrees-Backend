@@ -79,14 +79,14 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { savedTree } = req.body;
+    const { uploadTree } = req.body;
 
     const user = await User.findById(req.user.id).populate('videos');
 
     if (!user) return;
 
     // Change Nodes with unfinished progress to null
-    const nodes = traverseNodes(savedTree.root);
+    const nodes = traverseNodes(uploadTree.root);
 
     nodes.forEach((node) => {
       if (node.info && node.info.progress > 0 && node.info.progress < 100) {
@@ -94,20 +94,20 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
       }
     });
 
-    let video = user.videos.find((item) => item.root.id === savedTree.root.id);
+    let video = user.videos.find((item) => item.root.id === uploadTree.root.id);
 
     if (!video) {
-      video = new Video(savedTree);
+      video = new Video(uploadTree);
       user.videos.push(video);
     } else {
-      video.root = savedTree.root;
-      video.title = savedTree.title;
-      video.description = savedTree.description;
-      video.tags = savedTree.tags;
-      video.size = savedTree.size;
-      video.maxDuration = savedTree.maxDuration;
-      video.minDuration = savedTree.minDuration;
-      video.status = savedTree.status;
+      video.root = uploadTree.root;
+      video.title = uploadTree.title;
+      video.description = uploadTree.description;
+      video.tags = uploadTree.tags;
+      video.size = uploadTree.size;
+      video.maxDuration = uploadTree.maxDuration;
+      video.minDuration = uploadTree.minDuration;
+      video.status = uploadTree.status;
     }
 
     await Promise.all([user.save(), video.save()]);
