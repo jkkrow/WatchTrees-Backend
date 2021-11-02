@@ -2,7 +2,7 @@ import { RequestHandler } from 'express';
 import AWS from 'aws-sdk';
 
 import User from '../models/data/User.model';
-import Video from '../models/data/Video.model';
+import Video, { VideoStatus } from '../models/data/Video.model';
 import { traverseNodes } from '../util/tree';
 
 const s3 = new AWS.S3({
@@ -100,14 +100,13 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
       video = new Video(uploadTree);
       user.videos.push(video);
     } else {
-      video.root = uploadTree.root;
-      video.title = uploadTree.title;
-      video.description = uploadTree.description;
-      video.tags = uploadTree.tags;
-      video.size = uploadTree.size;
-      video.maxDuration = uploadTree.maxDuration;
-      video.minDuration = uploadTree.minDuration;
-      video.status = uploadTree.status;
+      for (let key in uploadTree) {
+        video[key] = uploadTree[key];
+      }
+    }
+
+    if (!video.title) {
+      video.isEditing = false;
     }
 
     await Promise.all([user.save(), video.save()]);

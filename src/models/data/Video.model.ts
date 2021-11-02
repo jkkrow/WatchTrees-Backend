@@ -9,19 +9,21 @@ interface VideoNode {
 }
 
 export enum VideoStatus {
-  Progressing = 'PROGRESSING',
-  Public = 'PUBLIC',
-  Private = 'PRIVATE',
+  Public = 'public',
+  Private = 'private',
 }
 
 export interface VideoDocument extends mongoose.Document {
   root: VideoNode;
   title: string;
-  description: string;
   tags: string[];
+  description: string;
+  thumbnail?: string;
   size: number;
   maxDuration: number;
   minDuration: number;
+  views: number;
+  isEditing: boolean;
   status: VideoStatus;
 }
 
@@ -35,10 +37,13 @@ const VideoSchema = new mongoose.Schema({
   title: { type: String },
   description: { type: String },
   tags: [{ type: String }],
+  thumbnail: { type: String },
   size: { type: Number, required: true },
   maxDuration: { type: Number, required: true },
   minDuration: { type: Number, required: true },
-  status: { type: String, required: true },
+  views: { type: Number, required: true },
+  isEditing: { type: Boolean, required: true },
+  status: { type: String, enum: ['public', 'private'], required: true },
 });
 
 export default mongoose.model<VideoDocument>('Video', VideoSchema);
