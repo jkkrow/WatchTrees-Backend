@@ -1,8 +1,10 @@
 import { RequestHandler } from 'express';
 import AWS from 'aws-sdk';
+import { v1 as uuidv1 } from 'uuid';
 
 import User from '../models/data/User.model';
-import Video, { VideoStatus } from '../models/data/Video.model';
+import Video from '../models/data/Video.model';
+import HttpError from '../models/common/HttpError';
 import { traverseNodes } from '../util/tree';
 
 const s3 = new AWS.S3({
@@ -13,11 +15,17 @@ const s3 = new AWS.S3({
   region: process.env.S3_BUCKET_REGION!,
 });
 
-export const initiateUpload: RequestHandler = async (req, res, next) => {
+export const initiateMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
     const { treeId, fileName, fileType } = req.query;
+
+    const type = (fileType as string).split('/');
+
+    if (type[0] !== 'video') {
+      throw new HttpError(422, 'Invalid file type');
+    }
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
@@ -33,7 +41,7 @@ export const initiateUpload: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const getUploadUrl: RequestHandler = async (req, res, next) => {
+export const processMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
@@ -54,7 +62,7 @@ export const getUploadUrl: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const completeUpload: RequestHandler = async (req, res, next) => {
+export const completeMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
@@ -70,6 +78,32 @@ export const completeUpload: RequestHandler = async (req, res, next) => {
     const result = await s3.completeMultipartUpload(params).promise();
 
     res.json({ url: result.Location });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const uploadImage: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { fileType } = req.query;
+
+    const type = (fileType as string).split('/');
+
+    if (type[0] !== 'image') {
+      throw new HttpError(422, 'Invalid file type');
+    }
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: `images/${req.user.id}/${uuidv1()}`,
+      ContentType: fileType as string,
+    };
+
+    const presignedUrl = await s3.getSignedUrlPromise('putObject', params);
+
+    res.json({ presignedUrl, key: params.Key });
   } catch (err) {
     return next(err);
   }
@@ -105,13 +139,13 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
       }
     }
 
-    if (!video.title) {
-      video.isEditing = false;
+    if (!video.title || !video.root.info) {
+      video.isEditing = true;
     }
 
     await Promise.all([user.save(), video.save()]);
 
-    res.json({ message: 'Saved video successfully.' });
+    res.json({ message: 'Upload progress saved' });
   } catch (err) {
     return next(err);
   }

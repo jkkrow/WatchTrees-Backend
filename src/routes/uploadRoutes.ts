@@ -5,13 +5,20 @@ import authMiddleware from '../middlewares/auth-middleware';
 
 const router = Router();
 
-router.get('/initiate-upload', authMiddleware, uploadController.initiateUpload);
-router.get('/get-upload-url', authMiddleware, uploadController.getUploadUrl);
-router.post(
-  '/complete-upload',
+router.get(
+  '/video-initiate',
   authMiddleware,
-  uploadController.completeUpload
+  uploadController.initiateMultipart
 );
+router.get('/video-url', authMiddleware, uploadController.processMultipart);
+router.post(
+  '/video-complete',
+  authMiddleware,
+  uploadController.completeMultipart
+);
+
+router.get('/image', authMiddleware, uploadController.uploadImage);
+
 router.post('/save-upload', authMiddleware, uploadController.saveUpload);
 
 export default router;

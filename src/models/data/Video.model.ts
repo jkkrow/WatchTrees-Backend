@@ -18,7 +18,7 @@ export interface VideoDocument extends mongoose.Document {
   title: string;
   tags: string[];
   description: string;
-  thumbnail?: string;
+  thumbnail: { name: string; url: string };
   size: number;
   maxDuration: number;
   minDuration: number;
@@ -31,13 +31,16 @@ const VideoSchema = new mongoose.Schema({
   root: {
     id: { type: String, required: true },
     layer: { type: Number, required: false },
-    info: { type: Object, required: true },
+    info: { type: Object },
     children: { type: Array, required: true },
   },
   title: { type: String },
   description: { type: String },
   tags: [{ type: String }],
-  thumbnail: { type: String },
+  thumbnail: {
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+  },
   size: { type: Number, required: true },
   maxDuration: { type: Number, required: true },
   minDuration: { type: Number, required: true },
