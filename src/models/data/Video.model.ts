@@ -2,14 +2,14 @@ import mongoose from 'mongoose';
 
 interface VideoInfo {
   name: string;
+  label: string;
   size: number;
   duration: number;
-  label: string;
   timelineStart: number | null;
   timelineEnd: number | null;
+  error: string | null;
   progress: number;
   isConverted: boolean;
-  error: string | null;
   url: string;
 }
 
@@ -17,7 +17,7 @@ interface VideoNode {
   id: string;
   prevId?: string;
   layer: number;
-  info: VideoInfo;
+  info: VideoInfo | null;
   children: VideoNode[];
 }
 

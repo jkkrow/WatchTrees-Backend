@@ -110,7 +110,7 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
 
     let video = user.videos.find((item) => item.root.id === uploadTree.root.id);
 
-    // Change Nodes with unfinished progress to null
+    // Refactor UploadTree fields before change document
     const uploadNodes = traverseNodes(uploadTree.root);
 
     for (let uploadNode of uploadNodes) {
@@ -137,7 +137,7 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
       user.videos.push(video);
     } else {
       for (let key in uploadTree) {
-        video[key] = uploadTree[key];
+        key !== 'views' && (video[key] = uploadTree[key]);
       }
     }
 
