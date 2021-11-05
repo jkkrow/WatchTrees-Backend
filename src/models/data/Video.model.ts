@@ -1,10 +1,23 @@
 import mongoose from 'mongoose';
 
+interface VideoInfo {
+  name: string;
+  size: number;
+  duration: number;
+  label: string;
+  timelineStart: number | null;
+  timelineEnd: number | null;
+  progress: number;
+  isConverted: boolean;
+  error: string | null;
+  url: string;
+}
+
 interface VideoNode {
   id: string;
   prevId?: string;
   layer: number;
-  info: any;
+  info: VideoInfo;
   children: VideoNode[];
 }
 
@@ -31,15 +44,26 @@ const VideoSchema = new mongoose.Schema({
   root: {
     id: { type: String, required: true },
     layer: { type: Number, required: false },
-    info: { type: Object },
+    info: {
+      name: { type: String },
+      size: { type: Number },
+      duration: { type: Number },
+      label: { type: String },
+      timelineStart: { type: Number },
+      timelineEnd: { type: Number },
+      progress: { type: Number },
+      error: { type: String },
+      isConverted: { type: Boolean },
+      url: { type: String },
+    },
     children: { type: Array, required: true },
   },
   title: { type: String },
   description: { type: String },
   tags: [{ type: String }],
   thumbnail: {
-    name: { type: String, required: true },
-    url: { type: String, required: true },
+    name: { type: String },
+    url: { type: String },
   },
   size: { type: Number, required: true },
   maxDuration: { type: Number, required: true },

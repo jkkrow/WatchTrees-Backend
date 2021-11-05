@@ -1,11 +1,12 @@
 import { RequestHandler } from 'express';
-import AWS from 'aws-sdk';
 import { v1 as uuidv1 } from 'uuid';
+import AWS from 'aws-sdk';
+import path from 'path';
 
 import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
 import HttpError from '../models/common/HttpError';
-import { traverseNodes } from '../util/tree';
+import { findById, traverseNodes } from '../util/tree';
 
 const s3 = new AWS.S3({
   credentials: {
@@ -19,18 +20,22 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { treeId, fileName, fileType } = req.query;
+    const { treeId, fileName, fileType } = req.query as {
+      treeId: string;
+      fileName: string;
+      fileType: string;
+    };
 
-    const type = (fileType as string).split('/');
+    const { dir } = path.parse(fileType);
 
-    if (type[0] !== 'video') {
+    if (dir !== 'video') {
       throw new HttpError(422, 'Invalid file type');
     }
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: `videos/${req.user.id}/${treeId}/${fileName}`,
-      ContentType: fileType as string,
+      ContentType: fileType,
     };
 
     const uploadData = await s3.createMultipartUpload(params).promise();
@@ -45,12 +50,17 @@ export const processMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { uploadId, partNumber, treeId, fileName } = req.query;
+    const { uploadId, treeId, fileName, partNumber } = req.query as {
+      uploadId: string;
+      treeId: string;
+      fileName: string;
+      partNumber: string;
+    };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: `videos/${req.user.id}/${treeId}/${fileName}`,
-      UploadId: uploadId as string,
+      UploadId: uploadId,
       PartNumber: partNumber,
     };
 
@@ -66,44 +76,23 @@ export const completeMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { uploadId, parts, treeId, fileName } = req.body.params;
+    const { uploadId, treeId, fileName, parts } = req.body.params as {
+      uploadId: string;
+      treeId: string;
+      fileName: string;
+      parts: { ETag: string; PartNumber: number }[];
+    };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: `videos/${req.user.id}/${treeId}/${fileName}`,
-      UploadId: uploadId as string,
+      UploadId: uploadId,
       MultipartUpload: { Parts: parts },
     };
 
     const result = await s3.completeMultipartUpload(params).promise();
 
-    res.json({ url: result.Location });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const uploadImage: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { fileType } = req.query;
-
-    const type = (fileType as string).split('/');
-
-    if (type[0] !== 'image') {
-      throw new HttpError(422, 'Invalid file type');
-    }
-
-    const params = {
-      Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `images/${req.user.id}/${uuidv1()}`,
-      ContentType: fileType as string,
-    };
-
-    const presignedUrl = await s3.getSignedUrlPromise('putObject', params);
-
-    res.json({ presignedUrl, key: params.Key });
+    res.json({ url: result.Key });
   } catch (err) {
     return next(err);
   }
@@ -119,16 +108,29 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
 
     if (!user) return;
 
-    // Change Nodes with unfinished progress to null
-    const nodes = traverseNodes(uploadTree.root);
-
-    nodes.forEach((node) => {
-      if (node.info && node.info.progress > 0 && node.info.progress < 100) {
-        node.info = null;
-      }
-    });
-
     let video = user.videos.find((item) => item.root.id === uploadTree.root.id);
+
+    // Change Nodes with unfinished progress to null
+    const uploadNodes = traverseNodes(uploadTree.root);
+
+    for (let uploadNode of uploadNodes) {
+      let nodeInfo = uploadNode.info;
+
+      if (!nodeInfo) continue;
+
+      if (nodeInfo.progress > 0 && nodeInfo.progress < 100) {
+        nodeInfo = null;
+      }
+
+      if (!video) continue;
+
+      const videoNode = findById(video, uploadNode.id);
+
+      if (!videoNode) continue;
+
+      nodeInfo.isConverted = videoNode.info.isConverted;
+      nodeInfo.url = videoNode.info.url;
+    }
 
     if (!video) {
       video = new Video(uploadTree);
@@ -155,17 +157,47 @@ export const cancelUpload: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { treeId, fileName, uploadId } = req.query;
+    const { uploadId, treeId, fileName } = req.query as {
+      uploadId: string;
+      treeId: string;
+      fileName: string;
+    };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: `videos/${req.user.id}/${treeId}/${fileName}`,
-      UploadId: uploadId as string,
+      UploadId: uploadId,
     };
 
     const data = await s3.abortMultipartUpload(params).promise();
 
     res.json({ data });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const uploadImage: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { fileType } = req.query as { fileType: string };
+
+    const { dir, name } = path.parse(fileType);
+
+    if (dir !== 'image') {
+      throw new HttpError(422, 'Invalid file type');
+    }
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: `images/${req.user.id}/${uuidv1()}.${name}`,
+      ContentType: fileType,
+    };
+
+    const presignedUrl = await s3.getSignedUrlPromise('putObject', params);
+
+    res.json({ presignedUrl, key: params.Key });
   } catch (err) {
     return next(err);
   }
