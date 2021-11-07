@@ -59,7 +59,8 @@ export const register: RequestHandler = async (req, res, next) => {
     });
 
     res.status(201).json({
-      message: 'Verification email has sent. Please check your email and confirm signup.',
+      message:
+        'Verification email has sent. Please check your email and confirm signup.',
     });
   } catch (err) {
     return next(err);
@@ -129,10 +130,7 @@ export const login: RequestHandler = async (req, res, next) => {
 
     res.json({
       accessToken,
-      refreshToken: {
-        value: refreshToken,
-        expiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
-      },
+      refreshToken,
       userData: {
         email: user.email,
         name: user.name,
@@ -160,10 +158,7 @@ export const updateRefreshToken: RequestHandler = async (req, res, next) => {
 
     res.json({
       accessToken: newAccessToken,
-      refreshToken: {
-        value: newRefreshToken,
-        expiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
-      },
+      refreshToken: newRefreshToken,
     });
   } catch (err) {
     return next(err);
@@ -191,7 +186,10 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new HttpError(404, 'No user found with this email. Please sign up.');
+      throw new HttpError(
+        404,
+        'No user found with this email. Please sign up.'
+      );
     }
 
     user.token = {
@@ -220,7 +218,8 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
     });
 
     res.json({
-      message: 'Verification email has sent. Please check your email and confirm signup.',
+      message:
+        'Verification email has sent. Please check your email and confirm signup.',
     });
   } catch (err) {
     return next(err);
@@ -268,7 +267,10 @@ export const sendRecoveryEmail: RequestHandler = async (req, res, next) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new HttpError(404, 'No user found with this email. Please sign up.');
+      throw new HttpError(
+        404,
+        'No user found with this email. Please sign up.'
+      );
     }
 
     user.token = {

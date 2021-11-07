@@ -126,7 +126,7 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
 
       const videoNode = findById(video, uploadNode.id);
 
-      if (!videoNode) continue;
+      if (!videoNode || !videoNode.info) continue;
 
       nodeInfo.isConverted = videoNode.info.isConverted;
       nodeInfo.url = videoNode.info.url;
