@@ -20,8 +20,9 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { treeId, fileName, fileType } = req.query as {
+    const { treeId, nodeId, fileName, fileType } = req.query as {
       treeId: string;
+      nodeId: string;
       fileName: string;
       fileType: string;
     };
@@ -36,6 +37,7 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: `videos/${req.user.id}/${treeId}/${fileName}`,
       ContentType: fileType,
+      Metadata: { isRoot: `${treeId === nodeId}` },
     };
 
     const uploadData = await s3.createMultipartUpload(params).promise();
