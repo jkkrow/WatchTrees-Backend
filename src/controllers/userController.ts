@@ -25,11 +25,13 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
       path: 'videos',
       options: {
         sort: { $natural: -1 },
-        select: '-root -__v',
+        select: '-root.children -__v',
         limit: itemsPerPage,
         skip: itemsPerPage * (pageNumber - 1),
       },
     });
+
+    console.log(user.videos[0]);
 
     res.json({ videos: user.videos, totalPage });
   } catch (err) {

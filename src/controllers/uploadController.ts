@@ -37,7 +37,7 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
       Bucket: process.env.S3_BUCKET_NAME!,
       Key: `videos/${req.user.id}/${treeId}/${fileName}`,
       ContentType: fileType,
-      Metadata: { isRoot: `${treeId === nodeId}` },
+      Metadata: { root: `${treeId === nodeId}` },
     };
 
     const uploadData = await s3.createMultipartUpload(params).promise();
