@@ -7,10 +7,10 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { page } = req.query;
+    const { page, max } = req.query;
 
-    let totalPage: number;
-    const itemsPerPage = 10;
+    let count: number;
+    const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
 
     const user = await User.findById(req.user.id);
@@ -19,7 +19,7 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
       throw new HttpError(404, 'No user found.');
     }
 
-    totalPage = Math.ceil(user.videos.length / itemsPerPage);
+    count = user.videos.length;
 
     await user.populate({
       path: 'videos',
@@ -31,9 +31,7 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
       },
     });
 
-    console.log(user.videos[0]);
-
-    res.json({ videos: user.videos, totalPage });
+    res.json({ videos: user.videos, count });
   } catch (err) {
     next(err);
   }

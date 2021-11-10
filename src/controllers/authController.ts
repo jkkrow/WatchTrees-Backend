@@ -135,6 +135,7 @@ export const login: RequestHandler = async (req, res, next) => {
         email: user.email,
         name: user.name,
         picture: user.picture,
+        videos: { data: [], count: 0 },
         isVerified: user.isVerified,
         isPremium: user.isPremium,
       },
