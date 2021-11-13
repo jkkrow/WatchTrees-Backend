@@ -5,8 +5,8 @@ interface VideoInfo {
   label: string;
   size: number;
   duration: number;
-  timelineStart: number | null;
-  timelineEnd: number | null;
+  selectionTimeStart: number | null;
+  selectionTimeEnd: number | null;
   error: string | null;
   progress: number;
   isConverted: boolean;
@@ -49,8 +49,8 @@ const VideoSchema = new mongoose.Schema({
       size: { type: Number },
       duration: { type: Number },
       label: { type: String },
-      timelineStart: { type: Number },
-      timelineEnd: { type: Number },
+      selectionTimeStart: { type: Number },
+      selectionTimeEnd: { type: Number },
       progress: { type: Number },
       error: { type: String },
       isConverted: { type: Boolean },
