@@ -27,9 +27,9 @@ router.get('/verify-email/:token', authController.verifyEmail);
 
 // Reset Password
 router.post('/send-recovery-email', authController.sendRecoveryEmail);
-router.get('/reset-password/:token', authController.getResetPassword);
-router.put(
-  '/reset-password/:token',
+router.get('/user-password/:token', authController.getResetPassword);
+router.patch(
+  '/user-password/:token',
   [
     body('password').trim().isStrongPassword(),
     body('confirmPassword').custom(

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-interface VideoInfo {
+export interface VideoInfo {
   name: string;
   label: string;
   size: number;
@@ -13,7 +13,7 @@ interface VideoInfo {
   url: string;
 }
 
-interface VideoNode {
+export interface VideoNode {
   id: string;
   prevId?: string;
   layer: number;

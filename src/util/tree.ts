@@ -1,18 +1,12 @@
-export interface Node {
-  id: string;
-  prevId?: string;
-  layer: number;
-  info: any;
-  children: Node[];
-}
+import {
+  VideoDocument,
+  VideoNode,
+  VideoInfo,
+} from '../models/data/Video.model';
 
-export interface Tree {
-  root: Node;
-}
-
-export const findById = (tree: Tree, id: string): Node | null => {
-  let currentNode: Node = tree.root;
-  const queue: Node[] = [];
+export const findById = (tree: VideoDocument, id: string): VideoNode | null => {
+  let currentNode: VideoNode = tree.root;
+  const queue: VideoNode[] = [];
 
   queue.push(currentNode);
 
@@ -28,10 +22,10 @@ export const findById = (tree: Tree, id: string): Node | null => {
   return null;
 };
 
-export const traverseNodes = (root: Node): Node[] => {
+export const traverseNodes = (root: VideoNode): VideoNode[] => {
   let currentNode = root;
-  const queue: Node[] = [];
-  const nodes: Node[] = [];
+  const queue: VideoNode[] = [];
+  const nodes: VideoNode[] = [];
 
   queue.push(currentNode);
 
@@ -45,4 +39,24 @@ export const traverseNodes = (root: Node): Node[] => {
   }
 
   return nodes;
+};
+
+export const validateNodes = (
+  root: VideoNode,
+  key: keyof VideoInfo | 'info',
+  value: any = null,
+  type = true
+): boolean => {
+  const nodes = traverseNodes(root);
+
+  if (key === 'info') {
+    return !!nodes.find((node) =>
+      type ? node.info === value : node.info !== value
+    );
+  }
+
+  return !!nodes.find((node) => {
+    if (!node.info) return false;
+    return type ? node.info[key] === value : node.info[key] !== value;
+  });
 };

@@ -6,7 +6,7 @@ import path from 'path';
 import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
 import HttpError from '../models/common/HttpError';
-import { findById, traverseNodes } from '../util/tree';
+import { findById, traverseNodes, validateNodes } from '../util/tree';
 
 const s3 = new AWS.S3({
   credentials: {
@@ -100,7 +100,31 @@ export const completeMultipart: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const saveUpload: RequestHandler = async (req, res, next) => {
+export const cancelMultipart: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { uploadId, treeId, fileName } = req.query as {
+      uploadId: string;
+      treeId: string;
+      fileName: string;
+    };
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: `videos/${req.user.id}/${treeId}/${fileName}`,
+      UploadId: uploadId,
+    };
+
+    const data = await s3.abortMultipartUpload(params).promise();
+
+    res.json({ data });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const saveVideo: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
@@ -128,7 +152,7 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
 
       const videoNode = findById(video, uploadNode.id);
 
-      if (!videoNode || !videoNode.info) continue;
+      if (!videoNode || !videoNode.info || !nodeInfo) continue;
 
       nodeInfo.isConverted = videoNode.info.isConverted;
       nodeInfo.url = videoNode.info.url;
@@ -143,7 +167,7 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
       }
     }
 
-    if (!video.title || !video.root.info) {
+    if (!video.title || validateNodes(video.root, 'info')) {
       video.isEditing = true;
     }
 
@@ -155,35 +179,14 @@ export const saveUpload: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const cancelUpload: RequestHandler = async (req, res, next) => {
+export const uploadThumbnail: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { uploadId, treeId, fileName } = req.query as {
-      uploadId: string;
-      treeId: string;
-      fileName: string;
+    const { thumbnail, fileType } = req.body as {
+      thumbnail: { name: string; url: string };
+      fileType: string;
     };
-
-    const params = {
-      Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `videos/${req.user.id}/${treeId}/${fileName}`,
-      UploadId: uploadId,
-    };
-
-    const data = await s3.abortMultipartUpload(params).promise();
-
-    res.json({ data });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const uploadImage: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { fileType } = req.query as { fileType: string };
 
     const { dir, name } = path.parse(fileType);
 
@@ -193,13 +196,32 @@ export const uploadImage: RequestHandler = async (req, res, next) => {
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `images/${req.user.id}/${uuidv1()}.${name}`,
+      Key: thumbnail.url || `images/${req.user.id}/${uuidv1()}.${name}`,
       ContentType: fileType,
     };
 
     const presignedUrl = await s3.getSignedUrlPromise('putObject', params);
 
     res.json({ presignedUrl, key: params.Key });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const deleteThumbnail: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { key } = req.query as { key: string };
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: key,
+    };
+
+    await s3.deleteObject(params).promise();
+
+    res.json({ message: 'Thumbnail deleted' });
   } catch (err) {
     return next(err);
   }
