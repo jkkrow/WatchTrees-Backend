@@ -22,21 +22,21 @@ router.post(
 );
 
 // Email Verification
-router.post('/send-verify-email', authController.sendVerifyEmail);
-router.get('/verify-email/:token', authController.verifyEmail);
+router.post('/verification', authController.sendVerification);
+router.get('/verification/:token', authController.checkVerification);
 
 // Reset Password
-router.post('/send-recovery-email', authController.sendRecoveryEmail);
-router.get('/user-password/:token', authController.getResetPassword);
+router.post('/recovery', authController.sendRecovery);
+router.get('/recovery/:token', authController.checkRecovery);
 router.patch(
-  '/user-password/:token',
+  '/recovery/:token/password',
   [
     body('password').trim().isStrongPassword(),
     body('confirmPassword').custom(
       (value, { req }) => value === req.body.password
     ),
   ],
-  authController.putResetPassword
+  authController.resetPassword
 );
 
 // Update Token

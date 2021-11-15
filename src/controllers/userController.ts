@@ -33,6 +33,6 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
 
     res.json({ videos: user.videos, count });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };

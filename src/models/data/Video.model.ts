@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+import { UserDocument } from './User.model';
+
 export interface VideoInfo {
   name: string;
   label: string;
@@ -27,6 +29,7 @@ export enum VideoStatus {
 }
 
 export interface VideoDocument extends mongoose.Document {
+  creator: UserDocument['_id'];
   root: VideoNode;
   title: string;
   tags: string[];
@@ -41,6 +44,7 @@ export interface VideoDocument extends mongoose.Document {
 }
 
 const VideoSchema = new mongoose.Schema({
+  creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   root: {
     id: { type: String, required: true },
     layer: { type: Number, required: false },

@@ -3,10 +3,7 @@ import { v1 as uuidv1 } from 'uuid';
 import AWS from 'aws-sdk';
 import path from 'path';
 
-import User from '../models/data/User.model';
-import Video from '../models/data/Video.model';
 import HttpError from '../models/common/HttpError';
-import { findById, traverseNodes, validateNodes } from '../util/tree';
 
 const s3 = new AWS.S3({
   credentials: {
@@ -119,61 +116,6 @@ export const cancelMultipart: RequestHandler = async (req, res, next) => {
     const data = await s3.abortMultipartUpload(params).promise();
 
     res.json({ data });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const saveVideo: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { uploadTree } = req.body;
-
-    const user = await User.findById(req.user.id).populate('videos');
-
-    if (!user) return;
-
-    let video = user.videos.find((item) => item.root.id === uploadTree.root.id);
-
-    // Refactor UploadTree fields before change document
-    const uploadNodes = traverseNodes(uploadTree.root);
-
-    for (let uploadNode of uploadNodes) {
-      let nodeInfo = uploadNode.info;
-
-      if (!nodeInfo) continue;
-
-      if (nodeInfo.progress > 0 && nodeInfo.progress < 100) {
-        nodeInfo = null;
-      }
-
-      if (!video) continue;
-
-      const videoNode = findById(video, uploadNode.id);
-
-      if (!videoNode || !videoNode.info || !nodeInfo) continue;
-
-      nodeInfo.isConverted = videoNode.info.isConverted;
-      nodeInfo.url = videoNode.info.url;
-    }
-
-    if (!video) {
-      video = new Video(uploadTree);
-      user.videos.push(video);
-    } else {
-      for (let key in uploadTree) {
-        key !== 'views' && (video[key] = uploadTree[key]);
-      }
-    }
-
-    if (!video.title || validateNodes(video.root, 'info')) {
-      video.isEditing = true;
-    }
-
-    await Promise.all([user.save(), video.save()]);
-
-    res.json({ message: 'Upload progress saved' });
   } catch (err) {
     return next(err);
   }

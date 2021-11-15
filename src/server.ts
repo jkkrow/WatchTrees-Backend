@@ -23,8 +23,8 @@ app.use(cors());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/video', videoRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/videos', videoRoutes);
 
 app.use(() => {
   throw new HttpError(404);

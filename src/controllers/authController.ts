@@ -33,7 +33,7 @@ export const register: RequestHandler = async (req, res, next) => {
       password: hashedPassword,
       name,
       token: {
-        type: 'verify-email',
+        type: 'verification',
         value: crypto.randomBytes(20).toString('hex'),
         expiresIn: Date.now() + 1000 * 60 * 60 * 24,
       },
@@ -48,13 +48,13 @@ export const register: RequestHandler = async (req, res, next) => {
       Verify your email address.\n
       You've just created new account with this email address.\n
       Please verify your email and complete signup process.\n
-      ${process.env.CLIENT_URL}/auth/verify-email/${user.token.value}
+      ${process.env.CLIENT_URL}/auth/verification/${user.token.value}
       `,
       html: `
       <h3>Verify your email address</h3>
       <p>You've just created new account with this email address.</p>
       <p>Please verify your email and complete signup process.</p>
-      <a href=${process.env.CLIENT_URL}/auth/verify-email/${user.token.value}>Verify email</a>
+      <a href=${process.env.CLIENT_URL}/auth/verification/${user.token.value}>Verify email</a>
       `,
     });
 
@@ -180,7 +180,7 @@ export const updateAccessToken: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
+export const sendVerification: RequestHandler = async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -194,7 +194,7 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
     }
 
     user.token = {
-      type: 'verify-email',
+      type: 'verification',
       value: crypto.randomBytes(20).toString('hex'),
       expiresIn: Date.now() + 1000 * 60 * 60,
     };
@@ -208,13 +208,13 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
       Verify your email address.\n
       You've just created new account with this email address.\n
       Please verify your email and complete signup process.\n
-      ${process.env.CLIENT_URL}/auth/verify-email/${user.token.value}
+      ${process.env.CLIENT_URL}/auth/verification/${user.token.value}
       `,
       html: `
       <h3>Verify your email address</h3>
       <p>You've just created new account with this email address.</p>
       <p>Please verify your email and complete signup process.</p>
-      <a href=${process.env.CLIENT_URL}/auth/verify-email/${user.token.value}>Verify email</a>
+      <a href=${process.env.CLIENT_URL}/auth/verification/${user.token.value}>Verify email</a>
       `,
     });
 
@@ -227,12 +227,12 @@ export const sendVerifyEmail: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const verifyEmail: RequestHandler = async (req, res, next) => {
+export const checkVerification: RequestHandler = async (req, res, next) => {
   try {
     const { token } = req.params;
 
     const user = await User.findOne({
-      'token.type': 'verify-email',
+      'token.type': 'verification',
       'token.value': token,
     });
 
@@ -261,7 +261,7 @@ export const verifyEmail: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const sendRecoveryEmail: RequestHandler = async (req, res, next) => {
+export const sendRecovery: RequestHandler = async (req, res, next) => {
   try {
     const { email } = req.body;
 
@@ -307,7 +307,7 @@ export const sendRecoveryEmail: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const getResetPassword: RequestHandler = async (req, res, next) => {
+export const checkRecovery: RequestHandler = async (req, res, next) => {
   try {
     const { token } = req.params;
 
@@ -333,7 +333,7 @@ export const getResetPassword: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const putResetPassword: RequestHandler = async (req, res, next) => {
+export const resetPassword: RequestHandler = async (req, res, next) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
