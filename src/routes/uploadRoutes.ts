@@ -1,23 +1,40 @@
 import { Router } from 'express';
 
 import * as uploadController from '../controllers/uploadController';
-import authMiddleware from '../middlewares/auth-middleware';
+import { checkToken, checkVerified } from '../middlewares/auth-middleware';
 
 const router = Router();
 
-router.get('/multipart-id', authMiddleware, uploadController.initiateMultipart);
+router.get(
+  '/multipart-id',
+  checkToken,
+  checkVerified,
+  uploadController.initiateMultipart
+);
 router.get(
   '/multipart-presigned-url',
-  authMiddleware,
+  checkToken,
+  checkVerified,
   uploadController.processMultipart
 );
 router.post(
   '/multipart-parts',
-  authMiddleware,
+  checkToken,
+  checkVerified,
   uploadController.completeMultipart
 );
 
-router.put('/thumbnail', authMiddleware, uploadController.uploadThumbnail);
-router.delete('/thumbnail', authMiddleware, uploadController.deleteThumbnail);
+router.put(
+  '/thumbnail',
+  checkToken,
+  checkVerified,
+  uploadController.uploadThumbnail
+);
+router.delete(
+  '/thumbnail',
+  checkToken,
+  checkVerified,
+  uploadController.deleteThumbnail
+);
 
 export default router;

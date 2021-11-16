@@ -58,9 +58,29 @@ export const register: RequestHandler = async (req, res, next) => {
       `,
     });
 
+    const accessToken = createAccessToken({
+      userId: user._id,
+      isVerified: user.isVerified,
+      isPremium: user.isPremium,
+    });
+    const refreshToken = createRefreshToken({
+      userId: user._id,
+      isVerified: user.isVerified,
+      isPremium: user.isPremium,
+    });
+
     res.status(201).json({
       message:
         'Verification email has sent. Please check your email and confirm signup.',
+      accessToken,
+      refreshToken,
+      userData: {
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        isVerified: user.isVerified,
+        isPremium: user.isPremium,
+      },
     });
   } catch (err) {
     return next(err);
@@ -123,9 +143,13 @@ export const login: RequestHandler = async (req, res, next) => {
 
     const accessToken = createAccessToken({
       userId: user._id,
+      isVerified: user.isVerified,
+      isPremium: user.isPremium,
     });
     const refreshToken = createRefreshToken({
       userId: user._id,
+      isVerified: user.isVerified,
+      isPremium: user.isPremium,
     });
 
     res.json({
@@ -135,7 +159,6 @@ export const login: RequestHandler = async (req, res, next) => {
         email: user.email,
         name: user.name,
         picture: user.picture,
-        videos: { data: [], count: 0 },
         isVerified: user.isVerified,
         isPremium: user.isPremium,
       },
@@ -151,10 +174,14 @@ export const updateRefreshToken: RequestHandler = async (req, res, next) => {
   try {
     const newAccessToken = createAccessToken({
       userId: req.user.id,
+      isVerified: req.user.isVerified,
+      isPremium: req.user.isPremium,
     });
 
     const newRefreshToken = createRefreshToken({
       userId: req.user.id,
+      isVerified: req.user.isVerified,
+      isPremium: req.user.isPremium,
     });
 
     res.json({
@@ -172,6 +199,8 @@ export const updateAccessToken: RequestHandler = async (req, res, next) => {
   try {
     const newAccessToken = createAccessToken({
       userId: req.user.id,
+      isVerified: req.user.isVerified,
+      isPremium: req.user.isPremium,
     });
 
     res.json({ accessToken: newAccessToken });
@@ -230,6 +259,7 @@ export const sendVerification: RequestHandler = async (req, res, next) => {
 export const checkVerification: RequestHandler = async (req, res, next) => {
   try {
     const { token } = req.params;
+    const { isLoggedIn } = req.query;
 
     const user = await User.findOne({
       'token.type': 'verification',
@@ -246,7 +276,7 @@ export const checkVerification: RequestHandler = async (req, res, next) => {
 
     if ((user.token.expiresIn as number) < Date.now()) {
       throw new HttpError(
-        400,
+        401,
         'This verification link has expired. Please send another email from Account Settings page.'
       );
     }
@@ -255,7 +285,36 @@ export const checkVerification: RequestHandler = async (req, res, next) => {
 
     await user.save();
 
-    res.json({ message: 'Your account has been successfully verified.' });
+    const message = 'Your account has been successfully verified.';
+
+    if (isLoggedIn === 'true') {
+      const refreshToken = createRefreshToken({
+        userId: user._id,
+        isVerified: user.isVerified,
+        isPremium: user.isPremium,
+      });
+      const accessToken = createAccessToken({
+        userId: user._id,
+        isVerified: user.isVerified,
+        isPremium: user.isPremium,
+      });
+      const userData = {
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        isVerified: user.isVerified,
+        isPremium: user.isPremium,
+      };
+
+      return res.json({
+        message,
+        refreshToken,
+        accessToken,
+        userData,
+      });
+    }
+
+    res.json({ message });
   } catch (err) {
     return next(err);
   }
@@ -322,7 +381,7 @@ export const checkRecovery: RequestHandler = async (req, res, next) => {
 
     if ((user.token.expiresIn as number) < Date.now()) {
       throw new HttpError(
-        400,
+        401,
         'This link has been expired. Please send another email to reset password.'
       );
     }
@@ -355,7 +414,7 @@ export const resetPassword: RequestHandler = async (req, res, next) => {
 
     if ((user.token.expiresIn as number) < Date.now()) {
       throw new HttpError(
-        400,
+        401,
         'This link has been expired. Please send another email to reset password.'
       );
     }

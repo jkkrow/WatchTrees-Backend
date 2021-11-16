@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 
 import * as authController from '../controllers/authController';
-import authMiddleware from '../middlewares/auth-middleware';
+import { checkToken } from '../middlewares/auth-middleware';
 
 const router = Router();
 
@@ -40,7 +40,7 @@ router.patch(
 );
 
 // Update Token
-router.get('/refresh-token', authMiddleware, authController.updateRefreshToken);
-router.get('/access-token', authMiddleware, authController.updateAccessToken);
+router.get('/refresh-token', checkToken, authController.updateRefreshToken);
+router.get('/access-token', checkToken, authController.updateAccessToken);
 
 export default router;

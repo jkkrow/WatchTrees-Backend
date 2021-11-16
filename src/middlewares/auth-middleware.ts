@@ -3,7 +3,7 @@ import { RequestHandler } from 'express';
 import HttpError from '../models/common/HttpError';
 import { verifyToken } from '../services/jwt-token';
 
-const authMiddleware: RequestHandler = (req, res, next) => {
+export const checkToken: RequestHandler = (req, res, next) => {
   if (req.method === 'OPTIONS') return next();
 
   try {
@@ -17,7 +17,11 @@ const authMiddleware: RequestHandler = (req, res, next) => {
 
     const decodedToken = verifyToken(token);
 
-    req.user = { id: decodedToken.userId };
+    req.user = {
+      id: decodedToken.userId,
+      isVerified: decodedToken.isVerified,
+      isPremium: decodedToken.isPremium,
+    };
 
     next();
   } catch (err) {
@@ -25,4 +29,16 @@ const authMiddleware: RequestHandler = (req, res, next) => {
   }
 };
 
-export default authMiddleware;
+export const checkVerified: RequestHandler = (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
+  if (req.user && req.user.isVerified) {
+    next();
+  } else {
+    return next(new HttpError(403, 'Need to verify email'));
+  }
+};
+
+// export const checKPremium: RequestHandler = (req, res, next) => {};

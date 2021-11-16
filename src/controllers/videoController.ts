@@ -74,10 +74,12 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
     const video = await Video.findById(id).populate('creator');
 
     if (!video) {
-      throw new HttpError(404, 'No video found.');
+      throw new HttpError(404, 'No video found');
     }
 
-    console.log(video);
+    if (req.user.id !== video.creator._id.toString()) {
+      throw new HttpError(403, 'Not authorized to delete this video');
+    }
 
     const session = await mongoose.startSession();
 
@@ -86,7 +88,7 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
       return Promise.all([video.remove({ session }), video.creator.save()]);
     });
 
-    // TODO: Delete videoTree from aws s3
+    // TODO: Delete videos & thumbnail from aws s3
 
     res.json({ message: 'Video deleted successfully' });
   } catch (err) {

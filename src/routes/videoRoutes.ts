@@ -1,11 +1,11 @@
 import { Router } from 'express';
 
-import authMiddleware from '../middlewares/auth-middleware';
+import { checkToken, checkVerified } from '../middlewares/auth-middleware';
 import * as videoController from '../controllers/videoController';
 
 const router = Router();
 
-router.put('/:id', authMiddleware, videoController.saveVideo);
-router.delete('/:id', authMiddleware, videoController.deleteVideo);
+router.put('/:id', checkToken, checkVerified, videoController.saveVideo);
+router.delete('/:id', checkToken, checkVerified, videoController.deleteVideo);
 
 export default router;

@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
 import * as userController from '../controllers/userController';
-import authMiddleware from '../middlewares/auth-middleware';
+import { checkToken } from '../middlewares/auth-middleware';
 
 const router = Router();
 
-router.get('/videos', authMiddleware, userController.fetchVideos);
+router.get('/videos', checkToken, userController.fetchVideos);
 
 export default router;
