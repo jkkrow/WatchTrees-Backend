@@ -28,7 +28,7 @@ export enum VideoStatus {
   Private = 'private',
 }
 
-export interface VideoDocument extends mongoose.Document {
+export interface VideoTree {
   creator: UserDocument['_id'];
   root: VideoNode;
   title: string;
@@ -41,6 +41,12 @@ export interface VideoDocument extends mongoose.Document {
   views: number;
   isEditing: boolean;
   status: VideoStatus;
+}
+
+export interface VideoDocument extends VideoTree, mongoose.Document {}
+
+interface VideoModel extends mongoose.Model<VideoDocument> {
+  findPublics: (filter?: mongoose.FilterQuery<any>) => Promise<VideoDocument[]>;
 }
 
 const VideoSchema = new mongoose.Schema({
@@ -77,4 +83,8 @@ const VideoSchema = new mongoose.Schema({
   status: { type: String, enum: ['public', 'private'], required: true },
 });
 
-export default mongoose.model<VideoDocument>('Video', VideoSchema);
+VideoSchema.statics.findPublics = function (filter: mongoose.FilterQuery<any>) {
+  return this.find({ isEditing: false, status: VideoStatus.Public, ...filter });
+};
+
+export default mongoose.model<VideoDocument, VideoModel>('Video', VideoSchema);

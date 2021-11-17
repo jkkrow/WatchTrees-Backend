@@ -44,13 +44,7 @@ export const register: RequestHandler = async (req, res, next) => {
     await sendEmail({
       to: user.email,
       subject: 'Account verification link',
-      text: `
-      Verify your email address.\n
-      You've just created new account with this email address.\n
-      Please verify your email and complete signup process.\n
-      ${process.env.CLIENT_URL}/auth/verification/${user.token.value}
-      `,
-      html: `
+      message: `
       <h3>Verify your email address</h3>
       <p>You've just created new account with this email address.</p>
       <p>Please verify your email and complete signup process.</p>
@@ -222,6 +216,10 @@ export const sendVerification: RequestHandler = async (req, res, next) => {
       );
     }
 
+    if (user.isVerified) {
+      return res.json({ message: 'You have already been verified' });
+    }
+
     user.token = {
       type: 'verification',
       value: crypto.randomBytes(20).toString('hex'),
@@ -233,13 +231,7 @@ export const sendVerification: RequestHandler = async (req, res, next) => {
     await sendEmail({
       to: user.email,
       subject: 'Account verification link',
-      text: `
-      Verify your email address.\n
-      You've just created new account with this email address.\n
-      Please verify your email and complete signup process.\n
-      ${process.env.CLIENT_URL}/auth/verification/${user.token.value}
-      `,
-      html: `
+      message: `
       <h3>Verify your email address</h3>
       <p>You've just created new account with this email address.</p>
       <p>Please verify your email and complete signup process.</p>
@@ -344,14 +336,7 @@ export const sendRecovery: RequestHandler = async (req, res, next) => {
     await sendEmail({
       to: user.email,
       subject: 'Reset password link',
-      text: `
-      Reset your password.\n
-      You've just requested the reset of the password for your account.\n
-      Please click the following link to complete the process within one hour.\n
-      If you did not request this, please ignore this email and your password will remain unchanged.\n
-      ${process.env.CLIENT_URL}/auth/reset-password/${user.token.value}
-      `,
-      html: `
+      message: `
       <h3>Reset your password.</h3>
       <p>You've just requested the reset of the password for your account.</p>
       <p>Please click the following link to complete the process within one hour.</p>

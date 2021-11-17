@@ -1,10 +1,6 @@
-import {
-  VideoDocument,
-  VideoNode,
-  VideoInfo,
-} from '../models/data/Video.model';
+import { VideoTree, VideoNode, VideoInfo } from '../models/data/Video.model';
 
-export const findById = (tree: VideoDocument, id: string): VideoNode | null => {
+export const findById = (tree: VideoTree, id: string): VideoNode | null => {
   let currentNode: VideoNode = tree.root;
   const queue: VideoNode[] = [];
 

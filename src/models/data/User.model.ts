@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 import { VideoDocument } from './Video.model';
 
-export interface UserDocument extends mongoose.Document {
+export interface User {
   name: string;
   email: string;
   password: string;
@@ -17,6 +17,10 @@ export interface UserDocument extends mongoose.Document {
   };
   videos: VideoDocument['_id'][];
 }
+
+export interface UserDocument extends User, mongoose.Document {}
+
+interface UserModel extends mongoose.Model<UserDocument> {}
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -34,4 +38,4 @@ const UserSchema = new mongoose.Schema({
   videos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],
 });
 
-export default mongoose.model<UserDocument>('User', UserSchema);
+export default mongoose.model<UserDocument, UserModel>('User', UserSchema);

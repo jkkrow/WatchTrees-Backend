@@ -4,8 +4,7 @@ import { OAuth2Client } from 'google-auth-library';
 interface Options {
   to: string;
   subject: string;
-  text: string;
-  html?: string;
+  message: string;
 }
 
 const sendEmail = async (options: Options): Promise<SentMessageInfo> => {
@@ -39,8 +38,8 @@ const sendEmail = async (options: Options): Promise<SentMessageInfo> => {
     from: process.env.EMAIL_FROM!,
     to: options.to,
     subject: options.subject,
-    text: options.text,
-    html: options.html,
+    text: options.message,
+    html: options.message,
   };
 
   return transporter.sendMail(mailOptions);

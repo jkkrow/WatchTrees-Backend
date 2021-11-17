@@ -6,6 +6,16 @@ import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
 import { findById, traverseNodes, validateNodes } from '../util/tree';
 
+export const fetchVideos: RequestHandler = async (req, res, next) => {
+  try {
+    const videos = await Video.findPublics();
+
+    res.json({ videos });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export const saveVideo: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
@@ -81,6 +91,8 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
       throw new HttpError(403, 'Not authorized to delete this video');
     }
 
+    const treeId = video.root.id;
+
     const session = await mongoose.startSession();
 
     session.withTransaction(() => {
@@ -90,7 +102,7 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
 
     // TODO: Delete videos & thumbnail from aws s3
 
-    res.json({ message: 'Video deleted successfully' });
+    res.json({ message: 'Video deleted successfully', treeId });
   } catch (err) {
     return next(err);
   }
