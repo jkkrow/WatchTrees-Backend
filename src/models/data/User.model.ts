@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 import { VideoDocument } from './Video.model';
 
@@ -16,9 +17,13 @@ export interface User {
     expiresIn?: number;
   };
   videos: VideoDocument['_id'][];
+  history: VideoDocument['_id'][];
 }
 
-export interface UserDocument extends User, mongoose.Document {}
+export interface UserDocument extends User, mongoose.Document {
+  hashPassword: () => Promise<void>;
+  checkPassword: (password: string) => Promise<boolean>;
+}
 
 interface UserModel extends mongoose.Model<UserDocument> {}
 
@@ -36,6 +41,17 @@ const UserSchema = new mongoose.Schema({
     expiresIn: { type: Number },
   },
   videos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],
+  history: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Video' }],
 });
+
+UserSchema.methods.hashPassword = async function () {
+  this.password = await bcrypt.hash(this.password, 12);
+};
+
+UserSchema.methods.checkPassword = async function (password: string) {
+  const result = await bcrypt.compare(password, this.password);
+
+  return result;
+};
 
 export default mongoose.model<UserDocument, UserModel>('User', UserSchema);

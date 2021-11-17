@@ -1,9 +1,8 @@
 import { RequestHandler } from 'express';
-import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { v1 as uuidv1 } from 'uuid';
 import { OAuth2Client } from 'google-auth-library';
 import { validationResult } from 'express-validator';
+import { v1 as uuidv1 } from 'uuid';
 
 import HttpError from '../models/common/HttpError';
 import User from '../models/data/User.model';
@@ -26,11 +25,9 @@ export const register: RequestHandler = async (req, res, next) => {
       throw new HttpError(409, 'Already existing email.');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
     const user = new User({
       email,
-      password: hashedPassword,
+      password,
       name,
       token: {
         type: 'verification',
@@ -38,6 +35,8 @@ export const register: RequestHandler = async (req, res, next) => {
         expiresIn: Date.now() + 1000 * 60 * 60 * 24,
       },
     });
+
+    user.hashPassword();
 
     await user.save();
 
@@ -96,7 +95,7 @@ export const login: RequestHandler = async (req, res, next) => {
         throw new HttpError(401, 'Invalid email or password.');
       }
 
-      const correctPassword = await bcrypt.compare(password, user.password);
+      const correctPassword = user.checkPassword(password);
 
       if (!correctPassword) {
         throw new HttpError(401, 'Invalid email or password.');
@@ -120,14 +119,14 @@ export const login: RequestHandler = async (req, res, next) => {
       user = await User.findOne({ email });
 
       if (!user) {
-        const hashedPassword = await bcrypt.hash(uuidv1() + email, 12);
-
         user = new User({
           email,
-          password: hashedPassword,
+          password: uuidv1() + email,
           name,
           isVerified: true,
         });
+
+        user.hashPassword();
 
         await user.save();
 
@@ -404,9 +403,9 @@ export const resetPassword: RequestHandler = async (req, res, next) => {
       );
     }
 
-    const newPassword = await bcrypt.hash(password, 12);
+    user.password = password;
 
-    user.password = newPassword;
+    user.hashPassword();
 
     await user.save();
 
