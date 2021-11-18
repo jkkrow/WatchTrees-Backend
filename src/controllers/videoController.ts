@@ -1,10 +1,10 @@
 import { RequestHandler } from 'express';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 
 import HttpError from '../models/common/HttpError';
 import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
-import { findById, traverseNodes, validateNodes } from '../util/tree';
+import { findById, traverseNodes } from '../util/tree';
 
 export const fetchVideos: RequestHandler = async (req, res, next) => {
   try {
@@ -61,11 +61,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
       }
     }
 
-    if (!video.title || validateNodes(video.root, 'info')) {
-      video.isEditing = true;
-    }
-
-    const session = await mongoose.startSession();
+    const session = await startSession();
 
     session.withTransaction(() => Promise.all([user.save(), video.save()]));
 
@@ -93,7 +89,7 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
 
     const treeId = video.root.id;
 
-    const session = await mongoose.startSession();
+    const session = await startSession();
 
     session.withTransaction(() => {
       video.creator.videos.pull(video);

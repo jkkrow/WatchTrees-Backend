@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
+import { Document, Model, Schema, model, FilterQuery } from 'mongoose';
 
 import { UserDocument } from './User.model';
+import { validateNodes } from '../../util/tree';
 
 export interface VideoInfo {
   name: string;
@@ -43,14 +44,14 @@ export interface VideoTree {
   status: VideoStatus;
 }
 
-export interface VideoDocument extends VideoTree, mongoose.Document {}
+export interface VideoDocument extends VideoTree, Document {}
 
-interface VideoModel extends mongoose.Model<VideoDocument> {
-  findPublics: (filter?: mongoose.FilterQuery<any>) => Promise<VideoDocument[]>;
+interface VideoModel extends Model<VideoDocument> {
+  findPublics: (filter?: FilterQuery<any>) => Promise<VideoDocument[]>;
 }
 
-const VideoSchema = new mongoose.Schema({
-  creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+const VideoSchema = new Schema({
+  creator: { type: Schema.Types.ObjectId, ref: 'User' },
   root: {
     id: { type: String, required: true },
     layer: { type: Number, required: false },
@@ -83,8 +84,16 @@ const VideoSchema = new mongoose.Schema({
   status: { type: String, enum: ['public', 'private'], required: true },
 });
 
-VideoSchema.statics.findPublics = function (filter: mongoose.FilterQuery<any>) {
+VideoSchema.statics.findPublics = function (filter: FilterQuery<any>) {
   return this.find({ isEditing: false, status: VideoStatus.Public, ...filter });
 };
 
-export default mongoose.model<VideoDocument, VideoModel>('Video', VideoSchema);
+VideoSchema.pre('save', function (next) {
+  if (!this.title || validateNodes(this.root, 'info')) {
+    this.isEditing = true;
+  }
+
+  next();
+});
+
+export default model<VideoDocument, VideoModel>('Video', VideoSchema);

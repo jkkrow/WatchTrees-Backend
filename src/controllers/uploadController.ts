@@ -1,11 +1,11 @@
 import { RequestHandler } from 'express';
 import { v1 as uuidv1 } from 'uuid';
-import AWS from 'aws-sdk';
-import path from 'path';
+import { S3 } from 'aws-sdk';
+import { parse } from 'path';
 
 import HttpError from '../models/common/HttpError';
 
-const s3 = new AWS.S3({
+const s3 = new S3({
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY_ID!,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
@@ -24,7 +24,7 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
       fileType: string;
     };
 
-    const { dir } = path.parse(fileType);
+    const { dir } = parse(fileType);
 
     if (dir !== 'video') {
       throw new HttpError(422, 'Invalid file type');
@@ -130,7 +130,7 @@ export const uploadThumbnail: RequestHandler = async (req, res, next) => {
       fileType: string;
     };
 
-    const { dir, name } = path.parse(fileType);
+    const { dir, name } = parse(fileType);
 
     if (dir !== 'image') {
       throw new HttpError(422, 'Invalid file type');

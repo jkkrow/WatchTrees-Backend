@@ -1,5 +1,5 @@
 import { RequestHandler } from 'express';
-import crypto from 'crypto';
+import { randomBytes } from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { validationResult } from 'express-validator';
 import { v1 as uuidv1 } from 'uuid';
@@ -31,7 +31,7 @@ export const register: RequestHandler = async (req, res, next) => {
       name,
       token: {
         type: 'verification',
-        value: crypto.randomBytes(20).toString('hex'),
+        value: randomBytes(20).toString('hex'),
         expiresIn: Date.now() + 1000 * 60 * 60 * 24,
       },
     });
@@ -221,7 +221,7 @@ export const sendVerification: RequestHandler = async (req, res, next) => {
 
     user.token = {
       type: 'verification',
-      value: crypto.randomBytes(20).toString('hex'),
+      value: randomBytes(20).toString('hex'),
       expiresIn: Date.now() + 1000 * 60 * 60,
     };
 
@@ -326,7 +326,7 @@ export const sendRecovery: RequestHandler = async (req, res, next) => {
 
     user.token = {
       type: 'reset-password',
-      value: crypto.randomBytes(20).toString('hex'),
+      value: randomBytes(20).toString('hex'),
       expiresIn: Date.now() + 1000 * 60 * 60,
     };
 
