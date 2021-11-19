@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { startSession } from 'mongoose';
 
-import HttpError from '../models/common/HttpError';
+import HttpError from '../models/Error/HttpError';
 import User from '../models/data/User.model';
 import Video from '../models/data/Video.model';
 import { findById, traverseNodes } from '../util/tree';

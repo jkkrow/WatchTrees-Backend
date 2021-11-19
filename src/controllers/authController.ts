@@ -4,7 +4,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { validationResult } from 'express-validator';
 import { v1 as uuidv1 } from 'uuid';
 
-import HttpError from '../models/common/HttpError';
+import HttpError from '../models/Error/HttpError';
 import User from '../models/data/User.model';
 import { createAccessToken, createRefreshToken } from '../services/jwt-token';
 import sendEmail from '../services/send-email';

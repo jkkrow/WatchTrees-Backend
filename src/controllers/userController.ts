@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { validationResult } from 'express-validator';
 
-import HttpError from '../models/common/HttpError';
+import HttpError from '../models/Error/HttpError';
 import User from '../models/data/User.model';
 
 export const fetchVideos: RequestHandler = async (req, res, next) => {
