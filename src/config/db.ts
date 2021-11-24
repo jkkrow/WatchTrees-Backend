@@ -1,8 +1,12 @@
-import { connect } from 'mongoose';
+import { MongoClient } from 'mongodb';
 
-const connectDB = async (): Promise<void> => {
+export const client = new MongoClient(process.env.MONGODB_URI!);
+
+export const session = client.startSession;
+
+export const connectDB = async (): Promise<void> => {
   try {
-    await connect(process.env.MONGODB_URI!);
+    await client.connect();
 
     console.log('MongoDB Connected');
   } catch (err) {
@@ -10,5 +14,3 @@ const connectDB = async (): Promise<void> => {
     process.exit(1);
   }
 };
-
-export default connectDB;
