@@ -6,7 +6,7 @@ import {
   ObjectId,
 } from 'mongodb';
 
-import { db } from '../../config/db';
+import { client } from '../../config/db';
 import { VideoTree } from './Video';
 
 const collectionName = 'videos';
@@ -15,47 +15,59 @@ export interface VideoDocument extends WithId<VideoTree> {}
 
 export class VideoService {
   static findById(id: string | ObjectId, options?: FindOptions) {
-    console.log(id);
-
-    return db
+    return client
+      .db()
       .collection<VideoDocument>(collectionName)
       .findOne({ _id: new ObjectId(id) }, options);
   }
 
   static findByCreator(userId: string, options?: FindOptions) {
-    return db
+    return client
+      .db()
       .collection<VideoDocument>(collectionName)
-      .find({ creator: new ObjectId(userId) }, options);
+      .find({ creator: new ObjectId(userId) }, options)
+      .toArray();
   }
 
-  static findPublics(filter?: Filter<WithId<VideoDocument>>) {
-    return db
+  static findPublics(filter?: Filter<VideoDocument>, options?: FindOptions) {
+    return client
+      .db()
       .collection<VideoDocument>(collectionName)
-      .find({ status: 'public', isEditing: false, ...filter });
+      .find({ status: 'public', isEditing: false, ...filter }, options)
+      .toArray();
   }
 
   static countVideos(
     filter?: Filter<VideoDocument>,
     options?: CountDocumentsOptions
   ) {
-    return db
+    return client
+      .db()
       .collection<VideoDocument>(collectionName)
       .countDocuments({ ...filter }, { ...options });
   }
 
   static createVideo(video: VideoDocument) {
-    return db.collection<VideoDocument>(collectionName).insertOne(video);
+    return client
+      .db()
+      .collection<VideoDocument>(collectionName)
+      .insertOne(video);
   }
 
   static updateVideo(video: VideoDocument) {
-    return db
+    return client
+      .db()
       .collection<VideoDocument>(collectionName)
       .replaceOne({ _id: new ObjectId(video._id) }, video);
   }
 
   static deleteVideo(videoId: string | ObjectId, creatorId: string) {
-    return db
+    return client
+      .db()
       .collection<VideoDocument>(collectionName)
-      .deleteOne({ _id: new ObjectId(videoId), creator: creatorId });
+      .deleteOne({
+        _id: new ObjectId(videoId),
+        creator: new ObjectId(creatorId),
+      });
   }
 }

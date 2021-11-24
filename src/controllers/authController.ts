@@ -207,10 +207,10 @@ export const sendVerification: RequestHandler = async (req, res, next) => {
       return res.json({ message: 'You have already been verified' });
     }
 
-    const verificationToken = createToken('verification', '1d');
+    const verificationToken = createToken({ type: 'verification' }, '1d');
 
     await UserService.updateUser(user._id, {
-      verificationToken,
+      $set: { verificationToken },
     });
 
     await sendEmail({
@@ -241,7 +241,7 @@ export const checkVerification: RequestHandler = async (req, res, next) => {
     const user = await UserService.findOne({ verificationToken: token });
 
     if (!user) {
-      throw new HttpError(404, 'Invalid token');
+      throw new HttpError(404);
     }
 
     if (user.isVerified) {
@@ -259,26 +259,28 @@ export const checkVerification: RequestHandler = async (req, res, next) => {
       );
     }
 
-    await UserService.updateUser(user._id, { isVerified: true });
+    await UserService.updateUser(user._id, {
+      $set: { isVerified: true },
+    });
 
     const message = 'Your account has been successfully verified.';
 
     if (isLoggedIn === 'true') {
       const refreshToken = createRefreshToken({
         userId: user._id.toString(),
-        isVerified: user.isVerified,
+        isVerified: true,
         isPremium: user.isPremium,
       });
       const accessToken = createAccessToken({
         userId: user._id.toString(),
-        isVerified: user.isVerified,
+        isVerified: true,
         isPremium: user.isPremium,
       });
       const userData = {
         email: user.email,
         name: user.name,
         picture: user.picture,
-        isVerified: user.isVerified,
+        isVerified: true,
         isPremium: user.isPremium,
       };
 
@@ -309,9 +311,9 @@ export const sendRecovery: RequestHandler = async (req, res, next) => {
       );
     }
 
-    const recoveryToken = createToken('recovery', '1h');
+    const recoveryToken = createToken({ type: 'recovery' }, '1h');
 
-    await UserService.updateUser(user._id, { recoveryToken });
+    await UserService.updateUser(user._id, { $set: { recoveryToken } });
 
     await sendEmail({
       to: user.email,
@@ -386,7 +388,10 @@ export const resetPassword: RequestHandler = async (req, res, next) => {
       );
     }
 
-    await UserService.updatePassword(user._id, password);
+    await UserService.updateUser(user._id, {
+      $set: { password },
+      $unset: { recoveryToken: '' },
+    });
 
     res.json({ message: 'Password has changed successfully.' });
   } catch (err) {

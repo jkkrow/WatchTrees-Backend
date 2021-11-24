@@ -2,7 +2,7 @@ import { Filter, FindOptions, UpdateFilter, WithId, ObjectId } from 'mongodb';
 import { v1 as uuidv1 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 
-import { db } from '../../config/db';
+import { client } from '../../config/db';
 import { User } from './User';
 import { createToken } from '../../services/jwt-token';
 
@@ -23,13 +23,17 @@ export interface UserDocument extends WithId<User> {}
 
 export class UserService {
   static findById(id: ObjectId | string, options?: FindOptions) {
-    return db
+    return client
+      .db()
       .collection<UserDocument>(collectionName)
       .findOne({ _id: new ObjectId(id) }, options);
   }
 
   static findOne(filter: Filter<UserDocument>, options?: FindOptions) {
-    return db.collection<UserDocument>(collectionName).findOne(filter, options);
+    return client
+      .db()
+      .collection<UserDocument>(collectionName)
+      .findOne(filter, options);
   }
 
   static async createUser(
@@ -44,7 +48,7 @@ export class UserService {
     newUser.isAdmin = false;
 
     if (type === 'native') {
-      newUser.verificationToken = createToken('verification', '1d');
+      newUser.verificationToken = createToken({ type: 'verification' }, '1d');
     }
 
     if (type === 'google') {
@@ -54,7 +58,8 @@ export class UserService {
 
     newUser.password = await bcrypt.hash(newUser.password, 12);
 
-    const { insertedId } = await db
+    const { insertedId } = await client
+      .db()
       .collection<UserDocument>(collectionName)
       .insertOne(newUser);
 
@@ -63,21 +68,26 @@ export class UserService {
     return newUser as UserDocument;
   }
 
-  static updateUser(
+  static async updateUser(
     userId: ObjectId | string,
-    update: UpdateFilter<User> | Partial<User>
+    update: UpdateFilter<UserDocument>
   ) {
-    return db
-      .collection<UserDocument>(collectionName)
-      .updateOne({ _id: new ObjectId(userId) }, update);
-  }
+    let updateFilter = { ...update };
 
-  static async updatePassword(userId: ObjectId | string, password: string) {
-    const hashedPassword = await bcrypt.hash(password, 12);
+    if (updateFilter.$set && updateFilter.$set.password) {
+      updateFilter = {
+        ...updateFilter,
+        $set: {
+          ...updateFilter.$set,
+          password: await bcrypt.hash(updateFilter.$set.password, 12),
+        },
+      };
+    }
 
-    return db
+    return client
+      .db()
       .collection<UserDocument>(collectionName)
-      .updateOne({ _id: new ObjectId(userId) }, { password: hashedPassword });
+      .updateOne({ _id: new ObjectId(userId) }, updateFilter);
   }
 
   static async checkPassword(user: UserDocument, password: string) {

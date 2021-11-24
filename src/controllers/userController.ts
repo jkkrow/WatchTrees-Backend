@@ -50,7 +50,7 @@ export const updateUserName: RequestHandler = async (req, res, next) => {
       throw new HttpError(422, 'Invalid inputs.');
     }
 
-    await UserService.updateUser(req.user.id, { name });
+    await UserService.updateUser(req.user.id, { $set: { name } });
 
     res.json({ message: 'User name changed successfully' });
   } catch (err) {
@@ -70,7 +70,7 @@ export const updatePassword: RequestHandler = async (req, res, next) => {
       throw new HttpError(422, 'Invalid inputs.');
     }
 
-    await UserService.updatePassword(req.user.id, password);
+    await UserService.updateUser(req.user.id, { $set: { password } });
 
     res.json({ message: 'Password changed successfully' });
   } catch (err) {

@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+
 export interface User {
   name: string;
   email: string;
@@ -8,6 +10,6 @@ export interface User {
   picture?: string;
   verificationToken?: string;
   recoveryToken?: string;
-  history: string[]; // ref to Video Document
+  history: ObjectId[]; // ref to Video Document
   createdAt: Date;
 }

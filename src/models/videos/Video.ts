@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+
 export interface VideoInfo {
   name: string;
   label: string;
@@ -20,7 +22,7 @@ export interface VideoNode {
 }
 
 export interface VideoTree {
-  creator: string; // ref to User Document
+  creator: ObjectId; // ref to User Document
   root: VideoNode;
   title: string;
   tags: string[];

@@ -1,6 +1,7 @@
-import { ObjectId } from 'bson';
+import { ObjectId } from 'mongodb';
 import { RequestHandler } from 'express';
 
+import HttpError from '../models/Error/HttpError';
 import { VideoService, VideoDocument } from '../models/videos/VideoService';
 import { findById, traverseNodes } from '../util/tree';
 
@@ -26,14 +27,12 @@ export const fetchUserVideos: RequestHandler = async (req, res, next) => {
     const count = await VideoService.countVideos({
       creator: new ObjectId(req.user.id),
     });
-    const videos = await VideoService.findByCreator(req.user.id)
-      .skip(itemsPerPage * (pageNumber - 1))
-      .limit(itemsPerPage)
-      .sort({ _id: -1 })
-      .project({ 'root.children': -1 });
-    console.log(count);
-
-    console.log(count, videos);
+    const videos = await VideoService.findByCreator(req.user.id, {
+      skip: itemsPerPage * (pageNumber - 1),
+      limit: itemsPerPage,
+      sort: { _id: -1 },
+      projection: { 'root.children': 0 },
+    });
 
     res.json({ videos: videos, count });
   } catch (err) {
@@ -51,7 +50,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
     let existingVideo: VideoDocument | null = null;
     let treeId = '';
 
-    if (id) {
+    if (id !== 'undefined') {
       existingVideo = await VideoService.findById(id);
     }
 
@@ -78,19 +77,30 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
     }
 
     if (!existingVideo) {
-      uploadTree.creator = req.user.id;
+      uploadTree.creator = new ObjectId(req.user.id);
 
       const { insertedId } = await VideoService.createVideo(uploadTree);
 
+      if (!insertedId) {
+        throw new HttpError(500, 'Saving video failed. Please try again');
+      }
+
       treeId = insertedId.toString();
-    } else {
+    }
+
+    if (existingVideo) {
       const updatedVideo = {
         ...existingVideo,
         ...uploadTree,
+        _id: existingVideo._id,
         views: existingVideo.views,
       };
 
-      VideoService.updateVideo(updatedVideo);
+      const { modifiedCount } = await VideoService.updateVideo(updatedVideo);
+
+      if (!modifiedCount) {
+        throw new HttpError(500, 'Saving video failed. Please try again');
+      }
     }
 
     res.json({ message: 'Upload progress saved', treeId });
@@ -105,7 +115,11 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    await VideoService.deleteVideo(id, req.user.id);
+    const { deletedCount } = await VideoService.deleteVideo(id, req.user.id);
+
+    if (!deletedCount) {
+      throw new HttpError(500, 'Deleting video failed. Please try again');
+    }
 
     // TODO: Delete videos & thumbnail from aws s3
 
