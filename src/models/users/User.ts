@@ -2,12 +2,12 @@ export interface User {
   name: string;
   email: string;
   password: string;
-  picture?: string;
   isVerified: boolean;
   isPremium: boolean;
   isAdmin: boolean;
+  picture?: string;
   verificationToken?: string;
   recoveryToken?: string;
-  history: [];
+  history: string[]; // ref to Video Document
   createdAt: Date;
 }

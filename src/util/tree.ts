@@ -1,4 +1,4 @@
-import { VideoTree, VideoNode, VideoInfo } from '../models/data/Video.model';
+import { VideoTree, VideoNode, VideoInfo } from '../models/videos/Video';
 
 export const findById = (tree: VideoTree, id: string): VideoNode | null => {
   let currentNode: VideoNode = tree.root;

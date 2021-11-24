@@ -1,16 +1,41 @@
+import { ObjectId } from 'bson';
 import { RequestHandler } from 'express';
-import { startSession } from 'mongoose';
 
-import HttpError from '../models/Error/HttpError';
-import User from '../models/data/User.model';
-import Video from '../models/data/Video.model';
+import { VideoService, VideoDocument } from '../models/videos/VideoService';
 import { findById, traverseNodes } from '../util/tree';
 
 export const fetchVideos: RequestHandler = async (req, res, next) => {
   try {
-    const videos = await Video.findPublics();
+    const videos = await VideoService.findPublics();
 
     res.json({ videos });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchUserVideos: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { page, max } = req.query;
+
+    const itemsPerPage = max ? +max : 10;
+    const pageNumber = page ? +page : 1;
+
+    const count = await VideoService.countVideos({
+      creator: new ObjectId(req.user.id),
+    });
+    const videos = await VideoService.findByCreator(req.user.id)
+      .skip(itemsPerPage * (pageNumber - 1))
+      .limit(itemsPerPage)
+      .sort({ _id: -1 })
+      .project({ 'root.children': -1 });
+    console.log(count);
+
+    console.log(count, videos);
+
+    res.json({ videos: videos, count });
   } catch (err) {
     return next(err);
   }
@@ -21,12 +46,14 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
 
   try {
     const { uploadTree } = req.body;
+    const { id } = req.params;
 
-    const user = await User.findById(req.user.id).populate('videos');
+    let existingVideo: VideoDocument | null = null;
+    let treeId = '';
 
-    if (!user) return;
-
-    let video = user.videos.find((item) => item.root.id === uploadTree.root.id);
+    if (id) {
+      existingVideo = await VideoService.findById(id);
+    }
 
     // Refactor UploadTree fields before change document
     const uploadNodes = traverseNodes(uploadTree.root);
@@ -40,9 +67,9 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
         nodeInfo = null;
       }
 
-      if (!video) continue;
+      if (!existingVideo) continue;
 
-      const videoNode = findById(video, uploadNode.id);
+      const videoNode = findById(existingVideo, uploadNode.id);
 
       if (!videoNode || !videoNode.info || !nodeInfo) continue;
 
@@ -50,22 +77,23 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
       nodeInfo.url = videoNode.info.url;
     }
 
-    if (!video) {
+    if (!existingVideo) {
       uploadTree.creator = req.user.id;
 
-      video = new Video(uploadTree);
-      user.videos.push(video);
+      const { insertedId } = await VideoService.createVideo(uploadTree);
+
+      treeId = insertedId.toString();
     } else {
-      for (let key in uploadTree) {
-        key !== 'views' && (video[key] = uploadTree[key]);
-      }
+      const updatedVideo = {
+        ...existingVideo,
+        ...uploadTree,
+        views: existingVideo.views,
+      };
+
+      VideoService.updateVideo(updatedVideo);
     }
 
-    const session = await startSession();
-
-    session.withTransaction(() => Promise.all([user.save(), video.save()]));
-
-    res.json({ message: 'Upload progress saved' });
+    res.json({ message: 'Upload progress saved', treeId });
   } catch (err) {
     return next(err);
   }
@@ -77,28 +105,11 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const video = await Video.findById(id).populate('creator');
-
-    if (!video) {
-      throw new HttpError(404, 'No video found');
-    }
-
-    if (req.user.id !== video.creator._id.toString()) {
-      throw new HttpError(403, 'Not authorized to delete this video');
-    }
-
-    const treeId = video.root.id;
-
-    const session = await startSession();
-
-    session.withTransaction(() => {
-      video.creator.videos.pull(video);
-      return Promise.all([video.remove({ session }), video.creator.save()]);
-    });
+    await VideoService.deleteVideo(id, req.user.id);
 
     // TODO: Delete videos & thumbnail from aws s3
 
-    res.json({ message: 'Video deleted successfully', treeId });
+    res.json({ message: 'Video deleted successfully' });
   } catch (err) {
     return next(err);
   }
