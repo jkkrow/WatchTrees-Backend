@@ -62,8 +62,9 @@ export const register: RequestHandler = async (req, res, next) => {
       accessToken,
       refreshToken,
       userData: {
-        email: user.email,
+        type: user.type,
         name: user.name,
+        email: user.email,
         picture: user.picture,
         isVerified: user.isVerified,
         isPremium: user.isPremium,
@@ -85,7 +86,7 @@ export const login: RequestHandler = async (req, res, next) => {
 
       user = await UserService.findOne({ email });
 
-      if (!user) {
+      if (!user || user.type !== 'native') {
         throw new HttpError(401, 'Invalid email or password.');
       }
 
@@ -116,6 +117,7 @@ export const login: RequestHandler = async (req, res, next) => {
         user = await UserService.createUser('google', {
           email: email as string,
           name: name as string,
+          password: '',
         });
 
         res.status(201);
@@ -137,8 +139,9 @@ export const login: RequestHandler = async (req, res, next) => {
       accessToken,
       refreshToken,
       userData: {
-        email: user.email,
+        type: user.type,
         name: user.name,
+        email: user.email,
         picture: user.picture,
         isVerified: user.isVerified,
         isPremium: user.isPremium,
@@ -277,8 +280,9 @@ export const checkVerification: RequestHandler = async (req, res, next) => {
         isPremium: user.isPremium,
       });
       const userData = {
-        email: user.email,
+        type: user.type,
         name: user.name,
+        email: user.email,
         picture: user.picture,
         isVerified: true,
         isPremium: user.isPremium,

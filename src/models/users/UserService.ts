@@ -8,15 +8,10 @@ import { createToken } from '../../services/jwt-token';
 
 const collectionName = 'users';
 
-interface NativeUserParams {
+interface UserParams {
   name: string;
   email: string;
   password: string;
-}
-
-interface GoogleUserParams {
-  name: string;
-  email: string;
 }
 
 export interface UserDocument extends WithId<User> {}
@@ -36,16 +31,18 @@ export class UserService {
       .findOne(filter, options);
   }
 
-  static async createUser(
-    type: 'native' | 'google',
-    params: NativeUserParams | GoogleUserParams
-  ) {
-    let newUser: any = {};
-
-    newUser = { ...params };
-    newUser.isVerified = false;
-    newUser.isPremium = false;
-    newUser.isAdmin = false;
+  static async createUser(type: 'native' | 'google', params: UserParams) {
+    let newUser: User = {
+      type: type,
+      name: params.name,
+      email: params.email,
+      password: params.password,
+      isVerified: false,
+      isPremium: false,
+      isAdmin: false,
+      history: [],
+      createdAt: new Date(),
+    };
 
     if (type === 'native') {
       newUser.verificationToken = createToken({ type: 'verification' }, '1d');
@@ -63,9 +60,12 @@ export class UserService {
       .collection<UserDocument>(collectionName)
       .insertOne(newUser);
 
-    newUser._id = insertedId;
+    const userDocument: UserDocument = {
+      ...newUser,
+      _id: insertedId,
+    };
 
-    return newUser as UserDocument;
+    return userDocument;
   }
 
   static async updateUser(

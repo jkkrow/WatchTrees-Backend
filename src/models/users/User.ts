@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 
 export interface User {
+  type: 'native' | 'google';
   name: string;
   email: string;
   password: string;
