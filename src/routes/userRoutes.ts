@@ -14,11 +14,18 @@ router.patch(
   [body('name').trim().isLength({ min: 4 })],
   userController.updateUserName
 );
-router.patch('/account/password', checkToken, [
-  body('password').trim().isStrongPassword(),
-  body('confirmPassword').custom(
-    (value, { req }) => value === req.body.password
-  ),
-]);
+router.patch(
+  '/account/password',
+  checkToken,
+  [
+    body('currentPassword').trim().notEmpty(),
+    body('newPassword').trim().isStrongPassword(),
+    body('confirmPassword').custom(
+      (value, { req }) => value === req.body.newPassword
+    ),
+  ],
+  userController.updatePassword
+);
+router.patch('/account/picture', checkToken, userController.updatePicture);
 
 export default router;
