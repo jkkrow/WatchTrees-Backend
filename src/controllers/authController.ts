@@ -90,7 +90,7 @@ export const login: RequestHandler = async (req, res, next) => {
         throw new HttpError(401, 'Invalid email or password.');
       }
 
-      const correctPassword = UserService.checkPassword(user, password);
+      const correctPassword = await UserService.checkPassword(user, password);
 
       if (!correctPassword) {
         throw new HttpError(401, 'Invalid email or password.');

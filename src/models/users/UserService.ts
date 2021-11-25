@@ -37,6 +37,7 @@ export class UserService {
       name: params.name,
       email: params.email,
       password: params.password,
+      picture: '',
       isVerified: false,
       isPremium: false,
       isAdmin: false,
@@ -90,7 +91,7 @@ export class UserService {
       .updateOne({ _id: new ObjectId(userId) }, updateFilter);
   }
 
-  static async checkPassword(user: UserDocument, password: string) {
-    return await bcrypt.compare(user.password, password);
+  static checkPassword(user: UserDocument, password: string) {
+    return bcrypt.compare(password, user.password);
   }
 }
