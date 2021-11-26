@@ -4,7 +4,7 @@ import { S3 } from 'aws-sdk';
 import { v1 as uuidv1 } from 'uuid';
 import { parse } from 'path';
 
-import HttpError from '../models/Error/HttpError';
+import { HttpError } from '../models/error/HttpError';
 import { UserService } from '../models/users/UserService';
 
 const s3 = new S3({

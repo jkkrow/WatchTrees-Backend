@@ -2,7 +2,7 @@ import { RequestHandler } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { validationResult } from 'express-validator';
 
-import HttpError from '../models/Error/HttpError';
+import { HttpError } from '../models/error/HttpError';
 import { UserDocument, UserService } from '../models/users/UserService';
 import {
   createAccessToken,

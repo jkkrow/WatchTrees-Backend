@@ -3,7 +3,7 @@ import cors from 'cors';
 import 'dotenv/config';
 
 import { connectDB } from './config/db';
-import HttpError from './models/Error/HttpError';
+import HttpError from './models/error/HttpError';
 import authRoutes from './routes/authRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import userRoutes from './routes/userRoutes';
@@ -27,7 +27,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
 
 app.use(() => {
-  throw new HttpError(404);
+  throw new HttpError(404, 'No routes found');
 });
 
 app.use(errorMiddleware);
