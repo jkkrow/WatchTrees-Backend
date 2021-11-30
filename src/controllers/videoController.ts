@@ -7,9 +7,52 @@ import { findById, traverseNodes } from '../util/tree';
 
 export const fetchVideos: RequestHandler = async (req, res, next) => {
   try {
-    const videos = await VideoService.findPublics();
+    const { page, max, count } = req.query;
 
-    res.json({ videos });
+    const itemsPerPage = max ? +max : 10;
+    const pageNumber = page ? +page : 1;
+    const isCount = count === 'false' ? false : true;
+
+    let videoCount: number | null = null;
+
+    if (isCount) {
+      videoCount = await VideoService.countVideos({
+        status: 'public',
+        isEditing: false,
+      });
+    }
+
+    const videos = await VideoService.findPublics({}, [
+      { $sort: { _id: -1 } },
+      { $skip: itemsPerPage * (pageNumber - 1) },
+      { $limit: itemsPerPage },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'creator',
+          foreignField: '_id',
+          as: 'creator',
+        },
+      },
+      {
+        $project: {
+          'root.children': 0,
+          creator: {
+            type: 0,
+            email: 0,
+            password: 0,
+            isVerified: 0,
+            isPremium: 0,
+            isAdmin: 0,
+            history: 0,
+            createdAt: 0,
+          },
+        },
+      },
+      { $unwind: { path: '$creator' } },
+    ]);
+
+    res.json({ videos, count: videoCount });
   } catch (err) {
     return next(err);
   }

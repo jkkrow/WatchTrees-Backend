@@ -29,11 +29,14 @@ export class VideoService {
       .toArray();
   }
 
-  static findPublics(filter?: Filter<VideoDocument>, options?: FindOptions) {
+  static findPublics(filter: Filter<VideoDocument>, pipeline?: any) {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .find({ status: 'public', isEditing: false, ...filter }, options)
+      .aggregate([
+        { $match: { status: 'public', isEditing: false, ...filter } },
+        ...pipeline,
+      ])
       .toArray();
   }
 
