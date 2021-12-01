@@ -3,15 +3,12 @@ import cors from 'cors';
 import 'dotenv/config';
 
 import { connectDB } from './config/db';
-import HttpError from './models/error/HttpError';
+import { HttpError } from './models/error/HttpError';
 import authRoutes from './routes/authRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import userRoutes from './routes/userRoutes';
 import videoRoutes from './routes/videoRoutes';
 import errorMiddleware from './middlewares/error-middleware';
-
-// Server and DB Setups
-connectDB();
 
 const PORT = process.env.PORT! || 5000;
 const app = express();
@@ -32,6 +29,8 @@ app.use(() => {
 
 app.use(errorMiddleware);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+connectDB(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });
