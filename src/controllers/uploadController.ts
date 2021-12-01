@@ -17,9 +17,9 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { treeId, nodeId, fileName, fileType } = req.query as {
-      treeId: string;
-      nodeId: string;
+    const { videoId, isRoot, fileName, fileType } = req.query as {
+      videoId: string;
+      isRoot: string;
       fileName: string;
       fileType: string;
     };
@@ -32,9 +32,9 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `videos/${req.user.id}/${treeId}/${fileName}`,
+      Key: `videos/${req.user.id}/${videoId}/${fileName}`,
       ContentType: fileType,
-      Metadata: { root: `${treeId === nodeId}` },
+      Metadata: { root: isRoot },
     };
 
     const uploadData = await s3.createMultipartUpload(params).promise();
@@ -49,16 +49,16 @@ export const processMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { uploadId, treeId, fileName, partNumber } = req.query as {
+    const { uploadId, videoId, fileName, partNumber } = req.query as {
       uploadId: string;
-      treeId: string;
+      videoId: string;
       fileName: string;
       partNumber: string;
     };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `videos/${req.user.id}/${treeId}/${fileName}`,
+      Key: `videos/${req.user.id}/${videoId}/${fileName}`,
       UploadId: uploadId,
       PartNumber: partNumber,
     };
@@ -75,16 +75,16 @@ export const completeMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { uploadId, treeId, fileName, parts } = req.body.params as {
+    const { uploadId, videoId, fileName, parts } = req.body.params as {
       uploadId: string;
-      treeId: string;
+      videoId: string;
       fileName: string;
       parts: { ETag: string; PartNumber: number }[];
     };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `videos/${req.user.id}/${treeId}/${fileName}`,
+      Key: `videos/${req.user.id}/${videoId}/${fileName}`,
       UploadId: uploadId,
       MultipartUpload: { Parts: parts },
     };
@@ -101,15 +101,15 @@ export const cancelMultipart: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { uploadId, treeId, fileName } = req.query as {
+    const { uploadId, videoId, fileName } = req.query as {
       uploadId: string;
-      treeId: string;
+      videoId: string;
       fileName: string;
     };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `videos/${req.user.id}/${treeId}/${fileName}`,
+      Key: `videos/${req.user.id}/${videoId}/${fileName}`,
       UploadId: uploadId,
     };
 
