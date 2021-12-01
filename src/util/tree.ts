@@ -1,4 +1,4 @@
-import { VideoTree, VideoNode, VideoInfo } from '../models/videos/Video';
+import { VideoTree, VideoNode, NodeInfo } from '../models/videos/Video';
 
 export const findById = (tree: VideoTree, id: string): VideoNode | null => {
   let currentNode: VideoNode = tree.root;
@@ -39,7 +39,7 @@ export const traverseNodes = (root: VideoNode): VideoNode[] => {
 
 export const validateNodes = (
   root: VideoNode,
-  key: keyof VideoInfo | 'info',
+  key: keyof NodeInfo | 'info',
   value: any = null,
   type = true
 ): boolean => {

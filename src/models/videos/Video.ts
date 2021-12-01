@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 
-export interface VideoInfo {
+export interface NodeInfo {
   name: string;
   label: string;
   size: number;
@@ -17,21 +17,26 @@ export interface VideoNode {
   id: string;
   prevId?: string;
   layer: number;
-  info: VideoInfo | null;
+  info: NodeInfo | null;
   children: VideoNode[];
 }
 
 export interface VideoTree {
-  creator: ObjectId; // ref to User Document
   root: VideoNode;
-  title: string;
-  tags: string[];
-  description: string;
-  thumbnail: { name: string; url: string };
-  size: number;
-  maxDuration: number;
-  minDuration: number;
-  views: number;
-  isEditing: boolean;
-  status: 'public' | 'private';
+  info: {
+    creator: ObjectId; // ref to User Document
+    title: string;
+    tags: string[];
+    description: string;
+    thumbnail: { name: string; url: string };
+    size: number;
+    maxDuration: number;
+    minDuration: number;
+    status: 'public' | 'private';
+    isEditing: boolean;
+  };
+  data: {
+    views: number;
+    favorites: number;
+  };
 }

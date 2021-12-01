@@ -25,7 +25,7 @@ export class VideoService {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .find({ creator: new ObjectId(userId) }, options)
+      .find({ 'info.creator': new ObjectId(userId) }, options)
       .toArray();
   }
 
@@ -34,7 +34,13 @@ export class VideoService {
       .db()
       .collection<VideoDocument>(collectionName)
       .aggregate([
-        { $match: { status: 'public', isEditing: false, ...filter } },
+        {
+          $match: {
+            'info.status': 'public',
+            'info.isEditing': false,
+            ...filter,
+          },
+        },
         ...pipeline,
       ])
       .toArray();
@@ -70,7 +76,7 @@ export class VideoService {
       .collection<VideoDocument>(collectionName)
       .deleteOne({
         _id: new ObjectId(videoId),
-        creator: new ObjectId(creatorId),
+        'info.creator': new ObjectId(creatorId),
       });
   }
 }

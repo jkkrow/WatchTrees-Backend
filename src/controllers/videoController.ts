@@ -17,8 +17,8 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
 
     if (isCount) {
       videoCount = await VideoService.countVideos({
-        status: 'public',
-        isEditing: false,
+        'info.status': 'public',
+        'info.isEditing': false,
       });
     }
 
@@ -29,15 +29,15 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
       {
         $lookup: {
           from: 'users',
-          localField: 'creator',
+          localField: 'info.creator',
           foreignField: '_id',
-          as: 'creator',
+          as: 'info.creatorInfo',
         },
       },
       {
         $project: {
           'root.children': 0,
-          creator: {
+          'info.creatorInfo': {
             type: 0,
             email: 0,
             password: 0,
@@ -49,7 +49,7 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
           },
         },
       },
-      { $unwind: { path: '$creator' } },
+      { $unwind: '$info.creatorInfo' },
     ]);
 
     res.json({ videos, count: videoCount });
@@ -91,7 +91,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
     const { id } = req.params;
 
     let existingVideo: VideoDocument | null = null;
-    let treeId = '';
+    let videoId: string | undefined;
 
     if (id !== 'undefined') {
       existingVideo = await VideoService.findById(id);
@@ -120,7 +120,8 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
     }
 
     if (!existingVideo) {
-      uploadTree.creator = new ObjectId(req.user.id);
+      uploadTree.info.creator = new ObjectId(req.user.id);
+      uploadTree.data = { views: 0, favorites: 0 };
 
       const { insertedId } = await VideoService.createVideo(uploadTree);
 
@@ -128,7 +129,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
         throw new HttpError(500, 'Saving video failed. Please try again');
       }
 
-      treeId = insertedId.toString();
+      videoId = insertedId.toString();
     }
 
     if (existingVideo) {
@@ -136,7 +137,8 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
         ...existingVideo,
         ...uploadTree,
         _id: existingVideo._id,
-        views: existingVideo.views,
+        info: { ...uploadTree.info, creator: existingVideo.info.creator },
+        data: { ...existingVideo.data },
       };
 
       const { modifiedCount } = await VideoService.updateVideo(updatedVideo);
@@ -146,7 +148,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
       }
     }
 
-    res.json({ message: 'Upload progress saved', treeId });
+    res.json({ message: 'Upload progress saved', videoId });
   } catch (err) {
     return next(err);
   }
