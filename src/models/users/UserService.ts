@@ -3,16 +3,10 @@ import { v1 as uuidv1 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 import { client } from '../../config/db';
-import { User } from './User';
+import { User, UserSchema } from './User';
 import { createToken } from '../../services/jwt-token';
 
 const collectionName = 'users';
-
-interface UserParams {
-  name: string;
-  email: string;
-  password: string;
-}
 
 export interface UserDocument extends WithId<User> {}
 
@@ -31,19 +25,20 @@ export class UserService {
       .findOne(filter, options);
   }
 
-  static async createUser(type: 'native' | 'google', params: UserParams) {
-    let newUser: User = {
-      type: type,
-      name: params.name,
-      email: params.email,
-      password: params.password,
-      picture: '',
-      isVerified: false,
-      isPremium: false,
-      isAdmin: false,
-      history: [],
-      createdAt: new Date(),
-    };
+  static async createUser(
+    type: 'native' | 'google',
+    params: {
+      name: string;
+      email: string;
+      password: string;
+    }
+  ) {
+    let newUser = new UserSchema(
+      type,
+      params.name,
+      params.email,
+      params.password
+    );
 
     if (type === 'native') {
       newUser.verificationToken = createToken({ type: 'verification' }, '1d');
