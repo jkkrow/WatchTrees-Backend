@@ -7,58 +7,51 @@ import { findById, traverseNodes } from '../util/tree';
 
 export const fetchVideos: RequestHandler = async (req, res, next) => {
   try {
-    const { page, max, count } = req.query;
+    const { page, max, userId } = req.query;
 
     const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
-    const isCount = count === 'false' ? false : true;
 
-    let videoCount: number | null = null;
+    const filter = userId
+      ? { 'info.creator': new ObjectId(userId as string) }
+      : {};
 
-    if (isCount) {
-      videoCount = await VideoService.countVideos({
-        'info.status': 'public',
-        'info.isEditing': false,
-      });
-    }
-
-    const videos = await VideoService.findPublics({}, [
-      { $sort: { _id: -1 } },
-      { $skip: itemsPerPage * (pageNumber - 1) },
-      { $limit: itemsPerPage },
+    const result = await VideoService.findPublics(filter, [
       {
-        $lookup: {
-          from: 'users',
-          localField: 'info.creator',
-          foreignField: '_id',
-          as: 'info.creatorInfo',
+        $facet: {
+          videos: [
+            { $sort: { _id: -1 } },
+            { $skip: itemsPerPage * (pageNumber - 1) },
+            { $limit: itemsPerPage },
+            {
+              $lookup: {
+                from: 'users',
+                as: 'info.creatorInfo',
+                let: { creator: '$info.creator' },
+                pipeline: [
+                  { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
+                  { $project: { _id: 0, name: 1, picture: 1 } },
+                ],
+              },
+            },
+            { $project: { 'root.children': 0 } },
+            { $unwind: '$info.creatorInfo' },
+          ],
+          totalCount: [{ $count: 'count' }],
         },
       },
-      {
-        $project: {
-          'root.children': 0,
-          'info.creatorInfo': {
-            type: 0,
-            email: 0,
-            password: 0,
-            isVerified: 0,
-            isPremium: 0,
-            isAdmin: 0,
-            history: 0,
-            createdAt: 0,
-          },
-        },
-      },
-      { $unwind: '$info.creatorInfo' },
     ]);
 
-    res.json({ videos, count: videoCount });
+    const videos = result[0].videos;
+    const count = result[0].totalCount[0].count;
+
+    res.json({ videos, count });
   } catch (err) {
     return next(err);
   }
 };
 
-export const fetchUserVideos: RequestHandler = async (req, res, next) => {
+export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
@@ -67,17 +60,14 @@ export const fetchUserVideos: RequestHandler = async (req, res, next) => {
     const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
 
-    const count = await VideoService.countVideos({
-      creator: new ObjectId(req.user.id),
-    });
-    const videos = await VideoService.findByCreator(req.user.id, {
-      skip: itemsPerPage * (pageNumber - 1),
-      limit: itemsPerPage,
-      sort: { _id: -1 },
-      projection: { 'root.children': 0 },
-    });
+    const videos = await VideoService.findByCreator(req.user.id, [
+      { $sort: { _id: -1 } },
+      { $skip: itemsPerPage * (pageNumber - 1) },
+      { $limit: itemsPerPage },
+      { $project: { 'root.children': 0 } },
+    ]);
 
-    res.json({ videos: videos, count });
+    res.json({ videos: videos });
   } catch (err) {
     return next(err);
   }
@@ -97,7 +87,10 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
       existingVideo = await VideoService.findById(id);
     }
 
-    // Refactor UploadTree fields before change document
+    /*
+     * Refactor UploadTree fields before change document
+     */
+
     const uploadNodes = traverseNodes(uploadTree.root);
 
     for (let uploadNode of uploadNodes) {
@@ -119,11 +112,15 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
       nodeInfo.url = videoNode.info.url;
     }
 
-    if (!existingVideo) {
-      uploadTree.info.creator = new ObjectId(req.user.id);
-      uploadTree.data = { views: 0, favorites: 0 };
+    /*
+     * Create Video
+     */
 
-      const { insertedId } = await VideoService.createVideo(uploadTree);
+    if (!existingVideo) {
+      const { insertedId } = await VideoService.createVideo(
+        uploadTree,
+        req.user.id
+      );
 
       if (!insertedId) {
         throw new HttpError(500, 'Saving video failed. Please try again');
