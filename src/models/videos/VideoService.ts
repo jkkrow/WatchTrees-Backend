@@ -1,13 +1,7 @@
-import {
-  CountDocumentsOptions,
-  Filter,
-  FindOptions,
-  WithId,
-  ObjectId,
-} from 'mongodb';
+import { Filter, FindOptions, WithId, ObjectId } from 'mongodb';
 
 import { client } from '../../config/db';
-import { VideoTree } from './Video';
+import { VideoTree, VideoSchema } from './Video';
 
 const collectionName = 'videos';
 
@@ -21,11 +15,14 @@ export class VideoService {
       .findOne({ _id: new ObjectId(id) }, options);
   }
 
-  static findByCreator(userId: string, options?: FindOptions) {
+  static findByCreator(userId: string, pipeline?: any) {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .find({ 'info.creator': new ObjectId(userId) }, options)
+      .aggregate([
+        { $match: { 'info.creator': new ObjectId(userId) } },
+        ...pipeline,
+      ])
       .toArray();
   }
 
@@ -46,28 +43,26 @@ export class VideoService {
       .toArray();
   }
 
-  static countVideos(
-    filter?: Filter<VideoDocument>,
-    options?: CountDocumentsOptions
-  ) {
-    return client
-      .db()
-      .collection<VideoDocument>(collectionName)
-      .countDocuments({ ...filter }, { ...options });
-  }
+  static createVideo(video: VideoTree, userId: string) {
+    const newVideo = new VideoSchema(video, userId);
 
-  static createVideo(video: VideoDocument) {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .insertOne(video);
+      .insertOne(newVideo);
   }
 
   static updateVideo(video: VideoDocument) {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .replaceOne({ _id: new ObjectId(video._id) }, video);
+      .replaceOne(
+        {
+          _id: new ObjectId(video._id),
+          'info.creator': new ObjectId(video.info.creator),
+        },
+        video
+      );
   }
 
   static deleteVideo(videoId: string | ObjectId, creatorId: string) {
