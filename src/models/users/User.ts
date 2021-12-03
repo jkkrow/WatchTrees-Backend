@@ -9,8 +9,8 @@ export interface User {
   isVerified: boolean;
   isPremium: boolean;
   isAdmin: boolean;
-  followers: ObjectId[]; // ref to User Document
-  follows: ObjectId[]; // ref to User Document
+  subscribers: ObjectId[]; // ref to User Document
+  subscribes: ObjectId[]; // ref to User Document
   favorites: ObjectId[]; // ref to Video Document
   history: ObjectId[]; // ref to Video Document
   createdAt: Date;
@@ -23,8 +23,8 @@ export class UserSchema implements User {
   public isVerified = false;
   public isPremium = false;
   public isAdmin = false;
-  public followers: ObjectId[] = [];
-  public follows: ObjectId[] = [];
+  public subscribers: ObjectId[] = [];
+  public subscribes: ObjectId[] = [];
   public favorites: ObjectId[] = [];
   public history: ObjectId[] = [];
   public createdAt = new Date();
