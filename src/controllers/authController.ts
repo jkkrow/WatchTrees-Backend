@@ -62,6 +62,7 @@ export const register: RequestHandler = async (req, res, next) => {
       accessToken,
       refreshToken,
       userData: {
+        _id: user._id,
         type: user.type,
         name: user.name,
         email: user.email,
@@ -139,6 +140,7 @@ export const login: RequestHandler = async (req, res, next) => {
       accessToken,
       refreshToken,
       userData: {
+        _id: user._id,
         type: user.type,
         name: user.name,
         email: user.email,
@@ -280,6 +282,7 @@ export const checkVerification: RequestHandler = async (req, res, next) => {
         isPremium: user.isPremium,
       });
       const userData = {
+        _id: user._id,
         type: user.type,
         name: user.name,
         email: user.email,
