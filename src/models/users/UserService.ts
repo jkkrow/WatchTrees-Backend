@@ -86,6 +86,42 @@ export class UserService {
       .updateOne({ _id: new ObjectId(userId) }, updateFilter);
   }
 
+  static async subscribe(targetId: string, currentUserId: string) {
+    const session = client.startSession();
+    const collection = client.db().collection<UserDocument>(collectionName);
+
+    await session.withTransaction(async () => {
+      await collection.updateOne(
+        { _id: new ObjectId(targetId) },
+        { $addToSet: { subscribers: new ObjectId(currentUserId) } }
+      );
+      await collection.updateOne(
+        { _id: new ObjectId(currentUserId) },
+        { $addToSet: { subscribes: new ObjectId(targetId) } }
+      );
+    });
+
+    await session.endSession();
+  }
+
+  static async unsubscribe(targetId: string, currentUserId: string) {
+    const session = client.startSession();
+    const collection = client.db().collection<UserDocument>(collectionName);
+
+    await session.withTransaction(async () => {
+      await collection.updateOne(
+        { _id: new ObjectId(targetId) },
+        { $pull: { subscribers: new ObjectId(currentUserId) } }
+      );
+      await collection.updateOne(
+        { _id: new ObjectId(currentUserId) },
+        { $pull: { subscribes: new ObjectId(targetId) } }
+      );
+    });
+
+    await session.endSession();
+  }
+
   static checkPassword(user: UserDocument, password: string) {
     return bcrypt.compare(password, user.password);
   }

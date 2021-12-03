@@ -8,6 +8,13 @@ const router = Router();
 
 // router.get('/history', checkToken, userController.fetchHistory);
 
+router.get('/channel/:id', userController.fetchChannel);
+router.patch(
+  '/channel/subscribers/:id',
+  checkToken,
+  userController.subscribeChannel
+);
+
 router.patch(
   '/account/name',
   checkToken,
