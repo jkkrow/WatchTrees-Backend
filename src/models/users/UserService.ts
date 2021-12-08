@@ -3,7 +3,7 @@ import { v1 as uuidv1 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 import { client } from '../../config/db';
-import { User, UserSchema } from './User';
+import { User, Channel, UserSchema } from './User';
 import { createToken } from '../../services/jwt-token';
 
 const collectionName = 'users';
@@ -23,6 +23,32 @@ export class UserService {
       .db()
       .collection<UserDocument>(collectionName)
       .findOne(filter, options);
+  }
+
+  static async findChannel(id: string, currentUserId: string) {
+    const result = await client
+      .db()
+      .collection<WithId<Channel>>(collectionName)
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        {
+          $project: {
+            name: 1,
+            picture: 1,
+            subscribers: { $size: '$subscribers' },
+            subscribes: { $size: '$subscribes' },
+            isSubscribed: {
+              $in: [
+                currentUserId ? new ObjectId(currentUserId) : '',
+                '$subscribers',
+              ],
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    return result[0];
   }
 
   static async createUser(

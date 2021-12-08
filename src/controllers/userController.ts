@@ -51,27 +51,17 @@ const s3 = new S3({
 
 export const fetchChannel: RequestHandler = async (req, res, next) => {
   try {
-    const { currentUserId } = req.query;
     const { id } = req.params;
+    const { currentUserId } = req.query;
 
-    const user = await UserService.findById(id, {
-      projection: { name: 1, picture: 1, subscribers: 1, subscribes: 1 },
-    });
-
-    if (!user) {
-      throw new HttpError(404, 'No Channel found');
-    }
-
-    const isSubscribed = !!user.subscribers.find(
-      (subscriber) => subscriber.toString() === currentUserId
+    const channelInfo = await UserService.findChannel(
+      id,
+      currentUserId as string
     );
 
-    const channelInfo = {
-      ...user,
-      subscribers: user.subscribers.length,
-      subscribes: user.subscribes.length,
-      isSubscribed,
-    };
+    if (!channelInfo) {
+      throw new HttpError(404, 'No Channel found');
+    }
 
     res.json({ channelInfo });
   } catch (err) {
@@ -84,29 +74,25 @@ export const subscribeChannel: RequestHandler = async (req, res, next) => {
 
   try {
     const { id } = req.params;
-    const currentUserId = req.user.id;
 
-    const user = await UserService.findById(id);
+    const channelInfo = await UserService.findChannel(id, req.user.id);
 
-    if (!user) {
-      throw new HttpError(404, 'No user found');
+    if (!channelInfo) {
+      throw new HttpError(404, 'No Channel found');
     }
 
-    const isSubscribed = !!user.subscribers.find(
-      (subscriber) => subscriber.toString() === currentUserId
-    );
-
-    const subscribers = isSubscribed
-      ? user.subscribers.length - 1
-      : user.subscribers.length + 1;
-
-    if (isSubscribed) {
+    if (channelInfo.isSubscribed) {
       await UserService.unsubscribe(id, req.user.id);
+      channelInfo.subscribers--;
     } else {
       await UserService.subscribe(id, req.user.id);
+      channelInfo.subscribers++;
     }
 
-    res.json({ isSubscribed: !isSubscribed, subscribers });
+    res.json({
+      isSubscribed: !channelInfo.isSubscribed,
+      subscribers: channelInfo.subscribers,
+    });
   } catch (err) {
     return next(err);
   }
