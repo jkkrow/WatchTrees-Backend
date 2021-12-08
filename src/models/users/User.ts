@@ -1,5 +1,13 @@
 import { ObjectId } from 'mongodb';
 
+export interface Channel {
+  name: string;
+  picture: string;
+  subscribers: number;
+  subscribes: number;
+  isSubscribed: boolean;
+}
+
 export interface User {
   type: 'native' | 'google';
   name: string;
