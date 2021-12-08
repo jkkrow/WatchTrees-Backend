@@ -123,6 +123,10 @@ export const login: RequestHandler = async (req, res, next) => {
 
         res.status(201);
       }
+
+      if (user.type !== 'google') {
+        throw new HttpError(401, 'Invalid Google account.');
+      }
     }
 
     const accessToken = createAccessToken({
