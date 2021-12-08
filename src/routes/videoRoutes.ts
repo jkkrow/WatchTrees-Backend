@@ -7,7 +7,9 @@ const router = Router();
 
 router.get('/', videoController.fetchVideos);
 router.get('/user', checkToken, videoController.fetchCreatedVideos);
+router.get('/:id', videoController.fetchVideo);
 router.put('/:id', checkToken, checkVerified, videoController.saveVideo);
 router.delete('/:id', checkToken, checkVerified, videoController.deleteVideo);
+router.patch('/:id/favorites', checkToken, videoController.addToFavorites);
 
 export default router;

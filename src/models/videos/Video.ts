@@ -34,6 +34,13 @@ export interface TreeInfo {
   isEditing: boolean;
 }
 
+export interface TreeInfoWithCreator extends TreeInfo {
+  creatorInfo: {
+    name: string;
+    picture: string;
+  };
+}
+
 export interface TreeData {
   views: number;
   favorites: ObjectId[]; // ref to User Document;
@@ -44,6 +51,18 @@ export interface VideoTree {
   info: TreeInfo;
   data: TreeData;
   createdAt: Date;
+}
+
+export interface VideoListDetail extends VideoTree {
+  info: TreeInfoWithCreator;
+}
+
+export interface VideoItemDetail extends VideoListDetail {
+  data: {
+    views: number;
+    favorites: ObjectId[];
+    isFavorite: boolean;
+  };
 }
 
 export class VideoSchema implements VideoTree {

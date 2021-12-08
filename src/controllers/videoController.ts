@@ -1,4 +1,3 @@
-import { ObjectId } from 'mongodb';
 import { RequestHandler } from 'express';
 
 import { HttpError } from '../models/error/HttpError';
@@ -12,38 +11,11 @@ export const fetchVideos: RequestHandler = async (req, res, next) => {
     const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
 
-    const filter = userId
-      ? { 'info.creator': new ObjectId(userId as string) }
-      : {};
-
-    const result = await VideoService.findPublics(filter, [
-      {
-        $facet: {
-          videos: [
-            { $sort: { _id: -1 } },
-            { $skip: itemsPerPage * (pageNumber - 1) },
-            { $limit: itemsPerPage },
-            {
-              $lookup: {
-                from: 'users',
-                as: 'info.creatorInfo',
-                let: { creator: '$info.creator' },
-                pipeline: [
-                  { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
-                  { $project: { _id: 0, name: 1, picture: 1 } },
-                ],
-              },
-            },
-            { $project: { 'root.children': 0 } },
-            { $unwind: '$info.creatorInfo' },
-          ],
-          totalCount: [{ $count: 'count' }],
-        },
-      },
-    ]);
-
-    const videos = result[0].videos;
-    const count = result[0].totalCount[0].count;
+    const { videos, count } = await VideoService.findList(
+      pageNumber,
+      itemsPerPage,
+      userId as string
+    );
 
     res.json({ videos, count });
   } catch (err) {
@@ -57,17 +29,33 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
   try {
     const { page, max } = req.query;
 
-    const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 10;
 
-    const videos = await VideoService.findByCreator(req.user.id, [
-      { $sort: { _id: -1 } },
-      { $skip: itemsPerPage * (pageNumber - 1) },
-      { $limit: itemsPerPage },
-      { $project: { 'root.children': 0 } },
-    ]);
+    const videos = await VideoService.findCreatedList(
+      req.user.id,
+      pageNumber,
+      itemsPerPage
+    );
 
-    res.json({ videos: videos });
+    res.json({ videos });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchVideo: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { currentUserId } = req.query;
+
+    const video = await VideoService.findItem(id, currentUserId as string);
+
+    if (!video) {
+      throw new HttpError(404, 'No video found');
+    }
+
+    res.json({ video });
   } catch (err) {
     return next(err);
   }
@@ -166,6 +154,35 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
     // TODO: Delete videos & thumbnail from aws s3
 
     res.json({ message: 'Video deleted successfully' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const addToFavorites: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { id } = req.params;
+
+    const video = await VideoService.findItem(id, req.user.id);
+
+    if (!video) {
+      throw new HttpError(404, 'No video found');
+    }
+
+    if (video.data.isFavorite) {
+      await VideoService.removeFromFavorites(id, req.user.id);
+      video.data.favorites--;
+    } else {
+      await VideoService.addToFavorites(id, req.user.id);
+      video.data.favorites++;
+    }
+
+    res.json({
+      isFavorite: !video.data.isFavorite,
+      favorites: video.data.favorites,
+    });
   } catch (err) {
     return next(err);
   }
