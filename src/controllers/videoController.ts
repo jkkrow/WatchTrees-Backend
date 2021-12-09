@@ -4,14 +4,14 @@ import { HttpError } from '../models/error/HttpError';
 import { VideoService, VideoDocument } from '../models/videos/VideoService';
 import { findById, traverseNodes } from '../util/tree';
 
-export const fetchVideos: RequestHandler = async (req, res, next) => {
+export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
   try {
     const { page, max, userId } = req.query;
 
     const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
 
-    const { videos, count } = await VideoService.findList(
+    const { videos, count } = await VideoService.findPublic(
       pageNumber,
       itemsPerPage,
       userId as string
@@ -32,7 +32,7 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
     const pageNumber = page ? +page : 1;
     const itemsPerPage = max ? +max : 10;
 
-    const videos = await VideoService.findCreatedList(
+    const videos = await VideoService.findCreated(
       req.user.id,
       pageNumber,
       itemsPerPage
@@ -44,12 +44,34 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const fetchVideo: RequestHandler = async (req, res, next) => {
+export const fetchCreatedVideo: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { id } = req.params;
+
+    const video = await VideoService.findById(id);
+
+    if (!video) {
+      throw new HttpError(404, 'No video found');
+    }
+
+    if (video.info.creator.toString() !== req.user.id) {
+      throw new HttpError(403, 'Not authorized to this video');
+    }
+
+    res.json({ video });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchPublicVideo: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { currentUserId } = req.query;
 
-    const video = await VideoService.findItem(id, currentUserId as string);
+    const video = await VideoService.findPublicOne(id, currentUserId as string);
 
     if (!video) {
       throw new HttpError(404, 'No video found');
@@ -126,11 +148,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
         data: { ...existingVideo.data },
       };
 
-      const { modifiedCount } = await VideoService.updateVideo(updatedVideo);
-
-      if (!modifiedCount) {
-        throw new HttpError(500, 'Saving video failed. Please try again');
-      }
+      await VideoService.updateVideo(updatedVideo);
     }
 
     res.json({ message: 'Upload progress saved', videoId });
@@ -165,7 +183,7 @@ export const addToFavorites: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const video = await VideoService.findItem(id, req.user.id);
+    const video = await VideoService.findPublicOne(id, req.user.id);
 
     if (!video) {
       throw new HttpError(404, 'No video found');
