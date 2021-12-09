@@ -6,7 +6,7 @@ import { findById, traverseNodes } from '../util/tree';
 
 export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
   try {
-    const { page, max, userId } = req.query;
+    const { page, max, userId, search } = req.query;
 
     const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
@@ -14,7 +14,8 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
     const { videos, count } = await VideoService.findPublic(
       pageNumber,
       itemsPerPage,
-      userId as string
+      userId as string,
+      search as string
     );
 
     res.json({ videos, count });

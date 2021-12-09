@@ -56,8 +56,25 @@ export class VideoService {
     return result[0];
   }
 
-  static async findPublic(page: number, max: number, userId?: string) {
-    const filter = userId ? { 'info.creator': new ObjectId(userId) } : {};
+  static async findPublic(
+    page: number,
+    max: number,
+    userId: string,
+    keyword: string
+  ) {
+    const filter: any = {};
+    const sort: any = { $sort: {} };
+
+    if (userId) {
+      filter.info = { creator: new ObjectId(userId) };
+    }
+
+    if (keyword) {
+      filter['$text'] = { $search: keyword };
+      sort['$sort'].score = { $meta: 'textScore' };
+    }
+
+    sort['$sort']._id = -1;
 
     const result = await client
       .db()
@@ -73,7 +90,7 @@ export class VideoService {
         {
           $facet: {
             videos: [
-              { $sort: { _id: -1 } },
+              sort,
               { $skip: max * (page - 1) },
               { $limit: max },
               {
@@ -96,11 +113,12 @@ export class VideoService {
             totalCount: [{ $count: 'count' }],
           },
         },
+        { $unwind: '$totalCount' },
       ])
       .toArray();
 
-    const videos = result[0].videos;
-    const count = result[0].totalCount[0].count;
+    const videos = result.length ? result[0].videos : [];
+    const count = result.length ? result[0].totalCount.count : 0;
 
     return { videos, count };
   }
