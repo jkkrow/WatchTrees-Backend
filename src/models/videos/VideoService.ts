@@ -21,7 +21,7 @@ export class VideoService {
       .findOne({ _id: new ObjectId(id) }, options);
   }
 
-  static async findItem(id: string, currentUserId: string) {
+  static async findPublicOne(id: string, currentUserId: string) {
     const result = await client
       .db()
       .collection<WithId<VideoItemDetail>>(collectionName)
@@ -56,7 +56,7 @@ export class VideoService {
     return result[0];
   }
 
-  static async findList(page: number, max: number, userId?: string) {
+  static async findPublic(page: number, max: number, userId?: string) {
     const filter = userId ? { 'info.creator': new ObjectId(userId) } : {};
 
     const result = await client
@@ -105,7 +105,7 @@ export class VideoService {
     return { videos, count };
   }
 
-  static findCreatedList(userId: string, page: number, max: number) {
+  static findCreated(userId: string, page: number, max: number) {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
@@ -115,6 +115,7 @@ export class VideoService {
         { $skip: max * (page - 1) },
         { $limit: max },
         { $project: { 'root.children': 0 } },
+        { $addFields: { 'data.favorites': { $size: '$data.favorites' } } },
       ])
       .toArray();
   }
