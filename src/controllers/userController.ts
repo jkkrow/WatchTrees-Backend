@@ -6,6 +6,7 @@ import { parse } from 'path';
 
 import { HttpError } from '../models/error/HttpError';
 import { UserService } from '../models/users/UserService';
+import { VideoService } from '../models/videos/VideoService';
 
 const s3 = new S3({
   credentials: {
@@ -14,40 +15,6 @@ const s3 = new S3({
   },
   region: process.env.S3_BUCKET_REGION!,
 });
-
-// export const fetchHistory: RequestHandler = async (req, res, next) => {
-//   if (!req.user) return;
-
-//   try {
-//     const { page, max } = req.query;
-
-//     let count: number;
-//     const itemsPerPage = max ? +max : 10;
-//     const pageNumber = page ? +page : 1;
-
-//     const user = await UserService.findById(req.user.id);
-
-//     if (!user) {
-//       throw new HttpError(404, 'No user found.');
-//     }
-
-//     count = user.videos.length;
-
-//     await user.populate({
-//       path: 'history',
-//       options: {
-//         sort: { $natural: -1 },
-//         select: '-root.children -__v',
-//         limit: itemsPerPage,
-//         skip: itemsPerPage * (pageNumber - 1),
-//       },
-//     });
-
-//     res.json({ videos: user.videos, count });
-//   } catch (err) {
-//     return next(err);
-//   }
-// };
 
 export const fetchChannel: RequestHandler = async (req, res, next) => {
   try {
@@ -209,6 +176,90 @@ export const updatePicture: RequestHandler = async (req, res, next) => {
       presignedUrl,
       newPicture,
       message: 'Picture updated successfully.',
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+// export const fetchHistory: RequestHandler = async (req, res, next) => {
+//   if (!req.user) return;
+
+//   try {
+//     const { page, max } = req.query;
+
+//     let count: number;
+//     const itemsPerPage = max ? +max : 10;
+//     const pageNumber = page ? +page : 1;
+
+//     const user = await UserService.findById(req.user.id);
+
+//     if (!user) {
+//       throw new HttpError(404, 'No user found.');
+//     }
+
+//     count = user.videos.length;
+
+//     await user.populate({
+//       path: 'history',
+//       options: {
+//         sort: { $natural: -1 },
+//         select: '-root.children -__v',
+//         limit: itemsPerPage,
+//         skip: itemsPerPage * (pageNumber - 1),
+//       },
+//     });
+
+//     res.json({ videos: user.videos, count });
+//   } catch (err) {
+//     return next(err);
+//   }
+// };
+
+export const fetchFavorites: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { page, max } = req.query;
+
+    const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 10;
+
+    const { videos, count } = await UserService.findFavorites(
+      req.user.id,
+      pageNumber,
+      itemsPerPage
+    );
+
+    res.json({ videos, count });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const addToFavorites: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { videoId } = req.body;
+
+    const video = await VideoService.findPublicOne(videoId, req.user.id);
+
+    if (!video) {
+      throw new HttpError(404, 'No video found');
+    }
+
+    if (video.data.isFavorite) {
+      await UserService.removeFromFavorites(videoId, req.user.id);
+      video.data.favorites--;
+    } else {
+      await UserService.addToFavorites(videoId, req.user.id);
+      video.data.favorites++;
+    }
+
+    res.json({
+      isFavorite: !video.data.isFavorite,
+      favorites: video.data.favorites,
     });
   } catch (err) {
     return next(err);

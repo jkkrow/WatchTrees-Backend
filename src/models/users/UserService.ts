@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 
 import { client } from '../../config/db';
 import { User, Channel, UserSchema } from './User';
+import { VideoDocument } from '../videos/VideoService';
 import { createToken } from '../../services/jwt-token';
 
 const collectionName = 'users';
@@ -49,6 +50,63 @@ export class UserService {
       .toArray();
 
     return result[0];
+  }
+
+  static async findFavorites(id: string, page: number, max: number) {
+    const result = await client
+      .db()
+      .collection<UserDocument>(collectionName)
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'videos',
+            as: 'favorites',
+            let: { favorites: '$favorites' },
+            pipeline: [
+              { $match: { $expr: { $in: ['$_id', '$$favorites'] } } },
+              {
+                $facet: {
+                  videos: [
+                    { $sort: { _id: -1 } },
+                    { $skip: max * (page - 1) },
+                    { $limit: max },
+                    {
+                      $lookup: {
+                        from: 'users',
+                        as: 'info.creatorInfo',
+                        let: { creator: '$info.creator' },
+                        pipeline: [
+                          { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
+                          { $project: { _id: 0, name: 1, picture: 1 } },
+                        ],
+                      },
+                    },
+                    { $unwind: '$info.creatorInfo' },
+                    { $project: { 'root.children': 0 } },
+                    {
+                      $addFields: {
+                        'data.favorites': { $size: '$data.favorites' },
+                      },
+                    },
+                  ],
+                  totalCount: [{ $count: 'count' }],
+                },
+              },
+              { $unwind: '$totalCount' },
+            ],
+          },
+        },
+        { $project: { favorites: 1 } },
+      ])
+      .toArray();
+
+    const favorites = result[0].favorites;
+
+    const videos = favorites.length ? favorites[0].videos : [];
+    const count = favorites.length ? favorites[0].totalCount.count : 0;
+
+    return { videos, count };
   }
 
   static async createUser(
@@ -112,6 +170,10 @@ export class UserService {
       .updateOne({ _id: new ObjectId(userId) }, updateFilter);
   }
 
+  static checkPassword(user: UserDocument, password: string) {
+    return bcrypt.compare(password, user.password);
+  }
+
   static async subscribe(targetId: string, currentUserId: string) {
     const session = client.startSession();
     const collection = client.db().collection<UserDocument>(collectionName);
@@ -148,7 +210,45 @@ export class UserService {
     await session.endSession();
   }
 
-  static checkPassword(user: UserDocument, password: string) {
-    return bcrypt.compare(password, user.password);
+  static async addToFavorites(targetId: string, currentUserId: string) {
+    const session = client.startSession();
+    const videoCollection = client.db().collection<VideoDocument>('videos');
+    const userCollection = client.db().collection<UserDocument>('users');
+
+    await session.withTransaction(async () => {
+      await Promise.all([
+        videoCollection.updateOne(
+          { _id: new ObjectId(targetId) },
+          { $addToSet: { 'data.favorites': new ObjectId(currentUserId) } }
+        ),
+        userCollection.updateOne(
+          { _id: new ObjectId(currentUserId) },
+          { $addToSet: { favorites: new ObjectId(targetId) } }
+        ),
+      ]);
+    });
+
+    await session.endSession();
+  }
+
+  static async removeFromFavorites(targetId: string, currentUserId: string) {
+    const session = client.startSession();
+    const videoCollection = client.db().collection<VideoDocument>('videos');
+    const userCollection = client.db().collection<UserDocument>('users');
+
+    await session.withTransaction(async () => {
+      await Promise.all([
+        videoCollection.updateOne(
+          { _id: new ObjectId(targetId) },
+          { $pull: { 'data.favorites': new ObjectId(currentUserId) } }
+        ),
+        userCollection.updateOne(
+          { _id: new ObjectId(currentUserId) },
+          { $pull: { favorites: new ObjectId(targetId) } }
+        ),
+      ]);
+    });
+
+    await session.endSession();
   }
 }

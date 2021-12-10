@@ -1,7 +1,6 @@
 import { FindOptions, WithId, ObjectId } from 'mongodb';
 
 import { client } from '../../config/db';
-import { UserDocument } from '../users/UserService';
 import {
   VideoTree,
   VideoListDetail,
@@ -59,14 +58,14 @@ export class VideoService {
   static async findPublic(
     page: number,
     max: number,
-    userId: string,
+    creatorId: string,
     keyword: string
   ) {
     const filter: any = {};
     const sort: any = { $sort: {} };
 
-    if (userId) {
-      filter.info = { creator: new ObjectId(userId) };
+    if (creatorId) {
+      filter['info.creator'] = new ObjectId(creatorId);
     }
 
     if (keyword) {
@@ -123,12 +122,12 @@ export class VideoService {
     return { videos, count };
   }
 
-  static findCreated(userId: string, page: number, max: number) {
+  static findCreated(creatorId: string, page: number, max: number) {
     return client
       .db()
       .collection<VideoDocument>(collectionName)
       .aggregate([
-        { $match: { 'info.creator': new ObjectId(userId) } },
+        { $match: { 'info.creator': new ObjectId(creatorId) } },
         { $sort: { _id: -1 } },
         { $skip: max * (page - 1) },
         { $limit: max },
@@ -138,8 +137,8 @@ export class VideoService {
       .toArray();
   }
 
-  static createVideo(video: VideoTree, userId: string) {
-    const newVideo = new VideoSchema(video, userId);
+  static createVideo(video: VideoTree, creatorId: string) {
+    const newVideo = new VideoSchema(video, creatorId);
 
     return client
       .db()
@@ -168,45 +167,5 @@ export class VideoService {
         _id: new ObjectId(videoId),
         'info.creator': new ObjectId(creatorId),
       });
-  }
-
-  static async addToFavorites(targetId: string, currentUserId: string) {
-    const session = client.startSession();
-    const db = client.db();
-    const videoCollection = db.collection<VideoDocument>(collectionName);
-    const userCollection = db.collection<UserDocument>('users');
-
-    await session.withTransaction(async () => {
-      await videoCollection.updateOne(
-        { _id: new ObjectId(targetId) },
-        { $addToSet: { 'data.favorites': new ObjectId(currentUserId) } }
-      );
-      await userCollection.updateOne(
-        { _id: new ObjectId(currentUserId) },
-        { $addToSet: { favorites: new ObjectId(targetId) } }
-      );
-    });
-
-    await session.endSession();
-  }
-
-  static async removeFromFavorites(targetId: string, currentUserId: string) {
-    const session = client.startSession();
-    const db = client.db();
-    const videoCollection = db.collection<VideoDocument>(collectionName);
-    const userCollection = db.collection<UserDocument>('users');
-
-    await session.withTransaction(async () => {
-      await videoCollection.updateOne(
-        { _id: new ObjectId(targetId) },
-        { $pull: { 'data.favorites': new ObjectId(currentUserId) } }
-      );
-      await userCollection.updateOne(
-        { _id: new ObjectId(currentUserId) },
-        { $pull: { favorites: new ObjectId(targetId) } }
-      );
-    });
-
-    await session.endSession();
   }
 }
