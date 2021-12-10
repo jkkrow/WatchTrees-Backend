@@ -177,32 +177,3 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
     return next(err);
   }
 };
-
-export const addToFavorites: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { id } = req.params;
-
-    const video = await VideoService.findPublicOne(id, req.user.id);
-
-    if (!video) {
-      throw new HttpError(404, 'No video found');
-    }
-
-    if (video.data.isFavorite) {
-      await VideoService.removeFromFavorites(id, req.user.id);
-      video.data.favorites--;
-    } else {
-      await VideoService.addToFavorites(id, req.user.id);
-      video.data.favorites++;
-    }
-
-    res.json({
-      isFavorite: !video.data.isFavorite,
-      favorites: video.data.favorites,
-    });
-  } catch (err) {
-    return next(err);
-  }
-};
