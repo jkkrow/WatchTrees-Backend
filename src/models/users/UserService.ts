@@ -52,6 +52,42 @@ export class UserService {
     return result[0];
   }
 
+  static async findSubscribes(id: string) {
+    const result = await client
+      .db()
+      .collection<UserDocument>(collectionName)
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'users',
+            as: 'subscribes',
+            let: { subscribes: '$subscribes' },
+            pipeline: [
+              { $match: { $expr: { $in: ['$_id', '$$subscribes'] } } },
+              {
+                $project: {
+                  name: 1,
+                  picture: 1,
+                  subscribers: { $size: '$subscribers' },
+                  subscribes: { $size: '$subscribes' },
+                  isSubscribed: {
+                    $in: [id ? new ObjectId(id) : '', '$subscribers'],
+                  },
+                },
+              },
+            ],
+          },
+        },
+        { $project: { subscribes: 1 } },
+      ])
+      .toArray();
+
+    const { subscribes } = result[0];
+
+    return subscribes;
+  }
+
   static async findFavorites(id: string, page: number, max: number) {
     const result = await client
       .db()
@@ -101,7 +137,7 @@ export class UserService {
       ])
       .toArray();
 
-    const favorites = result[0].favorites;
+    const { favorites } = result[0];
 
     const videos = favorites.length ? favorites[0].videos : [];
     const count = favorites.length ? favorites[0].totalCount.count : 0;

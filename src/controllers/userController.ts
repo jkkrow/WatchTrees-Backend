@@ -216,6 +216,18 @@ export const updatePicture: RequestHandler = async (req, res, next) => {
 //   }
 // };
 
+export const fetchSubscribes: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const subscribes = await UserService.findSubscribes(req.user.id);
+
+    res.json({ subscribes });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export const fetchFavorites: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 

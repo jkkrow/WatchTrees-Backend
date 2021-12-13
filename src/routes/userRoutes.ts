@@ -35,6 +35,8 @@ router.patch('/account/picture', checkToken, userController.updatePicture);
 
 // router.get('/history', checkToken, userController.fetchHistory);
 
+router.get('/subscribes', checkToken, userController.fetchSubscribes);
+
 router.get('/favorites', checkToken, userController.fetchFavorites);
 router.patch('/favorites', checkToken, userController.addToFavorites);
 
