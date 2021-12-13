@@ -5,11 +5,13 @@ import * as videoController from '../controllers/videoController';
 
 const router = Router();
 
-router.get('/', videoController.fetchPublicVideos);
 router.get('/user', checkToken, videoController.fetchCreatedVideos);
 router.get('/user/:id', checkToken, videoController.fetchCreatedVideo);
-router.get('/:id', videoController.fetchPublicVideo);
-router.put('/:id', checkToken, checkVerified, videoController.saveVideo);
+
+router.get('/', videoController.fetchPublicVideos);
+router.get('/:id', videoController.fetchVideo);
+
+router.put('/', checkToken, checkVerified, videoController.saveVideo);
 router.delete('/:id', checkToken, checkVerified, videoController.deleteVideo);
 
 export default router;
