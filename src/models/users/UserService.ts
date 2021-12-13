@@ -3,7 +3,7 @@ import { v1 as uuidv1 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 import { client } from '../../config/db';
-import { User, Channel, UserSchema } from './User';
+import { User, Channel, History, UserSchema } from './User';
 import { VideoDocument } from '../videos/VideoService';
 import { createToken } from '../../services/jwt-token';
 
@@ -244,6 +244,27 @@ export class UserService {
     });
 
     await session.endSession();
+  }
+
+  static async addToHistory(userId: string, history: History) {
+    const collection = client.db().collection<UserDocument>(collectionName);
+
+    history.video = new ObjectId(history.video);
+
+    const result = await collection.updateOne(
+      {
+        _id: new ObjectId(userId),
+        'history.video': history.video,
+      },
+      { $set: { 'history.$': history } }
+    );
+
+    if (!result.modifiedCount) {
+      await collection.updateOne(
+        { _id: new ObjectId(userId) },
+        { $addToSet: { history } }
+      );
+    }
   }
 
   static async addToFavorites(targetId: string, currentUserId: string) {

@@ -16,55 +16,6 @@ const s3 = new S3({
   region: process.env.S3_BUCKET_REGION!,
 });
 
-export const fetchChannel: RequestHandler = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { currentUserId } = req.query;
-
-    const channelInfo = await UserService.findChannel(
-      id,
-      currentUserId as string
-    );
-
-    if (!channelInfo) {
-      throw new HttpError(404, 'No Channel found');
-    }
-
-    res.json({ channelInfo });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const subscribeChannel: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { id } = req.params;
-
-    const channelInfo = await UserService.findChannel(id, req.user.id);
-
-    if (!channelInfo) {
-      throw new HttpError(404, 'No Channel found');
-    }
-
-    if (channelInfo.isSubscribed) {
-      await UserService.unsubscribe(id, req.user.id);
-      channelInfo.subscribers--;
-    } else {
-      await UserService.subscribe(id, req.user.id);
-      channelInfo.subscribers++;
-    }
-
-    res.json({
-      isSubscribed: !channelInfo.isSubscribed,
-      subscribers: channelInfo.subscribers,
-    });
-  } catch (err) {
-    return next(err);
-  }
-};
-
 export const updateUserName: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
@@ -182,6 +133,67 @@ export const updatePicture: RequestHandler = async (req, res, next) => {
   }
 };
 
+export const fetchChannel: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { currentUserId } = req.query;
+
+    const channelInfo = await UserService.findChannel(
+      id,
+      currentUserId as string
+    );
+
+    if (!channelInfo) {
+      throw new HttpError(404, 'No Channel found');
+    }
+
+    res.json({ channelInfo });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const subscribeChannel: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { id } = req.params;
+
+    const channelInfo = await UserService.findChannel(id, req.user.id);
+
+    if (!channelInfo) {
+      throw new HttpError(404, 'No Channel found');
+    }
+
+    if (channelInfo.isSubscribed) {
+      await UserService.unsubscribe(id, req.user.id);
+      channelInfo.subscribers--;
+    } else {
+      await UserService.subscribe(id, req.user.id);
+      channelInfo.subscribers++;
+    }
+
+    res.json({
+      isSubscribed: !channelInfo.isSubscribed,
+      subscribers: channelInfo.subscribers,
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchSubscribes: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const subscribes = await UserService.findSubscribes(req.user.id);
+
+    res.json({ subscribes });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 // export const fetchHistory: RequestHandler = async (req, res, next) => {
 //   if (!req.user) return;
 
@@ -216,13 +228,15 @@ export const updatePicture: RequestHandler = async (req, res, next) => {
 //   }
 // };
 
-export const fetchSubscribes: RequestHandler = async (req, res, next) => {
+export const addToHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const subscribes = await UserService.findSubscribes(req.user.id);
+    const { history } = req.body;
 
-    res.json({ subscribes });
+    await UserService.addToHistory(req.user.id, history);
+
+    res.json({ message: 'Added video to history' });
   } catch (err) {
     return next(err);
   }
@@ -255,7 +269,7 @@ export const addToFavorites: RequestHandler = async (req, res, next) => {
   try {
     const { videoId } = req.body;
 
-    const video = await VideoService.findPublicOne(videoId, req.user.id);
+    const video = await VideoService.findOneWithDetail(videoId, req.user.id);
 
     if (!video) {
       throw new HttpError(404, 'No video found');

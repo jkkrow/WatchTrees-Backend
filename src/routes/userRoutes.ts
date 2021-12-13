@@ -6,13 +6,6 @@ import { checkToken } from '../middlewares/auth-middleware';
 
 const router = Router();
 
-router.get('/channel/:id', userController.fetchChannel);
-router.patch(
-  '/channel/subscribers/:id',
-  checkToken,
-  userController.subscribeChannel
-);
-
 router.patch(
   '/account/name',
   checkToken,
@@ -33,9 +26,17 @@ router.patch(
 );
 router.patch('/account/picture', checkToken, userController.updatePicture);
 
-// router.get('/history', checkToken, userController.fetchHistory);
+router.get('/channel/:id', userController.fetchChannel);
+router.patch(
+  '/channel/subscribers/:id',
+  checkToken,
+  userController.subscribeChannel
+);
 
 router.get('/subscribes', checkToken, userController.fetchSubscribes);
+
+// router.get('/history', checkToken, userController.fetchHistory);
+router.patch('/history', checkToken, userController.addToHistory);
 
 router.get('/favorites', checkToken, userController.fetchFavorites);
 router.patch('/favorites', checkToken, userController.addToFavorites);

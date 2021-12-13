@@ -8,6 +8,15 @@ export interface Channel {
   isSubscribed: boolean;
 }
 
+export interface History {
+  video: ObjectId; // ref to Video Document
+  progress: {
+    activeVideoId: string;
+    time: number;
+  };
+  updatedAt: Date;
+}
+
 export interface User {
   type: 'native' | 'google';
   name: string;
@@ -20,7 +29,7 @@ export interface User {
   subscribers: ObjectId[]; // ref to User Document
   subscribes: ObjectId[]; // ref to User Document
   favorites: ObjectId[]; // ref to Video Document
-  history: ObjectId[]; // ref to Video Document
+  history: History[];
   createdAt: Date;
   verificationToken?: string;
   recoveryToken?: string;
@@ -34,7 +43,7 @@ export class UserSchema implements User {
   public subscribers: ObjectId[] = [];
   public subscribes: ObjectId[] = [];
   public favorites: ObjectId[] = [];
-  public history: ObjectId[] = [];
+  public history: History[] = [];
   public createdAt = new Date();
   public verificationToken?: string;
   public recoveryToken?: string;
