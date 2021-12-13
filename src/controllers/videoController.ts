@@ -67,12 +67,17 @@ export const fetchCreatedVideo: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const fetchPublicVideo: RequestHandler = async (req, res, next) => {
+export const fetchVideo: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { currentUserId } = req.query;
 
-    const video = await VideoService.findPublicOne(id, currentUserId as string);
+    await VideoService.incrementViews(id);
+
+    const video = await VideoService.findOneWithDetail(
+      id,
+      currentUserId as string
+    );
 
     if (!video) {
       throw new HttpError(404, 'No video found');
@@ -89,13 +94,12 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
 
   try {
     const { uploadTree } = req.body;
-    const { id } = req.params;
 
     let existingVideo: VideoDocument | null = null;
     let videoId: string | undefined;
 
-    if (id !== 'undefined') {
-      existingVideo = await VideoService.findById(id);
+    if (uploadTree._id) {
+      existingVideo = await VideoService.findById(uploadTree._id);
     }
 
     /*

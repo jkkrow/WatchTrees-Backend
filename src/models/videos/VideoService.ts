@@ -20,7 +20,7 @@ export class VideoService {
       .findOne({ _id: new ObjectId(id) }, options);
   }
 
-  static async findPublicOne(id: string, currentUserId: string) {
+  static async findOneWithDetail(id: string, currentUserId: string) {
     const result = await client
       .db()
       .collection<WithId<VideoItemDetail>>(collectionName)
@@ -157,6 +157,13 @@ export class VideoService {
         },
         video
       );
+  }
+
+  static incrementViews(videoId: string | ObjectId) {
+    return client
+      .db()
+      .collection<VideoDocument>(collectionName)
+      .updateOne({ _id: new ObjectId(videoId) }, { $inc: { 'data.views': 1 } });
   }
 
   static deleteVideo(videoId: string | ObjectId, creatorId: string) {
