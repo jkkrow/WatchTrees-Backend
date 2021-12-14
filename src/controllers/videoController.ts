@@ -100,6 +100,13 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
 
     if (uploadTree._id) {
       existingVideo = await VideoService.findById(uploadTree._id);
+
+      if (
+        existingVideo &&
+        existingVideo.info.creator.toString() !== req.user.id
+      ) {
+        throw new HttpError(403, 'Not authorized to this video');
+      }
     }
 
     /*
@@ -151,6 +158,7 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
         _id: existingVideo._id,
         info: { ...uploadTree.info, creator: existingVideo.info.creator },
         data: { ...existingVideo.data },
+        createdAt: new Date(existingVideo.createdAt),
       };
 
       await VideoService.updateVideo(updatedVideo);
