@@ -194,39 +194,26 @@ export const fetchSubscribes: RequestHandler = async (req, res, next) => {
   }
 };
 
-// export const fetchHistory: RequestHandler = async (req, res, next) => {
-//   if (!req.user) return;
+export const fetchHistory: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
 
-//   try {
-//     const { page, max } = req.query;
+  try {
+    const { page, max } = req.query;
 
-//     let count: number;
-//     const itemsPerPage = max ? +max : 10;
-//     const pageNumber = page ? +page : 1;
+    const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 10;
 
-//     const user = await UserService.findById(req.user.id);
+    const videos = await UserService.findHistory(
+      req.user.id,
+      pageNumber,
+      itemsPerPage
+    );
 
-//     if (!user) {
-//       throw new HttpError(404, 'No user found.');
-//     }
-
-//     count = user.videos.length;
-
-//     await user.populate({
-//       path: 'history',
-//       options: {
-//         sort: { $natural: -1 },
-//         select: '-root.children -__v',
-//         limit: itemsPerPage,
-//         skip: itemsPerPage * (pageNumber - 1),
-//       },
-//     });
-
-//     res.json({ videos: user.videos, count });
-//   } catch (err) {
-//     return next(err);
-//   }
-// };
+    res.json({ videos });
+  } catch (err) {
+    return next(err);
+  }
+};
 
 export const addToHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;

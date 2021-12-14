@@ -52,6 +52,65 @@ export class UserService {
     return result[0];
   }
 
+  static async findHistory(id: string, page: number, max: number) {
+    const result = await client
+      .db()
+      .collection<UserDocument>(collectionName)
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        { $unwind: '$history' },
+        { $sort: { 'history.updatedAt': -1 } },
+        { $skip: max * (page - 1) },
+        { $limit: max },
+        {
+          $lookup: {
+            from: 'videos',
+            as: 'history',
+            let: { history: '$history' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
+              {
+                $lookup: {
+                  from: 'users',
+                  as: 'info.creatorInfo',
+                  let: { creator: '$info.creator' },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
+                    { $project: { _id: 0, name: 1, picture: 1 } },
+                  ],
+                },
+              },
+              { $unwind: '$info.creatorInfo' },
+              { $project: { 'root.children': 0 } },
+              {
+                $addFields: {
+                  'data.favorites': { $size: '$data.favorites' },
+                  history: {
+                    progress: '$$history.progress',
+                    updatedAt: '$$history.updatedAt',
+                  },
+                },
+              },
+            ],
+          },
+        },
+        { $unwind: '$history' },
+        {
+          $group: {
+            _id: '$_id',
+            videos: { $push: '$history' },
+          },
+        },
+      ])
+      .toArray();
+
+    console.log(result);
+
+    const videos = result.length ? result[0].videos : [];
+
+    return videos;
+  }
+
   static async findSubscribes(id: string) {
     const result = await client
       .db()
@@ -250,6 +309,7 @@ export class UserService {
     const collection = client.db().collection<UserDocument>(collectionName);
 
     history.video = new ObjectId(history.video);
+    history.updatedAt = new Date(history.updatedAt);
 
     const result = await collection.updateOne(
       {
@@ -265,6 +325,13 @@ export class UserService {
         { $addToSet: { history } }
       );
     }
+  }
+
+  static async checkHistory(videoId: string) {
+    const result = await client
+      .db()
+      .collection<UserDocument>(collectionName)
+      .findOne({ history: new ObjectId(videoId) });
   }
 
   static async addToFavorites(targetId: string, currentUserId: string) {
