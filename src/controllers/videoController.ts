@@ -6,7 +6,9 @@ import { findById, traverseNodes } from '../util/tree';
 
 export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
   try {
-    const { page, max, userId, search } = req.query;
+    const { page, max, search, channelId, currentUserId } = req.query as {
+      [key: string]: string;
+    };
 
     const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
@@ -14,8 +16,9 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
     const { videos, count } = await VideoService.findPublic(
       pageNumber,
       itemsPerPage,
-      userId as string,
-      search as string
+      search,
+      channelId,
+      currentUserId
     );
 
     res.json({ videos, count });
@@ -70,14 +73,11 @@ export const fetchCreatedVideo: RequestHandler = async (req, res, next) => {
 export const fetchVideo: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { currentUserId } = req.query;
+    const { currentUserId } = req.query as { [key: string]: string };
 
     await VideoService.incrementViews(id);
 
-    const video = await VideoService.findOneWithDetail(
-      id,
-      currentUserId as string
-    );
+    const video = await VideoService.findOneWithDetail(id, currentUserId);
 
     if (!video) {
       throw new HttpError(404, 'No video found');
