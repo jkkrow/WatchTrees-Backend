@@ -21,6 +21,54 @@ export class VideoService {
   }
 
   static async findOneWithDetail(id: string, currentUserId: string) {
+    const historyPipeline = currentUserId
+      ? [
+          {
+            $lookup: {
+              from: 'users',
+              as: 'history',
+              let: { id: '$_id' },
+              pipeline: [
+                { $match: { _id: new ObjectId(currentUserId) } },
+                {
+                  $project: {
+                    history: {
+                      $filter: {
+                        input: '$history',
+                        as: 'item',
+                        cond: { $eq: ['$$item.video', '$$id'] },
+                      },
+                    },
+                  },
+                },
+                { $project: { history: { $arrayElemAt: ['$history', 0] } } },
+              ],
+            },
+          },
+          { $unwind: '$history' },
+          {
+            $addFields: {
+              history: {
+                progress: '$history.history.progress',
+                updatedAt: '$history.history.updatedAt',
+              },
+            },
+          },
+          { $project: { history: { _id: 0, history: 0 } } },
+          {
+            $addFields: {
+              history: {
+                $cond: {
+                  if: { $eq: ['$history', {}] },
+                  then: null,
+                  else: '$history',
+                },
+              },
+            },
+          },
+        ]
+      : [];
+
     const result = await client
       .db()
       .collection<WithId<VideoItemDetail>>(collectionName)
@@ -41,14 +89,12 @@ export class VideoService {
         {
           $addFields: {
             'data.favorites': { $size: '$data.favorites' },
-            'data.isFavorite': {
-              $in: [
-                currentUserId ? new ObjectId(currentUserId) : '',
-                '$data.favorites',
-              ],
-            },
+            'data.isFavorite': currentUserId
+              ? { $in: [new ObjectId(currentUserId), '$data.favorites'] }
+              : false,
           },
         },
+        ...historyPipeline,
       ])
       .toArray();
 
@@ -58,14 +104,15 @@ export class VideoService {
   static async findPublic(
     page: number,
     max: number,
-    creatorId: string,
-    keyword: string
+    keyword: string,
+    channelId: string,
+    currentUserId: string
   ) {
     const filter: any = {};
     const sort: any = { $sort: {} };
 
-    if (creatorId) {
-      filter['info.creator'] = new ObjectId(creatorId);
+    if (channelId) {
+      filter['info.creator'] = new ObjectId(channelId);
     }
 
     if (keyword) {
@@ -74,6 +121,54 @@ export class VideoService {
     }
 
     sort['$sort']._id = -1;
+
+    const historyPipeline = currentUserId
+      ? [
+          {
+            $lookup: {
+              from: 'users',
+              as: 'history',
+              let: { id: '$_id' },
+              pipeline: [
+                { $match: { _id: new ObjectId(currentUserId) } },
+                {
+                  $project: {
+                    history: {
+                      $filter: {
+                        input: '$history',
+                        as: 'item',
+                        cond: { $eq: ['$$item.video', '$$id'] },
+                      },
+                    },
+                  },
+                },
+                { $project: { history: { $arrayElemAt: ['$history', 0] } } },
+              ],
+            },
+          },
+          { $unwind: '$history' },
+          {
+            $addFields: {
+              history: {
+                progress: '$history.history.progress',
+                updatedAt: '$history.history.updatedAt',
+              },
+            },
+          },
+          { $project: { history: { _id: 0, history: 0 } } },
+          {
+            $addFields: {
+              history: {
+                $cond: {
+                  if: { $eq: ['$history', {}] },
+                  then: null,
+                  else: '$history',
+                },
+              },
+            },
+          },
+        ]
+      : [];
 
     const result = await client
       .db()
@@ -108,6 +203,7 @@ export class VideoService {
               {
                 $addFields: { 'data.favorites': { $size: '$data.favorites' } },
               },
+              ...historyPipeline,
             ],
             totalCount: [{ $count: 'count' }],
           },
@@ -118,6 +214,8 @@ export class VideoService {
 
     const videos = result.length ? result[0].videos : [];
     const count = result.length ? result[0].totalCount.count : 0;
+
+    console.log(videos);
 
     return { videos, count };
   }

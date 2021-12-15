@@ -95,16 +95,9 @@ export class UserService {
           },
         },
         { $unwind: '$history' },
-        {
-          $group: {
-            _id: '$_id',
-            videos: { $push: '$history' },
-          },
-        },
+        { $group: { _id: '$_id', videos: { $push: '$history' } } },
       ])
       .toArray();
-
-    console.log(result);
 
     const videos = result.length ? result[0].videos : [];
 
@@ -148,6 +141,52 @@ export class UserService {
   }
 
   static async findFavorites(id: string, page: number, max: number) {
+    const historyPipeline = [
+      {
+        $lookup: {
+          from: 'users',
+          as: 'history',
+          let: { id: '$_id' },
+          pipeline: [
+            { $match: { _id: new ObjectId(id) } },
+            {
+              $project: {
+                history: {
+                  $filter: {
+                    input: '$history',
+                    as: 'item',
+                    cond: { $eq: ['$$item.video', '$$id'] },
+                  },
+                },
+              },
+            },
+            { $project: { history: { $arrayElemAt: ['$history', 0] } } },
+          ],
+        },
+      },
+      { $unwind: '$history' },
+      {
+        $addFields: {
+          history: {
+            progress: '$history.history.progress',
+            updatedAt: '$history.history.updatedAt',
+          },
+        },
+      },
+      { $project: { history: { _id: 0, history: 0 } } },
+      {
+        $addFields: {
+          history: {
+            $cond: {
+              if: { $eq: ['$history', {}] },
+              then: null,
+              else: '$history',
+            },
+          },
+        },
+      },
+    ];
+
     const result = await client
       .db()
       .collection<UserDocument>(collectionName)
@@ -184,6 +223,7 @@ export class UserService {
                         'data.favorites': { $size: '$data.favorites' },
                       },
                     },
+                    ...historyPipeline,
                   ],
                   totalCount: [{ $count: 'count' }],
                 },
@@ -325,13 +365,6 @@ export class UserService {
         { $addToSet: { history } }
       );
     }
-  }
-
-  static async checkHistory(videoId: string) {
-    const result = await client
-      .db()
-      .collection<UserDocument>(collectionName)
-      .findOne({ history: new ObjectId(videoId) });
   }
 
   static async addToFavorites(targetId: string, currentUserId: string) {
