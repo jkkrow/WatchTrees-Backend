@@ -136,12 +136,9 @@ export const updatePicture: RequestHandler = async (req, res, next) => {
 export const fetchChannel: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { currentUserId } = req.query;
+    const { currentUserId } = req.query as { [key: string]: string };
 
-    const channelInfo = await UserService.findChannel(
-      id,
-      currentUserId as string
-    );
+    const channelInfo = await UserService.findChannel(id, currentUserId);
 
     if (!channelInfo) {
       throw new HttpError(404, 'No Channel found');

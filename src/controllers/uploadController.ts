@@ -18,10 +18,7 @@ export const initiateMultipart: RequestHandler = async (req, res, next) => {
 
   try {
     const { videoId, isRoot, fileName, fileType } = req.query as {
-      videoId: string;
-      isRoot: string;
-      fileName: string;
-      fileType: string;
+      [key: string]: string;
     };
 
     const { dir } = parse(fileType);
@@ -50,10 +47,7 @@ export const processMultipart: RequestHandler = async (req, res, next) => {
 
   try {
     const { uploadId, videoId, fileName, partNumber } = req.query as {
-      uploadId: string;
-      videoId: string;
-      fileName: string;
-      partNumber: string;
+      [key: string]: string;
     };
 
     const params = {
@@ -102,9 +96,7 @@ export const cancelMultipart: RequestHandler = async (req, res, next) => {
 
   try {
     const { uploadId, videoId, fileName } = req.query as {
-      uploadId: string;
-      videoId: string;
-      fileName: string;
+      [key: string]: string;
     };
 
     const params = {
@@ -154,7 +146,7 @@ export const deleteThumbnail: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { key } = req.query as { key: string };
+    const { key } = req.query as { [key: string]: string };
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
