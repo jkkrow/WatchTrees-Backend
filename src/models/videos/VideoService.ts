@@ -7,93 +7,43 @@ import {
   VideoItemDetail,
   VideoSchema,
 } from './Video';
+import { attachCreatorInfo, attachHistory } from '../../util/pipelines';
 
 const collectionName = 'videos';
 
 export interface VideoDocument extends WithId<VideoTree> {}
 
 export class VideoService {
-  static findById(id: string | ObjectId, options?: FindOptions) {
+  static findById(id: string, options?: FindOptions) {
+    const videoId = new ObjectId(id);
+
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .findOne({ _id: new ObjectId(id) }, options);
+      .findOne({ _id: videoId }, options);
   }
 
   static async findOneWithDetail(id: string, currentUserId: string) {
-    const historyPipeline = currentUserId
-      ? [
-          {
-            $lookup: {
-              from: 'users',
-              as: 'history',
-              let: { id: '$_id' },
-              pipeline: [
-                { $match: { _id: new ObjectId(currentUserId) } },
-                {
-                  $project: {
-                    history: {
-                      $filter: {
-                        input: '$history',
-                        as: 'item',
-                        cond: { $eq: ['$$item.video', '$$id'] },
-                      },
-                    },
-                  },
-                },
-                { $project: { history: { $arrayElemAt: ['$history', 0] } } },
-              ],
-            },
-          },
-          { $unwind: '$history' },
-          {
-            $addFields: {
-              history: {
-                progress: '$history.history.progress',
-                updatedAt: '$history.history.updatedAt',
-              },
-            },
-          },
-          { $project: { history: { _id: 0, history: 0 } } },
-          {
-            $addFields: {
-              history: {
-                $cond: {
-                  if: { $eq: ['$history', {}] },
-                  then: null,
-                  else: '$history',
-                },
-              },
-            },
-          },
-        ]
-      : [];
+    const videoId = new ObjectId(id);
+    const userId = new ObjectId(currentUserId);
+
+    const creatorPipeline = attachCreatorInfo();
+    const historyPipeline = attachHistory(userId);
 
     const result = await client
       .db()
       .collection<WithId<VideoItemDetail>>(collectionName)
       .aggregate([
-        { $match: { _id: new ObjectId(id) } },
-        {
-          $lookup: {
-            from: 'users',
-            as: 'info.creatorInfo',
-            let: { creator: '$info.creator' },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
-              { $project: { _id: 0, name: 1, picture: 1 } },
-            ],
-          },
-        },
-        { $unwind: '$info.creatorInfo' },
+        { $match: { _id: videoId } },
         {
           $addFields: {
             'data.favorites': { $size: '$data.favorites' },
             'data.isFavorite': currentUserId
-              ? { $in: [new ObjectId(currentUserId), '$data.favorites'] }
+              ? { $in: [userId, '$data.favorites'] }
               : false,
           },
         },
+        ...creatorPipeline,
         ...historyPipeline,
       ])
       .toArray();
@@ -111,6 +61,9 @@ export class VideoService {
     const filter: any = {};
     const sort: any = { $sort: {} };
 
+    const creatorPipeline = attachCreatorInfo();
+    const historyPipeline = attachHistory(new ObjectId(currentUserId));
+
     if (channelId) {
       filter['info.creator'] = new ObjectId(channelId);
     }
@@ -121,54 +74,6 @@ export class VideoService {
     }
 
     sort['$sort']._id = -1;
-
-    const historyPipeline = currentUserId
-      ? [
-          {
-            $lookup: {
-              from: 'users',
-              as: 'history',
-              let: { id: '$_id' },
-              pipeline: [
-                { $match: { _id: new ObjectId(currentUserId) } },
-                {
-                  $project: {
-                    history: {
-                      $filter: {
-                        input: '$history',
-                        as: 'item',
-                        cond: { $eq: ['$$item.video', '$$id'] },
-                      },
-                    },
-                  },
-                },
-                { $project: { history: { $arrayElemAt: ['$history', 0] } } },
-              ],
-            },
-          },
-          { $unwind: '$history' },
-          {
-            $addFields: {
-              history: {
-                progress: '$history.history.progress',
-                updatedAt: '$history.history.updatedAt',
-              },
-            },
-          },
-          { $project: { history: { _id: 0, history: 0 } } },
-          {
-            $addFields: {
-              history: {
-                $cond: {
-                  if: { $eq: ['$history', {}] },
-                  then: null,
-                  else: '$history',
-                },
-              },
-            },
-          },
-        ]
-      : [];
 
     const result = await client
       .db()
@@ -187,22 +92,11 @@ export class VideoService {
               sort,
               { $skip: max * (page - 1) },
               { $limit: max },
-              {
-                $lookup: {
-                  from: 'users',
-                  as: 'info.creatorInfo',
-                  let: { creator: '$info.creator' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
-                    { $project: { _id: 0, name: 1, picture: 1 } },
-                  ],
-                },
-              },
-              { $unwind: '$info.creatorInfo' },
               { $project: { 'root.children': 0 } },
               {
                 $addFields: { 'data.favorites': { $size: '$data.favorites' } },
               },
+              ...creatorPipeline,
               ...historyPipeline,
             ],
             totalCount: [{ $count: 'count' }],
@@ -215,17 +109,17 @@ export class VideoService {
     const videos = result.length ? result[0].videos : [];
     const count = result.length ? result[0].totalCount.count : 0;
 
-    console.log(videos);
-
     return { videos, count };
   }
 
-  static findCreated(creatorId: string, page: number, max: number) {
+  static findCreated(id: string, page: number, max: number) {
+    const creatorId = new ObjectId(id);
+
     return client
       .db()
       .collection<VideoDocument>(collectionName)
       .aggregate([
-        { $match: { 'info.creator': new ObjectId(creatorId) } },
+        { $match: { 'info.creator': creatorId } },
         { $sort: { _id: -1 } },
         { $skip: max * (page - 1) },
         { $limit: max },
@@ -245,32 +139,36 @@ export class VideoService {
   }
 
   static updateVideo(video: VideoDocument) {
+    const newVideo = video;
+
+    newVideo._id = new ObjectId(newVideo._id);
+    newVideo.info.creator = new ObjectId(newVideo.info.creator);
+
     return client
       .db()
       .collection<VideoDocument>(collectionName)
       .replaceOne(
-        {
-          _id: new ObjectId(video._id),
-          'info.creator': new ObjectId(video.info.creator),
-        },
-        video
+        { _id: newVideo._id, 'info.creator': newVideo.info.creator },
+        newVideo
       );
   }
 
-  static incrementViews(videoId: string | ObjectId) {
+  static incrementViews(id: string) {
+    const videoId = new ObjectId(id);
+
     return client
       .db()
       .collection<VideoDocument>(collectionName)
-      .updateOne({ _id: new ObjectId(videoId) }, { $inc: { 'data.views': 1 } });
+      .updateOne({ _id: videoId }, { $inc: { 'data.views': 1 } });
   }
 
-  static deleteVideo(videoId: string | ObjectId, creatorId: string) {
-    return client
-      .db()
-      .collection<VideoDocument>(collectionName)
-      .deleteOne({
-        _id: new ObjectId(videoId),
-        'info.creator': new ObjectId(creatorId),
-      });
+  static deleteVideo(id: string, creatorId: string) {
+    const videoId = new ObjectId(id);
+    const userId = new ObjectId(creatorId);
+
+    return client.db().collection<VideoDocument>(collectionName).deleteOne({
+      _id: videoId,
+      'info.creator': userId,
+    });
   }
 }

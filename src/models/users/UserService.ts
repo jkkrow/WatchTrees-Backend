@@ -6,17 +6,20 @@ import { client } from '../../config/db';
 import { User, Channel, History, UserSchema } from './User';
 import { VideoDocument } from '../videos/VideoService';
 import { createToken } from '../../services/jwt-token';
+import { attachCreatorInfo, attachHistory } from '../../util/pipelines';
 
 const collectionName = 'users';
 
 export interface UserDocument extends WithId<User> {}
 
 export class UserService {
-  static findById(id: ObjectId | string, options?: FindOptions) {
+  static findById(id: string, options?: FindOptions) {
+    const userId = new ObjectId(id);
+
     return client
       .db()
       .collection<UserDocument>(collectionName)
-      .findOne({ _id: new ObjectId(id) }, options);
+      .findOne({ _id: userId }, options);
   }
 
   static findOne(filter: Filter<UserDocument>, options?: FindOptions) {
@@ -27,11 +30,14 @@ export class UserService {
   }
 
   static async findChannel(id: string, currentUserId: string) {
+    const channelId = new ObjectId(id);
+    const userId = currentUserId ? new ObjectId(currentUserId) : '';
+
     const result = await client
       .db()
       .collection<WithId<Channel>>(collectionName)
       .aggregate([
-        { $match: { _id: new ObjectId(id) } },
+        { $match: { _id: channelId } },
         {
           $project: {
             name: 1,
@@ -39,10 +45,7 @@ export class UserService {
             subscribers: { $size: '$subscribers' },
             subscribes: { $size: '$subscribes' },
             isSubscribed: {
-              $in: [
-                currentUserId ? new ObjectId(currentUserId) : '',
-                '$subscribers',
-              ],
+              $in: [userId, '$subscribers'],
             },
           },
         },
@@ -53,11 +56,15 @@ export class UserService {
   }
 
   static async findHistory(id: string, page: number, max: number) {
+    const userId = new ObjectId(id);
+
+    const creatorPipeline = attachCreatorInfo();
+
     const result = await client
       .db()
       .collection<UserDocument>(collectionName)
       .aggregate([
-        { $match: { _id: new ObjectId(id) } },
+        { $match: { _id: userId } },
         { $unwind: '$history' },
         { $sort: { 'history.updatedAt': -1 } },
         { $skip: max * (page - 1) },
@@ -69,18 +76,6 @@ export class UserService {
             let: { history: '$history' },
             pipeline: [
               { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
-              {
-                $lookup: {
-                  from: 'users',
-                  as: 'info.creatorInfo',
-                  let: { creator: '$info.creator' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
-                    { $project: { _id: 0, name: 1, picture: 1 } },
-                  ],
-                },
-              },
-              { $unwind: '$info.creatorInfo' },
               { $project: { 'root.children': 0 } },
               {
                 $addFields: {
@@ -91,6 +86,7 @@ export class UserService {
                   },
                 },
               },
+              ...creatorPipeline,
             ],
           },
         },
@@ -105,11 +101,13 @@ export class UserService {
   }
 
   static async findSubscribes(id: string) {
+    const userId = new ObjectId(id);
+
     const result = await client
       .db()
       .collection<UserDocument>(collectionName)
       .aggregate([
-        { $match: { _id: new ObjectId(id) } },
+        { $match: { _id: userId } },
         {
           $lookup: {
             from: 'users',
@@ -124,7 +122,7 @@ export class UserService {
                   subscribers: { $size: '$subscribers' },
                   subscribes: { $size: '$subscribes' },
                   isSubscribed: {
-                    $in: [id ? new ObjectId(id) : '', '$subscribers'],
+                    $in: [id ? userId : '', '$subscribers'],
                   },
                 },
               },
@@ -141,57 +139,16 @@ export class UserService {
   }
 
   static async findFavorites(id: string, page: number, max: number) {
-    const historyPipeline = [
-      {
-        $lookup: {
-          from: 'users',
-          as: 'history',
-          let: { id: '$_id' },
-          pipeline: [
-            { $match: { _id: new ObjectId(id) } },
-            {
-              $project: {
-                history: {
-                  $filter: {
-                    input: '$history',
-                    as: 'item',
-                    cond: { $eq: ['$$item.video', '$$id'] },
-                  },
-                },
-              },
-            },
-            { $project: { history: { $arrayElemAt: ['$history', 0] } } },
-          ],
-        },
-      },
-      { $unwind: '$history' },
-      {
-        $addFields: {
-          history: {
-            progress: '$history.history.progress',
-            updatedAt: '$history.history.updatedAt',
-          },
-        },
-      },
-      { $project: { history: { _id: 0, history: 0 } } },
-      {
-        $addFields: {
-          history: {
-            $cond: {
-              if: { $eq: ['$history', {}] },
-              then: null,
-              else: '$history',
-            },
-          },
-        },
-      },
-    ];
+    const userId = new ObjectId(id);
+
+    const creatorPipeline = attachCreatorInfo();
+    const historyPipeline = attachHistory(userId);
 
     const result = await client
       .db()
       .collection<UserDocument>(collectionName)
       .aggregate([
-        { $match: { _id: new ObjectId(id) } },
+        { $match: { _id: userId } },
         {
           $lookup: {
             from: 'videos',
@@ -205,24 +162,13 @@ export class UserService {
                     { $sort: { _id: -1 } },
                     { $skip: max * (page - 1) },
                     { $limit: max },
-                    {
-                      $lookup: {
-                        from: 'users',
-                        as: 'info.creatorInfo',
-                        let: { creator: '$info.creator' },
-                        pipeline: [
-                          { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
-                          { $project: { _id: 0, name: 1, picture: 1 } },
-                        ],
-                      },
-                    },
-                    { $unwind: '$info.creatorInfo' },
                     { $project: { 'root.children': 0 } },
                     {
                       $addFields: {
                         'data.favorites': { $size: '$data.favorites' },
                       },
                     },
+                    ...creatorPipeline,
                     ...historyPipeline,
                   ],
                   totalCount: [{ $count: 'count' }],
@@ -284,90 +230,58 @@ export class UserService {
   }
 
   static async updateUser(
-    userId: ObjectId | string,
+    id: string | ObjectId,
     update: UpdateFilter<UserDocument>
   ) {
-    let updateFilter = { ...update };
+    const userId = new ObjectId(id);
+    const updateFilter = { ...update };
 
     if (updateFilter.$set && updateFilter.$set.password) {
-      updateFilter = {
-        ...updateFilter,
-        $set: {
-          ...updateFilter.$set,
-          password: await bcrypt.hash(updateFilter.$set.password, 12),
-        },
+      updateFilter.$set = {
+        ...updateFilter.$set,
+        password: await bcrypt.hash(updateFilter.$set.password, 12),
       };
     }
 
     return client
       .db()
       .collection<UserDocument>(collectionName)
-      .updateOne({ _id: new ObjectId(userId) }, updateFilter);
+      .updateOne({ _id: userId }, updateFilter);
   }
 
   static checkPassword(user: UserDocument, password: string) {
     return bcrypt.compare(password, user.password);
   }
 
-  static async subscribe(targetId: string, currentUserId: string) {
-    const session = client.startSession();
+  static async addToHistory(id: string, history: History) {
+    const userId = new ObjectId(id);
+    const newHistory = history;
+
+    newHistory.video = new ObjectId(newHistory.video);
+    newHistory.updatedAt = new Date(newHistory.updatedAt);
+
     const collection = client.db().collection<UserDocument>(collectionName);
-
-    await session.withTransaction(async () => {
-      await collection.updateOne(
-        { _id: new ObjectId(targetId) },
-        { $addToSet: { subscribers: new ObjectId(currentUserId) } }
-      );
-      await collection.updateOne(
-        { _id: new ObjectId(currentUserId) },
-        { $addToSet: { subscribes: new ObjectId(targetId) } }
-      );
-    });
-
-    await session.endSession();
-  }
-
-  static async unsubscribe(targetId: string, currentUserId: string) {
-    const session = client.startSession();
-    const collection = client.db().collection<UserDocument>(collectionName);
-
-    await session.withTransaction(async () => {
-      await collection.updateOne(
-        { _id: new ObjectId(targetId) },
-        { $pull: { subscribers: new ObjectId(currentUserId) } }
-      );
-      await collection.updateOne(
-        { _id: new ObjectId(currentUserId) },
-        { $pull: { subscribes: new ObjectId(targetId) } }
-      );
-    });
-
-    await session.endSession();
-  }
-
-  static async addToHistory(userId: string, history: History) {
-    const collection = client.db().collection<UserDocument>(collectionName);
-
-    history.video = new ObjectId(history.video);
-    history.updatedAt = new Date(history.updatedAt);
 
     const result = await collection.updateOne(
       {
-        _id: new ObjectId(userId),
-        'history.video': history.video,
+        _id: userId,
+        'history.video': newHistory.video,
       },
-      { $set: { 'history.$': history } }
+      { $set: { 'history.$': newHistory } }
     );
 
     if (!result.modifiedCount) {
       await collection.updateOne(
-        { _id: new ObjectId(userId) },
-        { $addToSet: { history } }
+        { _id: userId },
+        { $addToSet: { history: newHistory } }
       );
     }
   }
 
   static async addToFavorites(targetId: string, currentUserId: string) {
+    const videoId = new ObjectId(targetId);
+    const userId = new ObjectId(currentUserId);
+
     const session = client.startSession();
     const videoCollection = client.db().collection<VideoDocument>('videos');
     const userCollection = client.db().collection<UserDocument>('users');
@@ -375,12 +289,12 @@ export class UserService {
     await session.withTransaction(async () => {
       await Promise.all([
         videoCollection.updateOne(
-          { _id: new ObjectId(targetId) },
-          { $addToSet: { 'data.favorites': new ObjectId(currentUserId) } }
+          { _id: videoId },
+          { $addToSet: { 'data.favorites': userId } }
         ),
         userCollection.updateOne(
-          { _id: new ObjectId(currentUserId) },
-          { $addToSet: { favorites: new ObjectId(targetId) } }
+          { _id: userId },
+          { $addToSet: { favorites: videoId } }
         ),
       ]);
     });
@@ -389,6 +303,9 @@ export class UserService {
   }
 
   static async removeFromFavorites(targetId: string, currentUserId: string) {
+    const videoId = new ObjectId(targetId);
+    const userId = new ObjectId(currentUserId);
+
     const session = client.startSession();
     const videoCollection = client.db().collection<VideoDocument>('videos');
     const userCollection = client.db().collection<UserDocument>('users');
@@ -396,12 +313,58 @@ export class UserService {
     await session.withTransaction(async () => {
       await Promise.all([
         videoCollection.updateOne(
-          { _id: new ObjectId(targetId) },
-          { $pull: { 'data.favorites': new ObjectId(currentUserId) } }
+          { _id: videoId },
+          { $pull: { 'data.favorites': userId } }
         ),
         userCollection.updateOne(
-          { _id: new ObjectId(currentUserId) },
-          { $pull: { favorites: new ObjectId(targetId) } }
+          { _id: userId },
+          { $pull: { favorites: videoId } }
+        ),
+      ]);
+    });
+
+    await session.endSession();
+  }
+
+  static async subscribe(targetId: string, currentUserId: string) {
+    const subscribeId = new ObjectId(targetId);
+    const subscriberId = new ObjectId(currentUserId);
+
+    const session = client.startSession();
+    const collection = client.db().collection<UserDocument>(collectionName);
+
+    await session.withTransaction(async () => {
+      await Promise.all([
+        collection.updateOne(
+          { _id: subscribeId },
+          { $addToSet: { subscribers: subscriberId } }
+        ),
+        collection.updateOne(
+          { _id: subscriberId },
+          { $addToSet: { subscribes: subscribeId } }
+        ),
+      ]);
+    });
+
+    await session.endSession();
+  }
+
+  static async unsubscribe(targetId: string, currentUserId: string) {
+    const subscribeId = new ObjectId(targetId);
+    const subscriberId = new ObjectId(currentUserId);
+
+    const session = client.startSession();
+    const collection = client.db().collection<UserDocument>(collectionName);
+
+    await session.withTransaction(async () => {
+      await Promise.all([
+        collection.updateOne(
+          { _id: subscribeId },
+          { $pull: { subscribers: subscriberId } }
+        ),
+        collection.updateOne(
+          { _id: subscriberId },
+          { $pull: { subscribes: subscribeId } }
         ),
       ]);
     });
