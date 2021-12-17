@@ -13,6 +13,7 @@ export interface History {
   progress: {
     activeVideoId: string;
     time: number;
+    isEnded: boolean;
   };
   updatedAt: Date;
 }
