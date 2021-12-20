@@ -43,14 +43,7 @@ export const attachHistory = (userId: ObjectId) => {
           },
         },
         { $unwind: '$history' },
-        {
-          $addFields: {
-            history: {
-              progress: '$history.history.progress',
-              updatedAt: '$history.history.updatedAt',
-            },
-          },
-        },
+        { $addFields: { history: '$history.history' } },
         { $project: { history: { _id: 0, history: 0 } } },
         {
           $addFields: {

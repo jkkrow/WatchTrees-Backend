@@ -80,10 +80,7 @@ export class UserService {
               {
                 $addFields: {
                   'data.favorites': { $size: '$data.favorites' },
-                  history: {
-                    progress: '$$history.progress',
-                    updatedAt: '$$history.updatedAt',
-                  },
+                  history: '$$history',
                 },
               },
               ...creatorPipeline,

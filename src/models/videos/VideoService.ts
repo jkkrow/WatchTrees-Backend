@@ -25,10 +25,10 @@ export class VideoService {
 
   static async findOneWithDetail(id: string, currentUserId: string) {
     const videoId = new ObjectId(id);
-    const userId = new ObjectId(currentUserId);
+    const userId = currentUserId ? new ObjectId(currentUserId) : '';
 
     const creatorPipeline = attachCreatorInfo();
-    const historyPipeline = attachHistory(userId);
+    const historyPipeline = userId ? attachHistory(userId) : [];
 
     const result = await client
       .db()
@@ -61,8 +61,10 @@ export class VideoService {
     const filter: any = {};
     const sort: any = { $sort: {} };
 
+    const userId = currentUserId ? new ObjectId(currentUserId) : '';
+
     const creatorPipeline = attachCreatorInfo();
-    const historyPipeline = attachHistory(new ObjectId(currentUserId));
+    const historyPipeline = userId ? attachHistory(userId) : [];
 
     if (channelId) {
       filter['info.creator'] = new ObjectId(channelId);
