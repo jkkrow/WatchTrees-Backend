@@ -36,13 +36,13 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
     const pageNumber = page ? +page : 1;
     const itemsPerPage = max ? +max : 10;
 
-    const videos = await VideoService.findCreated(
+    const { videos, count } = await VideoService.findCreated(
       req.user.id,
       pageNumber,
       itemsPerPage
     );
 
-    res.json({ videos });
+    res.json({ videos, count });
   } catch (err) {
     return next(err);
   }
