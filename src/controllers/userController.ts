@@ -195,15 +195,17 @@ export const fetchHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 
   try {
-    const { page, max } = req.query;
+    const { page, max, skipFullyWatched } = req.query;
 
     const pageNumber = page ? +page : 1;
     const itemsPerPage = max ? +max : 10;
+    const isSkip = skipFullyWatched ? true : false;
 
     const videos = await UserService.findHistory(
       req.user.id,
       pageNumber,
-      itemsPerPage
+      itemsPerPage,
+      isSkip
     );
 
     res.json({ videos });

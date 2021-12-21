@@ -55,10 +55,18 @@ export class UserService {
     return result[0];
   }
 
-  static async findHistory(id: string, page: number, max: number) {
+  static async findHistory(
+    id: string,
+    page: number,
+    max: number,
+    skipFullyWatched = false
+  ) {
     const userId = new ObjectId(id);
 
     const creatorPipeline = attachCreatorInfo();
+    const extraMatchPipeline = skipFullyWatched
+      ? [{ $match: { 'history.progress.isEnded': false } }]
+      : [];
 
     const result = await client
       .db()
@@ -66,6 +74,7 @@ export class UserService {
       .aggregate([
         { $match: { _id: userId } },
         { $unwind: '$history' },
+        ...extraMatchPipeline,
         { $sort: { 'history.updatedAt': -1 } },
         { $skip: max * (page - 1) },
         { $limit: max },
