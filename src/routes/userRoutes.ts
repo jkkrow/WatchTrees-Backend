@@ -37,6 +37,7 @@ router.get('/subscribes', checkToken, userController.fetchSubscribes);
 
 router.get('/history', checkToken, userController.fetchHistory);
 router.patch('/history', checkToken, userController.addToHistory);
+router.get('/history/local', userController.fetchLocalHistory);
 
 router.get('/favorites', checkToken, userController.fetchFavorites);
 router.patch('/favorites', checkToken, userController.addToFavorites);

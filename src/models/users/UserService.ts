@@ -74,36 +74,51 @@ export class UserService {
       .aggregate([
         { $match: { _id: userId } },
         { $unwind: '$history' },
-        ...extraMatchPipeline,
-        { $sort: { 'history.updatedAt': -1 } },
-        { $skip: max * (page - 1) },
-        { $limit: max },
         {
-          $lookup: {
-            from: 'videos',
-            as: 'history',
-            let: { history: '$history' },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
-              { $project: { 'root.children': 0 } },
+          $facet: {
+            videos: [
+              ...extraMatchPipeline,
+              { $sort: { 'history.updatedAt': -1 } },
+              { $skip: max * (page - 1) },
+              { $limit: max },
               {
-                $addFields: {
-                  'data.favorites': { $size: '$data.favorites' },
-                  history: '$$history',
+                $lookup: {
+                  from: 'videos',
+                  as: 'history',
+                  let: { history: '$history' },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
+                    { $project: { 'root.children': 0 } },
+                    {
+                      $addFields: {
+                        'data.favorites': { $size: '$data.favorites' },
+                        history: '$$history',
+                      },
+                    },
+                    ...creatorPipeline,
+                  ],
                 },
               },
-              ...creatorPipeline,
+              { $unwind: '$history' },
+              {
+                $group: {
+                  _id: '$_id',
+                  videos: { $push: '$history' },
+                },
+              },
             ],
+            totalCount: [{ $count: 'count' }],
           },
         },
-        { $unwind: '$history' },
-        { $group: { _id: '$_id', videos: { $push: '$history' } } },
+        { $unwind: '$videos' },
+        { $unwind: '$totalCount' },
       ])
       .toArray();
 
-    const videos = result.length ? result[0].videos : [];
+    const videos = result.length ? result[0].videos.videos : [];
+    const count = result.length ? result[0].totalCount.count : 0;
 
-    return videos;
+    return { videos, count };
   }
 
   static async findSubscribes(id: string) {
@@ -269,10 +284,7 @@ export class UserService {
     const collection = client.db().collection<UserDocument>(collectionName);
 
     const result = await collection.updateOne(
-      {
-        _id: userId,
-        'history.video': newHistory.video,
-      },
+      { _id: userId, 'history.video': newHistory.video },
       { $set: { 'history.$': newHistory } }
     );
 

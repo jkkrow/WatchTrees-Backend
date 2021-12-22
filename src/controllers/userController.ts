@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import { validationResult } from 'express-validator';
 import { S3 } from 'aws-sdk';
+import { ObjectId } from 'mongodb';
 import { v1 as uuidv1 } from 'uuid';
 import { parse } from 'path';
 
@@ -198,17 +199,34 @@ export const fetchHistory: RequestHandler = async (req, res, next) => {
     const { page, max, skipFullyWatched } = req.query;
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 10;
-    const isSkip = skipFullyWatched ? true : false;
+    const itemsPerPage = max ? +max : 20;
 
-    const videos = await UserService.findHistory(
+    const { videos, count } = await UserService.findHistory(
       req.user.id,
       pageNumber,
       itemsPerPage,
-      isSkip
+      skipFullyWatched ? true : false
     );
 
-    res.json({ videos });
+    res.json({ videos, count });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchLocalHistory: RequestHandler = async (req, res, next) => {
+  try {
+    const { localHistory } = req.query as { [key: string]: string[] };
+
+    const matchFilter = {
+      _id: { $in: localHistory.map((history) => new ObjectId(history)) },
+    };
+
+    const { videos, count } = await VideoService.findVideoList({
+      match: matchFilter,
+    });
+
+    res.json({ videos, count });
   } catch (err) {
     return next(err);
   }
@@ -235,7 +253,7 @@ export const fetchFavorites: RequestHandler = async (req, res, next) => {
     const { page, max } = req.query;
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 10;
+    const itemsPerPage = max ? +max : 20;
 
     const { videos, count } = await UserService.findFavorites(
       req.user.id,
@@ -255,7 +273,7 @@ export const addToFavorites: RequestHandler = async (req, res, next) => {
   try {
     const { videoId } = req.body;
 
-    const video = await VideoService.findOneWithDetail(videoId, req.user.id);
+    const video = await VideoService.findVideoItem(videoId, req.user.id);
 
     if (!video) {
       throw new HttpError(404, 'No video found');

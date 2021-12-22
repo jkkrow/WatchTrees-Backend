@@ -1,4 +1,5 @@
 import { RequestHandler } from 'express';
+import { ObjectId } from 'mongodb';
 
 import { HttpError } from '../models/error/HttpError';
 import { VideoService, VideoDocument } from '../models/videos/VideoService';
@@ -10,16 +11,34 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
       [key: string]: string;
     };
 
-    const itemsPerPage = max ? +max : 10;
     const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 20;
+    const userId = currentUserId ? `${currentUserId}` : '';
 
-    const { videos, count } = await VideoService.findPublic(
-      pageNumber,
-      itemsPerPage,
-      search,
-      channelId,
-      currentUserId
-    );
+    const matchFilter: any = {
+      'info.status': 'public',
+      'info.isEditing': false,
+    };
+    const sortFilter: any = {};
+
+    if (search) {
+      matchFilter['$text'] = { $search: search };
+      sortFilter.score = { $meta: 'textScore' };
+    }
+
+    if (channelId) {
+      matchFilter['info.creator'] = new ObjectId(channelId);
+    }
+
+    sortFilter._id = -1;
+
+    const { videos, count } = await VideoService.findVideoList({
+      match: matchFilter,
+      sort: sortFilter,
+      page: pageNumber,
+      max: itemsPerPage,
+      currentUserId: userId,
+    });
 
     res.json({ videos, count });
   } catch (err) {
@@ -34,13 +53,13 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
     const { page, max } = req.query;
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 10;
+    const itemsPerPage = max ? +max : 20;
 
-    const { videos, count } = await VideoService.findCreated(
-      req.user.id,
-      pageNumber,
-      itemsPerPage
-    );
+    const { videos, count } = await VideoService.findVideoList({
+      match: { 'info.creator': new ObjectId(req.user.id) },
+      page: pageNumber,
+      max: itemsPerPage,
+    });
 
     res.json({ videos, count });
   } catch (err) {
@@ -77,7 +96,7 @@ export const fetchVideo: RequestHandler = async (req, res, next) => {
 
     await VideoService.incrementViews(id);
 
-    const video = await VideoService.findOneWithDetail(id, currentUserId);
+    const video = await VideoService.findVideoItem(id, currentUserId);
 
     if (!video) {
       throw new HttpError(404, 'No video found');

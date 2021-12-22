@@ -23,7 +23,7 @@ export class VideoService {
       .findOne({ _id: videoId }, options);
   }
 
-  static async findOneWithDetail(id: string, currentUserId: string) {
+  static async findVideoItem(id: string, currentUserId: string) {
     const videoId = new ObjectId(id);
     const userId = currentUserId ? new ObjectId(currentUserId) : '';
 
@@ -51,87 +51,43 @@ export class VideoService {
     return result[0];
   }
 
-  static async findPublic(
-    page: number,
-    max: number,
-    keyword: string,
-    channelId: string,
-    currentUserId: string
-  ) {
-    const filter: any = {};
-    const sort: any = { $sort: {} };
-
+  static async findVideoList({
+    match,
+    sort,
+    page,
+    max,
+    currentUserId,
+  }: {
+    match: any;
+    sort?: any;
+    page?: number;
+    max?: number;
+    currentUserId?: string;
+  }) {
     const userId = currentUserId ? new ObjectId(currentUserId) : '';
 
+    const skipPipeline = page && max ? [{ $skip: max * (page - 1) }] : [];
+    const limitPipeline = max ? [{ $limit: max }] : [];
     const creatorPipeline = attachCreatorInfo();
     const historyPipeline = userId ? attachHistory(userId) : [];
-
-    if (channelId) {
-      filter['info.creator'] = new ObjectId(channelId);
-    }
-
-    if (keyword) {
-      filter['$text'] = { $search: keyword };
-      sort['$sort'].score = { $meta: 'textScore' };
-    }
-
-    sort['$sort']._id = -1;
 
     const result = await client
       .db()
       .collection<WithId<VideoListDetail>>(collectionName)
       .aggregate([
-        {
-          $match: {
-            'info.status': 'public',
-            'info.isEditing': false,
-            ...filter,
-          },
-        },
+        { $match: match },
         {
           $facet: {
             videos: [
-              sort,
-              { $skip: max * (page - 1) },
-              { $limit: max },
+              { $sort: sort || { _id: -1 } },
+              ...skipPipeline,
+              ...limitPipeline,
               { $project: { 'root.children': 0 } },
               {
                 $addFields: { 'data.favorites': { $size: '$data.favorites' } },
               },
               ...creatorPipeline,
               ...historyPipeline,
-            ],
-            totalCount: [{ $count: 'count' }],
-          },
-        },
-        { $unwind: '$totalCount' },
-      ])
-      .toArray();
-
-    const videos = result.length ? result[0].videos : [];
-    const count = result.length ? result[0].totalCount.count : 0;
-
-    return { videos, count };
-  }
-
-  static async findCreated(id: string, page: number, max: number) {
-    const creatorId = new ObjectId(id);
-
-    const result = await client
-      .db()
-      .collection<VideoDocument>(collectionName)
-      .aggregate([
-        { $match: { 'info.creator': creatorId } },
-        {
-          $facet: {
-            videos: [
-              { $sort: { _id: -1 } },
-              { $skip: max * (page - 1) },
-              { $limit: max },
-              { $project: { 'root.children': 0 } },
-              {
-                $addFields: { 'data.favorites': { $size: '$data.favorites' } },
-              },
             ],
             totalCount: [{ $count: 'count' }],
           },
