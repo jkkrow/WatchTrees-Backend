@@ -66,6 +66,7 @@ export class VideoService {
   }) {
     const userId = currentUserId ? new ObjectId(currentUserId) : '';
 
+    const sortPipeline = sort ? [{ $sort: sort }] : [{ $sort: { _id: -1 } }];
     const skipPipeline = page && max ? [{ $skip: max * (page - 1) }] : [];
     const limitPipeline = max ? [{ $limit: max }] : [];
     const creatorPipeline = attachCreatorInfo();
@@ -79,7 +80,7 @@ export class VideoService {
         {
           $facet: {
             videos: [
-              { $sort: sort || { _id: -1 } },
+              ...sortPipeline,
               ...skipPipeline,
               ...limitPipeline,
               { $project: { 'root.children': 0 } },
