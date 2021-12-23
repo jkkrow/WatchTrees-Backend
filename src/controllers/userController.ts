@@ -246,6 +246,20 @@ export const addToHistory: RequestHandler = async (req, res, next) => {
   }
 };
 
+export const removeFromHistory: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { historyId } = req.query as { [key: string]: string };
+
+    await UserService.removeFromHistory(req.user.id, historyId);
+
+    res.json({ message: 'Removed videoe from history' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export const fetchFavorites: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
 

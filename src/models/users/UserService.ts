@@ -296,6 +296,19 @@ export class UserService {
     }
   }
 
+  static async removeFromHistory(id: string, historyId: string) {
+    const userId = new ObjectId(id);
+    const historyVideoId = new ObjectId(historyId);
+
+    await client
+      .db()
+      .collection<UserDocument>(collectionName)
+      .updateOne(
+        { _id: userId },
+        { $pull: { history: { video: historyVideoId } } }
+      );
+  }
+
   static async addToFavorites(targetId: string, currentUserId: string) {
     const videoId = new ObjectId(targetId);
     const userId = new ObjectId(currentUserId);
