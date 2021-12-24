@@ -12,7 +12,7 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
     };
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 20;
+    const itemsPerPage = max ? +max : 12;
     const userId = currentUserId ? `${currentUserId}` : '';
 
     const matchFilter: any = {
@@ -53,7 +53,7 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
     const { page, max } = req.query;
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 20;
+    const itemsPerPage = max ? +max : 12;
 
     const { videos, count } = await VideoService.findVideoList({
       match: { 'info.creator': new ObjectId(req.user.id) },

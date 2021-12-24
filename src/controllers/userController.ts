@@ -199,7 +199,7 @@ export const fetchHistory: RequestHandler = async (req, res, next) => {
     const { page, max, skipFullyWatched } = req.query;
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 20;
+    const itemsPerPage = max ? +max : 12;
 
     const { videos, count } = await UserService.findHistory(
       req.user.id,
@@ -267,7 +267,7 @@ export const fetchFavorites: RequestHandler = async (req, res, next) => {
     const { page, max } = req.query;
 
     const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 20;
+    const itemsPerPage = max ? +max : 12;
 
     const { videos, count } = await UserService.findFavorites(
       req.user.id,
