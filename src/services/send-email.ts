@@ -7,7 +7,7 @@ interface Options {
   message: string;
 }
 
-const sendEmail = async (options: Options): Promise<SentMessageInfo> => {
+export const sendEmail = async (options: Options): Promise<SentMessageInfo> => {
   const client = new OAuth2Client(
     process.env.EMAIL_CLIENT_ID!,
     process.env.EMAIL_CLIENT_SECRET!,
@@ -44,5 +44,3 @@ const sendEmail = async (options: Options): Promise<SentMessageInfo> => {
 
   return transporter.sendMail(mailOptions);
 };
-
-export default sendEmail;

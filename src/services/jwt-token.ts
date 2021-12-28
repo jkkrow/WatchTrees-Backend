@@ -1,23 +1,45 @@
 import * as jwt from 'jsonwebtoken';
 
-interface TokenPayload {
-  userId: string;
-  isVerified: boolean;
-  isPremium: boolean;
+import { HttpError } from '../models/error/HttpError';
+import { UserDocument } from '../models/users/UserService';
+
+interface UserPayload extends UserDocument {
+  id: string;
 }
 
 export const createToken = (payload: string | object | Buffer, exp: string) => {
   return jwt.sign(payload, process.env.JWT_KEY!, { expiresIn: exp });
 };
 
-export const createAccessToken = (payload: TokenPayload) => {
-  return jwt.sign(payload, process.env.JWT_KEY!, { expiresIn: '15m' });
+export const createAuthTokens = (
+  user: Partial<UserPayload>,
+  onlyAccess?: boolean
+) => {
+  const payload = {
+    userId: user._id || user.id,
+    isVerified: user.isVerified,
+    isPremium: user.isPremium,
+  };
+
+  let refreshToken = '';
+
+  if (!onlyAccess) {
+    refreshToken = jwt.sign(payload, process.env.JWT_KEY!, {
+      expiresIn: '7d',
+    });
+  }
+
+  const accessToken = jwt.sign(payload, process.env.JWT_KEY!, {
+    expiresIn: '15m',
+  });
+
+  return onlyAccess ? { accessToken } : { refreshToken, accessToken };
 };
 
-export const createRefreshToken = (payload: TokenPayload) => {
-  return jwt.sign(payload, process.env.JWT_KEY!, { expiresIn: '7d' });
-};
-
-export const verifyToken = (token: string) => {
-  return jwt.verify(token, process.env.JWT_KEY!) as jwt.JwtPayload;
+export const verifyToken = (token: string, message?: string) => {
+  try {
+    return jwt.verify(token, process.env.JWT_KEY!);
+  } catch (err) {
+    throw new HttpError(401, message);
+  }
 };

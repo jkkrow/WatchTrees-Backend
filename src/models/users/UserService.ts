@@ -3,10 +3,8 @@ import { v1 as uuidv1 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 
 import { client } from '../../config/db';
-import { User, Channel, History, UserSchema } from './User';
-import { VideoDocument } from '../videos/VideoService';
+import { User, Channel, UserSchema } from './User';
 import { createToken } from '../../services/jwt-token';
-import { attachCreatorInfo, attachHistory } from '../../util/pipelines';
 
 const collectionName = 'users';
 
@@ -29,7 +27,7 @@ export class UserService {
       .findOne(filter, options);
   }
 
-  static async findChannel(id: string, currentUserId: string) {
+  static async getChannelInfo(id: string, currentUserId: string) {
     const channelId = new ObjectId(id);
     const userId = currentUserId ? new ObjectId(currentUserId) : '';
 
@@ -55,73 +53,7 @@ export class UserService {
     return result[0];
   }
 
-  static async findHistory(
-    id: string,
-    page: number,
-    max: number,
-    skipFullyWatched = false
-  ) {
-    const userId = new ObjectId(id);
-
-    const creatorPipeline = attachCreatorInfo();
-    const extraMatchPipeline = skipFullyWatched
-      ? [{ $match: { 'history.progress.isEnded': false } }]
-      : [];
-
-    const result = await client
-      .db()
-      .collection<UserDocument>(collectionName)
-      .aggregate([
-        { $match: { _id: userId } },
-        { $unwind: '$history' },
-        {
-          $facet: {
-            videos: [
-              ...extraMatchPipeline,
-              { $sort: { 'history.updatedAt': -1 } },
-              { $skip: max * (page - 1) },
-              { $limit: max },
-              {
-                $lookup: {
-                  from: 'videos',
-                  as: 'history',
-                  let: { history: '$history' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
-                    { $project: { 'root.children': 0 } },
-                    {
-                      $addFields: {
-                        'data.favorites': { $size: '$data.favorites' },
-                        history: '$$history',
-                      },
-                    },
-                    ...creatorPipeline,
-                  ],
-                },
-              },
-              { $unwind: '$history' },
-              {
-                $group: {
-                  _id: '$_id',
-                  videos: { $push: '$history' },
-                },
-              },
-            ],
-            totalCount: [{ $count: 'count' }],
-          },
-        },
-        { $unwind: '$videos' },
-        { $unwind: '$totalCount' },
-      ])
-      .toArray();
-
-    const videos = result.length ? result[0].videos.videos : [];
-    const count = result.length ? result[0].totalCount.count : 0;
-
-    return { videos, count };
-  }
-
-  static async findSubscribes(id: string) {
+  static async getSubscribes(id: string) {
     const userId = new ObjectId(id);
 
     const result = await client
@@ -157,58 +89,6 @@ export class UserService {
     const { subscribes } = result[0];
 
     return subscribes;
-  }
-
-  static async findFavorites(id: string, page: number, max: number) {
-    const userId = new ObjectId(id);
-
-    const creatorPipeline = attachCreatorInfo();
-    const historyPipeline = attachHistory(userId);
-
-    const result = await client
-      .db()
-      .collection<UserDocument>(collectionName)
-      .aggregate([
-        { $match: { _id: userId } },
-        {
-          $lookup: {
-            from: 'videos',
-            as: 'favorites',
-            let: { favorites: '$favorites' },
-            pipeline: [
-              { $match: { $expr: { $in: ['$_id', '$$favorites'] } } },
-              {
-                $facet: {
-                  videos: [
-                    { $sort: { _id: -1 } },
-                    { $skip: max * (page - 1) },
-                    { $limit: max },
-                    { $project: { 'root.children': 0 } },
-                    {
-                      $addFields: {
-                        'data.favorites': { $size: '$data.favorites' },
-                      },
-                    },
-                    ...creatorPipeline,
-                    ...historyPipeline,
-                  ],
-                  totalCount: [{ $count: 'count' }],
-                },
-              },
-              { $unwind: '$totalCount' },
-            ],
-          },
-        },
-        { $project: { favorites: 1 } },
-      ])
-      .toArray();
-
-    const { favorites } = result[0];
-
-    const videos = favorites.length ? favorites[0].videos : [];
-    const count = favorites.length ? favorites[0].totalCount.count : 0;
-
-    return { videos, count };
   }
 
   static async createUser(
@@ -274,87 +154,16 @@ export class UserService {
     return bcrypt.compare(password, user.password);
   }
 
-  static async addToHistory(id: string, history: History) {
-    const userId = new ObjectId(id);
-    const newHistory = history;
-
-    newHistory.video = new ObjectId(newHistory.video);
-    newHistory.updatedAt = new Date(newHistory.updatedAt);
-
-    const collection = client.db().collection<UserDocument>(collectionName);
-
-    const result = await collection.updateOne(
-      { _id: userId, 'history.video': newHistory.video },
-      { $set: { 'history.$': newHistory } }
-    );
-
-    if (!result.modifiedCount) {
-      await collection.updateOne(
-        { _id: userId },
-        { $addToSet: { history: newHistory } }
-      );
-    }
-  }
-
-  static async removeFromHistory(id: string, historyId: string) {
-    const userId = new ObjectId(id);
-    const historyVideoId = new ObjectId(historyId);
-
-    await client
-      .db()
-      .collection<UserDocument>(collectionName)
-      .updateOne(
-        { _id: userId },
-        { $pull: { history: { video: historyVideoId } } }
-      );
-  }
-
-  static async addToFavorites(targetId: string, currentUserId: string) {
-    const videoId = new ObjectId(targetId);
-    const userId = new ObjectId(currentUserId);
-
-    const session = client.startSession();
-    const videoCollection = client.db().collection<VideoDocument>('videos');
-    const userCollection = client.db().collection<UserDocument>('users');
-
-    await session.withTransaction(async () => {
-      await Promise.all([
-        videoCollection.updateOne(
-          { _id: videoId },
-          { $addToSet: { 'data.favorites': userId } }
-        ),
-        userCollection.updateOne(
-          { _id: userId },
-          { $addToSet: { favorites: videoId } }
-        ),
-      ]);
-    });
-
-    await session.endSession();
-  }
-
-  static async removeFromFavorites(targetId: string, currentUserId: string) {
-    const videoId = new ObjectId(targetId);
-    const userId = new ObjectId(currentUserId);
-
-    const session = client.startSession();
-    const videoCollection = client.db().collection<VideoDocument>('videos');
-    const userCollection = client.db().collection<UserDocument>('users');
-
-    await session.withTransaction(async () => {
-      await Promise.all([
-        videoCollection.updateOne(
-          { _id: videoId },
-          { $pull: { 'data.favorites': userId } }
-        ),
-        userCollection.updateOne(
-          { _id: userId },
-          { $pull: { favorites: videoId } }
-        ),
-      ]);
-    });
-
-    await session.endSession();
+  static getUserData(user: UserDocument) {
+    return {
+      _id: user._id,
+      type: user.type,
+      name: user.name,
+      email: user.email,
+      picture: user.picture,
+      isVerified: user.isVerified,
+      isPremium: user.isPremium,
+    };
   }
 
   static async subscribe(targetId: string, currentUserId: string) {

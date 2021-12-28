@@ -32,7 +32,7 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
 
     sortFilter._id = -1;
 
-    const { videos, count } = await VideoService.findVideoList({
+    const { videos, count } = await VideoService.getVideoList({
       match: matchFilter,
       sort: sortFilter,
       page: pageNumber,
@@ -55,7 +55,7 @@ export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
     const pageNumber = page ? +page : 1;
     const itemsPerPage = max ? +max : 12;
 
-    const { videos, count } = await VideoService.findVideoList({
+    const { videos, count } = await VideoService.getVideoList({
       match: { 'info.creator': new ObjectId(req.user.id) },
       page: pageNumber,
       max: itemsPerPage,
@@ -96,13 +96,74 @@ export const fetchVideo: RequestHandler = async (req, res, next) => {
 
     await VideoService.incrementViews(id);
 
-    const video = await VideoService.findVideoItem(id, currentUserId);
+    const video = await VideoService.getVideoItem(id, currentUserId);
 
     if (!video) {
       throw new HttpError(404, 'No video found');
     }
 
     res.json({ video });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchHistory: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { page, max, skipFullyWatched } = req.query;
+
+    const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 12;
+
+    const { videos, count } = await VideoService.getHistory(
+      req.user.id,
+      pageNumber,
+      itemsPerPage,
+      skipFullyWatched ? true : false
+    );
+
+    res.json({ videos, count });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchLocalHistory: RequestHandler = async (req, res, next) => {
+  try {
+    const { localHistory } = req.query as { [key: string]: string[] };
+
+    const matchFilter = {
+      _id: { $in: localHistory.map((history) => new ObjectId(history)) },
+    };
+
+    const { videos, count } = await VideoService.getVideoList({
+      match: matchFilter,
+    });
+
+    res.json({ videos, count });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const fetchFavorites: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { page, max } = req.query;
+
+    const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 12;
+
+    const { videos, count } = await VideoService.getFavorites(
+      req.user.id,
+      pageNumber,
+      itemsPerPage
+    );
+
+    res.json({ videos, count });
   } catch (err) {
     return next(err);
   }
@@ -204,6 +265,63 @@ export const deleteVideo: RequestHandler = async (req, res, next) => {
     // TODO: Delete videos & thumbnail from aws s3
 
     res.json({ message: 'Video deleted successfully' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const addToHistory: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { history } = req.body;
+
+    await VideoService.addToHistory(req.user.id, history);
+
+    res.json({ message: 'Added video to history' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const removeFromHistory: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { historyId } = req.query as { [key: string]: string };
+
+    await VideoService.removeFromHistory(req.user.id, historyId);
+
+    res.json({ message: 'Removed videoe from history' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const toggleFavorites: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+
+  try {
+    const { videoId } = req.body;
+
+    const video = await VideoService.getVideoItem(videoId, req.user.id);
+
+    if (!video) {
+      throw new HttpError(404, 'No video found');
+    }
+
+    if (video.data.isFavorite) {
+      await VideoService.removeFromFavorites(videoId, req.user.id);
+      video.data.favorites--;
+    } else {
+      await VideoService.addToFavorites(videoId, req.user.id);
+      video.data.favorites++;
+    }
+
+    res.json({
+      isFavorite: !video.data.isFavorite,
+      favorites: video.data.favorites,
+    });
   } catch (err) {
     return next(err);
   }
