@@ -1,6 +1,6 @@
 import { Filter, FindOptions, UpdateFilter, WithId, ObjectId } from 'mongodb';
 import { v1 as uuidv1 } from 'uuid';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { client } from '../../config/db';
 import { User, Channel, UserSchema } from './User';
