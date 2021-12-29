@@ -38,7 +38,7 @@ export const createAuthTokens = (
 
 export const verifyToken = (token: string, message?: string) => {
   try {
-    return jwt.verify(token, process.env.JWT_KEY!);
+    return jwt.verify(token, process.env.JWT_KEY!) as jwt.JwtPayload;
   } catch (err) {
     throw new HttpError(401, message);
   }
