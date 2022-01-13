@@ -3,7 +3,7 @@ import { v1 as uuidv1 } from 'uuid';
 import { S3 } from 'aws-sdk';
 import { parse } from 'path';
 
-import { HttpError } from '../models/error/HttpError';
+import { HttpError } from '../models/error/Error';
 
 const s3 = new S3({
   credentials: {

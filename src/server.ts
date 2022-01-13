@@ -3,7 +3,7 @@ import cors from 'cors';
 import 'dotenv/config';
 
 import { connectDB } from './config/db';
-import { HttpError } from './models/error/HttpError';
+import { HttpError } from './models/error/Error';
 import uploadRoutes from './routes/uploadRoutes';
 import userRoutes from './routes/userRoutes';
 import videoRoutes from './routes/videoRoutes';

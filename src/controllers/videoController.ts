@@ -1,7 +1,7 @@
 import { RequestHandler } from 'express';
 import { ObjectId } from 'mongodb';
 
-import { HttpError } from '../models/error/HttpError';
+import { HttpError } from '../models/error/Error';
 import { VideoService, VideoDocument } from '../models/videos/VideoService';
 import { findById, traverseNodes } from '../util/tree';
 

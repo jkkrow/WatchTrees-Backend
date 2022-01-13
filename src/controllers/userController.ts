@@ -5,7 +5,7 @@ import { S3 } from 'aws-sdk';
 import { v1 as uuidv1 } from 'uuid';
 import { parse } from 'path';
 
-import { HttpError } from '../models/error/HttpError';
+import { HttpError } from '../models/error/Error';
 import { UserService, UserDocument } from '../models/users/UserService';
 import {
   createToken,

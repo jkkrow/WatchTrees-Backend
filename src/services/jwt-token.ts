@@ -1,6 +1,6 @@
 import * as jwt from 'jsonwebtoken';
 
-import { HttpError } from '../models/error/HttpError';
+import { HttpError } from '../models/error/Error';
 import { UserDocument } from '../models/users/UserService';
 
 interface UserPayload extends UserDocument {

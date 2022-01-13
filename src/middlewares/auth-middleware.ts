@@ -1,6 +1,6 @@
 import { RequestHandler } from 'express';
 
-import { HttpError } from '../models/error/HttpError';
+import { HttpError } from '../models/error/Error';
 import { verifyToken } from '../services/jwt-token';
 
 export const checkToken: RequestHandler = (req, res, next) => {
