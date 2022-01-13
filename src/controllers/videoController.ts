@@ -219,16 +219,13 @@ export const saveVideo: RequestHandler = async (req, res, next) => {
      */
 
     if (!existingVideo) {
-      const { insertedId } = await VideoService.createVideo(
-        uploadTree,
-        req.user.id
-      );
+      const result = await VideoService.createVideo(uploadTree, req.user.id);
 
-      if (!insertedId) {
+      if (!result.insertedId) {
         throw new HttpError(500, 'Saving video failed. Please try again');
       }
 
-      videoId = insertedId.toString();
+      videoId = result.insertedId.toString();
     }
 
     if (existingVideo) {

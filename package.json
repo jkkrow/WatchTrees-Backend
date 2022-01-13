@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/server.js",
+    "dev": "ts-node-dev --respawn --poll --transpile-only src/server.ts",
+    "prod": "ts-node --transpile-only src/server.ts",
     "build": "tsc",
-    "prepare": "npm run build",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
+    "start": "node dist/server.js"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +22,7 @@
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^4.2.0",
     "nodemailer": "^6.6.5",
+    "ts-node": "^9.1.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -36,6 +37,6 @@
     "@typescript-eslint/parser": "^5.2.0",
     "eslint": "^8.1.0",
     "ts-node-dev": "^1.1.8",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.4"
   }
 }

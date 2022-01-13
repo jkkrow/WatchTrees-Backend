@@ -58,7 +58,7 @@ export class UserService {
 
     const result = await client
       .db()
-      .collection<UserDocument>(collectionName)
+      .collection(collectionName)
       .aggregate([
         { $match: { _id: userId } },
         {
@@ -119,10 +119,10 @@ export class UserService {
 
     const { insertedId } = await client
       .db()
-      .collection<UserDocument>(collectionName)
+      .collection(collectionName)
       .insertOne(newUser);
 
-    const userDocument: UserDocument = {
+    const userDocument = {
       ...newUser,
       _id: insertedId,
     };
@@ -130,10 +130,7 @@ export class UserService {
     return userDocument;
   }
 
-  static async updateUser(
-    id: string | ObjectId,
-    update: UpdateFilter<UserDocument>
-  ) {
+  static async updateUser(id: string | ObjectId, update: UpdateFilter<User>) {
     const userId = new ObjectId(id);
     const updateFilter = { ...update };
 
@@ -146,15 +143,15 @@ export class UserService {
 
     return client
       .db()
-      .collection<UserDocument>(collectionName)
+      .collection(collectionName)
       .updateOne({ _id: userId }, updateFilter);
   }
 
-  static checkPassword(user: UserDocument, password: string) {
+  static checkPassword(user: User, password: string) {
     return bcrypt.compare(password, user.password);
   }
 
-  static getUserData(user: UserDocument) {
+  static getUserData(user: WithId<User>) {
     return {
       _id: user._id,
       type: user.type,
@@ -171,7 +168,7 @@ export class UserService {
     const subscriberId = new ObjectId(currentUserId);
 
     const session = client.startSession();
-    const collection = client.db().collection<UserDocument>(collectionName);
+    const collection = client.db().collection(collectionName);
 
     await session.withTransaction(async () => {
       await Promise.all([
@@ -194,7 +191,7 @@ export class UserService {
     const subscriberId = new ObjectId(currentUserId);
 
     const session = client.startSession();
-    const collection = client.db().collection<UserDocument>(collectionName);
+    const collection = client.db().collection(collectionName);
 
     await session.withTransaction(async () => {
       await Promise.all([

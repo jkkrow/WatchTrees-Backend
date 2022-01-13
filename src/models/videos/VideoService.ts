@@ -22,8 +22,8 @@ export class VideoService {
 
     return client
       .db()
-      .collection<VideoDocument>(collectionName)
-      .findOne({ _id: videoId }, options);
+      .collection(collectionName)
+      .findOne({ _id: videoId }, options) as Promise<VideoDocument | null>;
   }
 
   static async getVideoItem(id: string, currentUserId: string) {
@@ -227,10 +227,7 @@ export class VideoService {
   static createVideo(video: VideoTree, creatorId: string) {
     const newVideo = new VideoSchema(video, creatorId);
 
-    return client
-      .db()
-      .collection<VideoDocument>(collectionName)
-      .insertOne(newVideo);
+    return client.db().collection(collectionName).insertOne(newVideo);
   }
 
   static updateVideo(video: VideoDocument) {
@@ -241,7 +238,7 @@ export class VideoService {
 
     return client
       .db()
-      .collection<VideoDocument>(collectionName)
+      .collection(collectionName)
       .replaceOne(
         { _id: newVideo._id, 'info.creator': newVideo.info.creator },
         newVideo
@@ -252,7 +249,7 @@ export class VideoService {
     const videoId = new ObjectId(id);
     const userId = new ObjectId(creatorId);
 
-    return client.db().collection<VideoDocument>(collectionName).deleteOne({
+    return client.db().collection(collectionName).deleteOne({
       _id: videoId,
       'info.creator': userId,
     });
@@ -263,7 +260,7 @@ export class VideoService {
 
     return client
       .db()
-      .collection<VideoDocument>(collectionName)
+      .collection(collectionName)
       .updateOne({ _id: videoId }, { $inc: { 'data.views': 1 } });
   }
 
@@ -274,7 +271,7 @@ export class VideoService {
     newHistory.video = new ObjectId(newHistory.video);
     newHistory.updatedAt = new Date(newHistory.updatedAt);
 
-    const collection = client.db().collection<UserDocument>(collectionName);
+    const collection = client.db().collection<UserDocument>(userCollectionName);
 
     const result = await collection.updateOne(
       { _id: userId, 'history.video': newHistory.video },
@@ -295,7 +292,7 @@ export class VideoService {
 
     await client
       .db()
-      .collection<UserDocument>(collectionName)
+      .collection<UserDocument>(userCollectionName)
       .updateOne(
         { _id: userId },
         { $pull: { history: { video: historyVideoId } } }
@@ -307,9 +304,7 @@ export class VideoService {
     const userId = new ObjectId(currentUserId);
 
     const session = client.startSession();
-    const videoCollection = client
-      .db()
-      .collection<VideoDocument>(collectionName);
+    const videoCollection = client.db().collection(collectionName);
     const userCollection = client
       .db()
       .collection<UserDocument>(userCollectionName);
@@ -335,9 +330,7 @@ export class VideoService {
     const userId = new ObjectId(currentUserId);
 
     const session = client.startSession();
-    const videoCollection = client
-      .db()
-      .collection<VideoDocument>(collectionName);
+    const videoCollection = client.db().collection(collectionName);
     const userCollection = client
       .db()
       .collection<UserDocument>(userCollectionName);
