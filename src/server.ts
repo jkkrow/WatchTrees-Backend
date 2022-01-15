@@ -21,6 +21,10 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
 
+app.use('/health', (req, res) => {
+  res.json('ok');
+});
+
 app.use(() => {
   throw new HttpError(404, 'No routes found');
 });
