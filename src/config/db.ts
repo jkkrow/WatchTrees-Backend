@@ -1,12 +1,8 @@
-import { MongoClient } from 'mongodb';
-
-export const client = new MongoClient(process.env.MONGODB_URI!);
-
-export const session = client.startSession;
+import { connect } from 'mongoose';
 
 export const connectDB = async (callback: () => void): Promise<void> => {
   try {
-    await client.connect();
+    await connect(process.env.MONGODB_URI!);
 
     console.log('MongoDB Connected');
 

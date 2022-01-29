@@ -1,6 +1,6 @@
-import { ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
 
-export const attachCreatorInfo = () => {
+export const creatorInfoPipeline = () => {
   return [
     {
       $lookup: {
@@ -17,7 +17,7 @@ export const attachCreatorInfo = () => {
   ];
 };
 
-export const attachHistory = (userId: ObjectId) => {
+export const historyPipeline = (userId?: string) => {
   return userId
     ? [
         {
@@ -26,7 +26,7 @@ export const attachHistory = (userId: ObjectId) => {
             as: 'history',
             let: { id: '$_id' },
             pipeline: [
-              { $match: { _id: userId } },
+              { $match: { _id: new mongoose.Types.ObjectId(userId) } },
               {
                 $project: {
                   history: {

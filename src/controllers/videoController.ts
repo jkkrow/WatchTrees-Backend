@@ -1,11 +1,90 @@
 import { RequestHandler } from 'express';
-import { ObjectId } from 'mongodb';
 
-import { HttpError } from '../models/error/Error';
-import { VideoService, VideoDocument } from '../models/videos/VideoService';
-import { findById, traverseNodes } from '../util/tree';
+import * as VideoService from '../services/video.service';
+import { HttpError } from '../models/error';
 
-export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
+export const getVideos: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { page, max } = req.query;
+
+    const pageNumber = page ? +page : 1;
+    const itemsPerPage = max ? +max : 12;
+
+    const { videos, count } = await VideoService.getVideoClients({
+      match: { 'info.creator': req.user.id },
+      page: pageNumber,
+      max: itemsPerPage,
+    });
+
+    res.json({ videos, count });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getVideo: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { id } = req.params;
+
+    const video = await VideoService.findById(id);
+
+    if (!video) {
+      throw new HttpError(404, 'No video found');
+    }
+
+    if (video.info.creator.toString() !== req.user.id) {
+      throw new HttpError(403, 'Not authorized to this video');
+    }
+
+    res.json({ video });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const createVideo: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const video = await VideoService.create(req.user.id);
+
+    res.json({ video });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const updateVideo: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { uploadTree } = req.body;
+    const { id } = req.params;
+
+    await VideoService.update(id, uploadTree);
+
+    res.json({ message: 'Upload progress saved' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const deleteVideo: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { id } = req.params;
+
+    await VideoService.remove(id, req.user.id);
+
+    // TODO: Delete videos & thumbnail from aws s3
+
+    res.json({ message: 'Video deleted successfully' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const getClientVideos: RequestHandler = async (req, res, next) => {
   try {
     const { page, max, search, channelId, currentUserId } = req.query as {
       [key: string]: string;
@@ -27,12 +106,12 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
     }
 
     if (channelId) {
-      matchFilter['info.creator'] = new ObjectId(channelId);
+      matchFilter['info.creator'] = channelId;
     }
 
     sortFilter._id = -1;
 
-    const { videos, count } = await VideoService.getVideoList({
+    const { videos, count } = await VideoService.getVideoClients({
       match: matchFilter,
       sort: sortFilter,
       page: pageNumber,
@@ -46,61 +125,18 @@ export const fetchPublicVideos: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const fetchCreatedVideos: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { page, max } = req.query;
-
-    const pageNumber = page ? +page : 1;
-    const itemsPerPage = max ? +max : 12;
-
-    const { videos, count } = await VideoService.getVideoList({
-      match: { 'info.creator': new ObjectId(req.user.id) },
-      page: pageNumber,
-      max: itemsPerPage,
-    });
-
-    res.json({ videos, count });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const fetchCreatedVideo: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { id } = req.params;
-
-    const video = await VideoService.findById(id);
-
-    if (!video) {
-      throw new HttpError(404, 'No video found');
-    }
-
-    if (video.info.creator.toString() !== req.user.id) {
-      throw new HttpError(403, 'Not authorized to this video');
-    }
-
-    res.json({ video });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const fetchVideo: RequestHandler = async (req, res, next) => {
+export const getClientVideo: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { currentUserId } = req.query as { [key: string]: string };
 
-    await VideoService.incrementViews(id);
-
-    const video = await VideoService.getVideoItem(id, currentUserId);
+    const video = await VideoService.getVideoClient(id, currentUserId);
 
     if (!video) {
       throw new HttpError(404, 'No video found');
     }
+
+    await VideoService.incrementViews(id);
 
     res.json({ video });
   } catch (err) {
@@ -108,16 +144,15 @@ export const fetchVideo: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const fetchHistory: RequestHandler = async (req, res, next) => {
+export const getHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { page, max, skipFullyWatched } = req.query;
 
     const pageNumber = page ? +page : 1;
     const itemsPerPage = max ? +max : 12;
 
-    const { videos, count } = await VideoService.getHistory(
+    const { videos, count } = await VideoService.getVideoHistory(
       req.user.id,
       pageNumber,
       itemsPerPage,
@@ -130,15 +165,13 @@ export const fetchHistory: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const fetchLocalHistory: RequestHandler = async (req, res, next) => {
+export const getLocalHistory: RequestHandler = async (req, res, next) => {
   try {
     const { localHistory } = req.query as { [key: string]: string[] };
 
-    const matchFilter = {
-      _id: { $in: localHistory.map((history) => new ObjectId(history)) },
-    };
+    const matchFilter = { _id: { $in: localHistory } };
 
-    const { videos, count } = await VideoService.getVideoList({
+    const { videos, count } = await VideoService.getVideoClients({
       match: matchFilter,
     });
 
@@ -148,9 +181,8 @@ export const fetchLocalHistory: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const fetchFavorites: RequestHandler = async (req, res, next) => {
+export const getFavorites: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { page, max } = req.query;
 
@@ -169,107 +201,8 @@ export const fetchFavorites: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const saveVideo: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { uploadTree } = req.body;
-
-    let existingVideo: VideoDocument | null = null;
-    let videoId: string | undefined;
-
-    if (uploadTree._id) {
-      existingVideo = await VideoService.findById(uploadTree._id);
-
-      if (
-        existingVideo &&
-        existingVideo.info.creator.toString() !== req.user.id
-      ) {
-        throw new HttpError(403, 'Not authorized to this video');
-      }
-    }
-
-    /*
-     * Refactor UploadTree fields before change document
-     */
-
-    const uploadNodes = traverseNodes(uploadTree.root);
-
-    for (let uploadNode of uploadNodes) {
-      let nodeInfo = uploadNode.info;
-
-      if (!nodeInfo) continue;
-
-      if (nodeInfo.progress > 0 && nodeInfo.progress < 100) {
-        nodeInfo = null;
-      }
-
-      if (!existingVideo) continue;
-
-      const videoNode = findById(existingVideo, uploadNode.id);
-
-      if (!videoNode || !videoNode.info || !nodeInfo) continue;
-
-      nodeInfo.isConverted = videoNode.info.isConverted;
-      nodeInfo.url = videoNode.info.url;
-    }
-
-    /*
-     * Create Video
-     */
-
-    if (!existingVideo) {
-      const result = await VideoService.createVideo(uploadTree, req.user.id);
-
-      if (!result.insertedId) {
-        throw new HttpError(500, 'Saving video failed. Please try again');
-      }
-
-      videoId = result.insertedId.toString();
-    }
-
-    if (existingVideo) {
-      const updatedVideo = {
-        ...existingVideo,
-        ...uploadTree,
-        _id: existingVideo._id,
-        info: { ...uploadTree.info, creator: existingVideo.info.creator },
-        data: { ...existingVideo.data },
-        createdAt: new Date(existingVideo.createdAt),
-      };
-
-      await VideoService.updateVideo(updatedVideo);
-    }
-
-    res.json({ message: 'Upload progress saved', videoId });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const deleteVideo: RequestHandler = async (req, res, next) => {
-  if (!req.user) return;
-
-  try {
-    const { id } = req.params;
-
-    const { deletedCount } = await VideoService.deleteVideo(id, req.user.id);
-
-    if (!deletedCount) {
-      throw new HttpError(500, 'Deleting video failed. Please try again');
-    }
-
-    // TODO: Delete videos & thumbnail from aws s3
-
-    res.json({ message: 'Video deleted successfully' });
-  } catch (err) {
-    return next(err);
-  }
-};
-
 export const addToHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { history } = req.body;
 
@@ -283,7 +216,6 @@ export const addToHistory: RequestHandler = async (req, res, next) => {
 
 export const removeFromHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { historyId } = req.query as { [key: string]: string };
 
@@ -297,11 +229,10 @@ export const removeFromHistory: RequestHandler = async (req, res, next) => {
 
 export const toggleFavorites: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { videoId } = req.body;
 
-    const video = await VideoService.getVideoItem(videoId, req.user.id);
+    const video = await VideoService.getVideoClient(videoId, req.user.id);
 
     if (!video) {
       throw new HttpError(404, 'No video found');

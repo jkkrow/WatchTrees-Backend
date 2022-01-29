@@ -1,25 +1,13 @@
 import * as jwt from 'jsonwebtoken';
 
-import { HttpError } from '../models/error/Error';
-import { UserDocument } from '../models/users/UserService';
-
-interface UserPayload extends UserDocument {
-  id: string;
-}
+import { HttpError } from '../models/error';
 
 export const createToken = (payload: string | object | Buffer, exp: string) => {
   return jwt.sign(payload, process.env.JWT_KEY!, { expiresIn: exp });
 };
 
-export const createAuthTokens = (
-  user: Partial<UserPayload>,
-  onlyAccess?: boolean
-) => {
-  const payload = {
-    userId: user._id || user.id,
-    isVerified: user.isVerified,
-    isPremium: user.isPremium,
-  };
+export const createAuthTokens = (userId: string, onlyAccess?: boolean) => {
+  const payload = { userId };
 
   let refreshToken = '';
 
