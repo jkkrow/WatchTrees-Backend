@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import { Types } from 'mongoose';
 
 export const creatorInfoPipeline = () => {
   return [
@@ -17,6 +17,19 @@ export const creatorInfoPipeline = () => {
   ];
 };
 
+export const favoritesPipeline = (userId?: string) => {
+  return [
+    {
+      $addFields: {
+        'data.favorites': { $size: '$data.favorites' },
+        'data.isFavorite': userId
+          ? { $in: [new Types.ObjectId(userId), '$data.favorites'] }
+          : false,
+      },
+    },
+  ];
+};
+
 export const historyPipeline = (userId?: string) => {
   return userId
     ? [
@@ -26,7 +39,7 @@ export const historyPipeline = (userId?: string) => {
             as: 'history',
             let: { id: '$_id' },
             pipeline: [
-              { $match: { _id: new mongoose.Types.ObjectId(userId) } },
+              { $match: { _id: new Types.ObjectId(userId) } },
               {
                 $project: {
                   history: {

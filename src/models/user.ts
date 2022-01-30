@@ -17,16 +17,6 @@ export interface User {
   recoveryToken?: string;
 }
 
-export interface History {
-  video: Types.ObjectId; // ref to Video Document
-  progress: {
-    activeVideoId: string;
-    time: number;
-    isEnded: boolean;
-  };
-  updatedAt: Date;
-}
-
 export interface Channel {
   name: string;
   picture: string;

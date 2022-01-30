@@ -1,4 +1,4 @@
-import { FilterQuery, startSession } from 'mongoose';
+import { FilterQuery, startSession, Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 
 import { UserModel, User } from '../models/user';
@@ -76,7 +76,7 @@ export const updatePassword = async (
 
 export const getChannelInfo = async (id: string, currentUserId: string) => {
   const result = await UserModel.aggregate([
-    { $match: { _id: id } },
+    { $match: { _id: new Types.ObjectId(id) } },
     {
       $project: {
         name: 1,
@@ -93,7 +93,7 @@ export const getChannelInfo = async (id: string, currentUserId: string) => {
 
 export const getSubscribes = async (id: string) => {
   const result = await UserModel.aggregate([
-    { $match: { _id: id } },
+    { $match: { _id: new Types.ObjectId(id) } },
     {
       $lookup: {
         from: 'users',

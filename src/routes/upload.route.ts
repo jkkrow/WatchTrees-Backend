@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import * as uploadController from '../controllers/uploadController';
-import { checkToken, checkVerified } from '../middlewares/auth-middleware';
+import * as uploadController from '../controllers/upload.controller';
+import { checkToken, checkVerified } from '../middlewares/auth.middleware';
 
 const router = Router();
 

@@ -1,22 +1,18 @@
-import { FilterQuery, startSession, Types } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import { v1 as uuidv1 } from 'uuid';
 
 import { VideoModel, VideoTree } from '../models/video';
-import { UserModel, History } from '../models/user';
-import { creatorInfoPipeline, historyPipeline } from '../util/pipelines';
+import { UserModel } from '../models/user';
+import {
+  creatorInfoPipeline,
+  favoritesPipeline,
+  historyPipeline,
+} from './pipelines/video.pipeline';
 import { HttpError } from '../models/error';
 import { traverseNodes, findNodeById, validateNodes } from '../util/tree';
 
 export const findById = (id: string) => {
   return VideoModel.findById(id);
-};
-
-export const findOne = (filter: FilterQuery<VideoTree>) => {
-  return VideoModel.findOne(filter);
-};
-
-export const find = (filter: FilterQuery<VideoTree>) => {
-  return VideoModel.find(filter).exec();
 };
 
 export const create = async (currentUserId: string) => {
@@ -104,25 +100,18 @@ export const remove = async (id: string, currentUserId: string) => {
   return await video.remove();
 };
 
-export const getVideoClient = async (id: string, currentUserId?: string) => {
+export const getClient = async (id: string, currentUserId?: string) => {
   const result = await VideoModel.aggregate([
     { $match: { _id: new Types.ObjectId(id) } },
-    {
-      $addFields: {
-        'data.favorites': { $size: '$data.favorites' },
-        'data.isFavorite': currentUserId
-          ? { $in: [currentUserId, '$data.favorites'] }
-          : false,
-      },
-    },
     ...creatorInfoPipeline(),
+    ...favoritesPipeline(currentUserId),
     ...historyPipeline(currentUserId),
   ]);
 
   return result[0];
 };
 
-export const getVideoClients = async ({
+export const getClients = async ({
   match,
   sort,
   page,
@@ -148,92 +137,25 @@ export const getVideoClients = async ({
           ...skipPipeline,
           ...limitPipeline,
           { $project: { 'root.children': 0 } },
-          {
-            $addFields: {
-              'data.favorites': { $size: '$data.favorites' },
-              'data.isFavorite': currentUserId
-                ? { $in: [currentUserId, '$data.favorites'] }
-                : false,
-            },
-          },
           ...creatorInfoPipeline(),
+          ...favoritesPipeline(currentUserId),
           ...historyPipeline(currentUserId),
         ],
         totalCount: [{ $count: 'count' }],
       },
     },
     { $unwind: '$totalCount' },
-  ]).exec();
+  ]);
 
-  const videos = result.length ? result[0].videos : [];
-  const count = result.length ? result[0].totalCount.count : 0;
-
-  return { videos, count };
-};
-
-export const getVideoHistory = async (
-  id: string,
-  page: number,
-  max: number,
-  skipFullyWatched = false
-) => {
-  const extraMatchPipeline = skipFullyWatched
-    ? [{ $match: { 'history.progress.isEnded': false } }]
-    : [];
-
-  const result = await UserModel.aggregate([
-    { $match: { _id: id } },
-    { $unwind: '$history' },
-    {
-      $facet: {
-        videos: [
-          ...extraMatchPipeline,
-          { $sort: { 'history.updatedAt': -1 } },
-          { $skip: max * (page - 1) },
-          { $limit: max },
-          {
-            $lookup: {
-              from: 'videos',
-              as: 'history',
-              let: { history: '$history' },
-              pipeline: [
-                { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
-                { $project: { 'root.children': 0 } },
-                {
-                  $addFields: {
-                    'data.favorites': { $size: '$data.favorites' },
-                    'data.isFavorite': { $in: [id, '$data.favorites'] },
-                    history: '$$history',
-                  },
-                },
-                ...creatorInfoPipeline(),
-              ],
-            },
-          },
-          { $unwind: '$history' },
-          {
-            $group: {
-              _id: '$_id',
-              videos: { $push: '$history' },
-            },
-          },
-        ],
-        totalCount: [{ $count: 'count' }],
-      },
-    },
-    { $unwind: '$videos' },
-    { $unwind: '$totalCount' },
-  ]).exec();
-
-  const videos = result.length ? result[0].videos.videos : [];
-  const count = result.length ? result[0].totalCount.count : 0;
-
-  return { videos, count };
+  return {
+    videos: result.length ? result[0].videos : [],
+    count: result.length ? result[0].totalCount.count : 0,
+  };
 };
 
 export const getFavorites = async (id: string, page: number, max: number) => {
   const result = await UserModel.aggregate([
-    { $match: { _id: id } },
+    { $match: { _id: new Types.ObjectId(id) } },
     {
       $lookup: {
         from: 'videos',
@@ -248,13 +170,8 @@ export const getFavorites = async (id: string, page: number, max: number) => {
                 { $skip: max * (page - 1) },
                 { $limit: max },
                 { $project: { 'root.children': 0 } },
-                {
-                  $addFields: {
-                    'data.favorites': { $size: '$data.favorites' },
-                    'data.isFavorite': { $in: [id, '$data.favorites'] },
-                  },
-                },
                 ...creatorInfoPipeline(),
+                ...favoritesPipeline(id),
                 ...historyPipeline(id),
               ],
               totalCount: [{ $count: 'count' }],
@@ -265,7 +182,7 @@ export const getFavorites = async (id: string, page: number, max: number) => {
       },
     },
     { $project: { favorites: 1 } },
-  ]).exec();
+  ]);
 
   const { favorites } = result[0];
 
@@ -277,24 +194,6 @@ export const getFavorites = async (id: string, page: number, max: number) => {
 
 export const incrementViews = (id: string) => {
   return VideoModel.updateOne({ _id: id }, { $inc: { 'data.views': 1 } });
-};
-
-export const addToHistory = async (id: string, history: History) => {
-  const result = await UserModel.updateOne(
-    { _id: id, 'history.video': history.video },
-    { $set: { 'history.$': history } }
-  );
-
-  if (!result.modifiedCount) {
-    await UserModel.updateOne({ _id: id }, { $addToSet: { history } });
-  }
-};
-
-export const removeFromHistory = async (id: string, historyId: string) => {
-  await UserModel.updateOne(
-    { _id: id },
-    { $pull: { history: { video: historyId } } }
-  );
 };
 
 export const addToFavorites = async (

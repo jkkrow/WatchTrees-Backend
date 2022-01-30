@@ -4,10 +4,11 @@ import 'dotenv/config';
 
 import { connectDB } from './config/db';
 import { HttpError } from './models/error';
-import uploadRoutes from './routes/uploadRoutes';
-import userRoutes from './routes/userRoutes';
-import videoRoutes from './routes/videoRoutes';
-import errorMiddleware from './middlewares/error-middleware';
+import uploadRoute from './routes/upload.route';
+import userRoute from './routes/user.route';
+import videoRoute from './routes/video.route';
+import historyRoute from './routes/history.route';
+import errorMiddleware from './middlewares/error.middleware';
 
 const PORT = process.env.PORT! || 5000;
 const app = express();
@@ -17,9 +18,10 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-app.use('/api/upload', uploadRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/videos', videoRoutes);
+app.use('/api/upload', uploadRoute);
+app.use('/api/users', userRoute);
+app.use('/api/videos', videoRoute);
+app.use('/api/histories', historyRoute);
 
 app.use('/health', (req, res) => {
   res.json('ok');
