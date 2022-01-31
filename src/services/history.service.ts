@@ -6,48 +6,6 @@ import {
   favoritesPipeline,
 } from './pipelines/video.pipeline';
 
-// export const get = async (
-//   id: string,
-//   page: number,
-//   max: number,
-//   skipFullyWatched = false
-// ) => {
-//   const result = await HistoryModel.aggregate([
-//     { $match: { _id: new Types.ObjectId(id) } },
-//     { $addFields: { count: { $size: '$history' } } },
-//     { $unwind: '$history' },
-//     { $match: skipFullyWatched ? { 'history.progress.isEnded': false } : {} },
-//     { $sort: { 'history.updatedAt': -1 } },
-//     { $skip: max * (page - 1) },
-//     { $limit: max },
-//     {
-//       $lookup: {
-//         from: 'videos',
-//         as: 'history',
-//         let: { history: '$history' },
-//         pipeline: [
-//           { $match: { $expr: { $eq: ['$$history.video', '$_id'] } } },
-//           { $project: { 'root.children': 0 } },
-//           { $addFields: { history: '$$history' } },
-//           ...creatorInfoPipeline(),
-//           ...favoritesPipeline(id),
-//         ],
-//       },
-//     },
-//     { $unwind: '$history' },
-//     { $group: { _id: '$_id', videos: { $push: '$history' } } },
-//   ]);
-
-//   console.log(result);
-
-//   console.log(result[0].videos);
-
-//   return {
-//     videos: result.length ? result[0].videos.videos : [],
-//     count: result.length ? result[0].totalCount.count : 0,
-//   };
-// };
-
 export const find = async (
   userId: string,
   page: string | number,

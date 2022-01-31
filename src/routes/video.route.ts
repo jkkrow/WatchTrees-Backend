@@ -11,10 +11,10 @@ router.get('/client/:id', videoController.getClientVideo);
 router.get('/favorites', checkToken, videoController.getFavorites);
 router.patch('/favorites', checkToken, videoController.toggleFavorites);
 
-router.get('/', checkToken, videoController.getVideos);
+router.get('/', checkToken, videoController.getCreatedVideos);
 router.post('/', checkToken, checkVerified, videoController.createVideo);
 
-router.get('/:id', checkToken, videoController.getVideo);
+router.get('/:id', checkToken, videoController.getCreatedVideo);
 router.patch('/:id', checkToken, checkVerified, videoController.updateVideo);
 router.delete('/:id', checkToken, checkVerified, videoController.deleteVideo);
 

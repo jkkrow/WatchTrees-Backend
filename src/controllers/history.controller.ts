@@ -1,7 +1,6 @@
 import { RequestHandler } from 'express';
 
 import * as HistoryService from '../services/history.service';
-import * as VideoService from '../services/video.service';
 
 export const getHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
@@ -16,22 +15,6 @@ export const getHistory: RequestHandler = async (req, res, next) => {
       max,
       skipFullyWatched ? true : false
     );
-
-    res.json({ videos, count });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const getLocalHistory: RequestHandler = async (req, res, next) => {
-  try {
-    const { localHistory } = req.query as { [key: string]: string[] };
-
-    const matchFilter = { _id: { $in: localHistory } };
-
-    const { videos, count } = await VideoService.getClients({
-      match: matchFilter,
-    });
 
     res.json({ videos, count });
   } catch (err) {

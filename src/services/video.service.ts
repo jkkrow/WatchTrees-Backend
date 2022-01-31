@@ -1,8 +1,7 @@
-import { startSession, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { v1 as uuidv1 } from 'uuid';
 
 import { VideoModel, VideoTree } from '../models/video';
-import { UserModel } from '../models/user';
 import {
   creatorInfoPipeline,
   favoritesPipeline,
@@ -10,10 +9,6 @@ import {
 } from './pipelines/video.pipeline';
 import { HttpError } from '../models/error';
 import { traverseNodes, findNodeById, validateNodes } from '../util/tree';
-
-export const findById = (id: string) => {
-  return VideoModel.findById(id);
-};
 
 export const create = async (currentUserId: string) => {
   const videoTree = {
@@ -100,7 +95,17 @@ export const remove = async (id: string, currentUserId: string) => {
   return await video.remove();
 };
 
-export const getClient = async (id: string, currentUserId?: string) => {
+export const findOne = async (id: string) => {
+  const video = await VideoModel.findById(id);
+
+  if (!video) {
+    throw new HttpError(404, 'Video not found');
+  }
+
+  return video;
+};
+
+export const findClientOne = async (id: string, currentUserId?: string) => {
   const result = await VideoModel.aggregate([
     { $match: { _id: new Types.ObjectId(id) } },
     ...creatorInfoPipeline(),
@@ -108,38 +113,49 @@ export const getClient = async (id: string, currentUserId?: string) => {
     ...historyPipeline(currentUserId),
   ]);
 
-  return result[0];
+  if (!result.length) {
+    throw new HttpError(404, 'Video not found');
+  }
+
+  const video = result[0];
+
+  if (
+    video.info.status === 'private' &&
+    video.info.creator.toString() !== currentUserId
+  ) {
+    throw new HttpError(403, 'Not authorized to video');
+  }
+
+  return video;
 };
 
-export const getClients = async ({
-  match,
-  sort,
-  page,
-  max,
+export const find = async ({
+  match = {},
+  sort = {},
+  page = 1,
+  max = 12,
   currentUserId,
+  historyData = true,
 }: {
-  match: any;
+  match?: any;
   sort?: any;
-  page?: number;
-  max?: number;
+  page?: number | string;
+  max?: number | string;
   currentUserId?: string;
+  historyData?: boolean;
 }) => {
-  const sortPipeline = sort ? [{ $sort: sort }] : [{ $sort: { _id: -1 } }];
-  const skipPipeline = page && max ? [{ $skip: max * (page - 1) }] : [];
-  const limitPipeline = max ? [{ $limit: max }] : [];
-
   const result = await VideoModel.aggregate([
-    { $match: match },
+    { $match: { ...match } },
     {
       $facet: {
         videos: [
-          ...sortPipeline,
-          ...skipPipeline,
-          ...limitPipeline,
+          { $sort: { ...sort, _id: -1 } },
+          { $skip: +max * (+page - 1) },
+          { $limit: +max },
           { $project: { 'root.children': 0 } },
           ...creatorInfoPipeline(),
           ...favoritesPipeline(currentUserId),
-          ...historyPipeline(currentUserId),
+          ...historyPipeline(currentUserId, historyData),
         ],
         totalCount: [{ $count: 'count' }],
       },
@@ -153,89 +169,114 @@ export const getClients = async ({
   };
 };
 
-export const getFavorites = async (id: string, page: number, max: number) => {
-  const result = await UserModel.aggregate([
-    { $match: { _id: new Types.ObjectId(id) } },
-    {
-      $lookup: {
-        from: 'videos',
-        as: 'favorites',
-        let: { favorites: '$favorites' },
-        pipeline: [
-          { $match: { $expr: { $in: ['$_id', '$$favorites'] } } },
-          {
-            $facet: {
-              videos: [
-                { $sort: { _id: -1 } },
-                { $skip: max * (page - 1) },
-                { $limit: max },
-                { $project: { 'root.children': 0 } },
-                ...creatorInfoPipeline(),
-                ...favoritesPipeline(id),
-                ...historyPipeline(id),
-              ],
-              totalCount: [{ $count: 'count' }],
-            },
+export const findByCreator = async (
+  creatorId: string,
+  page: number | string,
+  max: number | string
+) => {
+  return await find({
+    match: { 'info.creator': new Types.ObjectId(creatorId) },
+    page,
+    max,
+    historyData: false,
+  });
+};
+
+export const findClient = async ({
+  match = {},
+  sort = {},
+  page,
+  max,
+  currentUserId,
+}: {
+  match?: any;
+  sort?: any;
+  page: number | string;
+  max: number | string;
+  currentUserId?: string;
+}) => {
+  return await find({
+    match: { 'info.status': 'public', 'info.isEditing': false, ...match },
+    sort,
+    page,
+    max,
+    currentUserId,
+  });
+};
+
+export const findClientByKeyword = async (params: {
+  search: string;
+  page: number | string;
+  max: number | string;
+  currentUserId?: string;
+}) => {
+  return await findClient({
+    match: { $text: { $search: params.search } },
+    sort: { score: { $meta: 'textScore' } },
+    page: params.page,
+    max: params.max,
+    currentUserId: params.currentUserId,
+  });
+};
+
+export const findClientByChannel = async (params: {
+  channelId: string;
+  page: number | string;
+  max: number | string;
+  currentUserId?: string;
+}) => {
+  return await findClient({
+    match: { 'info.creator': new Types.ObjectId(params.channelId) },
+    page: params.page,
+    max: params.max,
+    currentUserId: params.currentUserId,
+  });
+};
+
+export const findClientByIds = async (params: {
+  ids: string[];
+  currentUserId?: string;
+}) => {
+  return await findClient({
+    match: { _id: { $in: params.ids.map((id) => new Types.ObjectId(id)) } },
+    page: 1,
+    max: params.ids.length,
+    currentUserId: params.currentUserId,
+  });
+};
+
+export const findClientByFavorites = async (
+  id: string,
+  params: { page: number | string; max: number | string }
+) => {
+  return await findClient({
+    match: { $expr: { $in: [new Types.ObjectId(id), '$data.favorites'] } },
+    page: params.page,
+    max: params.max,
+  });
+};
+
+export const updateFavorites = async (id: string, currentUserId: string) => {
+  const objectUserId = new Types.ObjectId(currentUserId);
+  return await VideoModel.findByIdAndUpdate(
+    id,
+    [
+      {
+        $set: {
+          'data.favorites': {
+            $cond: [
+              { $in: [objectUserId, '$data.favorites'] },
+              { $setDifference: ['$data.favorites', [objectUserId]] },
+              { $concatArrays: ['$data.favorites', [objectUserId]] },
+            ],
           },
-          { $unwind: '$totalCount' },
-        ],
+        },
       },
-    },
-    { $project: { favorites: 1 } },
-  ]);
-
-  const { favorites } = result[0];
-
-  const videos = favorites.length ? favorites[0].videos : [];
-  const count = favorites.length ? favorites[0].totalCount.count : 0;
-
-  return { videos, count };
+    ],
+    { new: true }
+  );
 };
 
-export const incrementViews = (id: string) => {
-  return VideoModel.updateOne({ _id: id }, { $inc: { 'data.views': 1 } });
-};
-
-export const addToFavorites = async (
-  targetId: string,
-  currentUserId: string
-) => {
-  const session = await startSession();
-
-  await session.withTransaction(async () => {
-    await Promise.all([
-      VideoModel.updateOne(
-        { _id: targetId },
-        { $addToSet: { 'data.favorites': currentUserId } }
-      ),
-      UserModel.updateOne(
-        { _id: currentUserId },
-        { $addToSet: { favorites: targetId } }
-      ),
-    ]);
-  });
-
-  await session.endSession();
-};
-
-export const removeFromFavorites = async (
-  targetId: string,
-  currentUserId: string
-) => {
-  const session = await startSession();
-
-  await session.withTransaction(async () => {
-    await Promise.all([
-      VideoModel.updateOne(
-        { _id: targetId },
-        { $pull: { 'data.favorites': currentUserId } }
-      ),
-      UserModel.updateOne(
-        { _id: currentUserId },
-        { $pull: { favorites: targetId } }
-      ),
-    ]);
-  });
-
-  await session.endSession();
+export const incrementViews = async (id: string) => {
+  return await VideoModel.findByIdAndUpdate(id, { $inc: { 'data.views': 1 } });
 };

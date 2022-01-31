@@ -30,8 +30,8 @@ export const favoritesPipeline = (userId?: string) => {
   ];
 };
 
-export const historyPipeline = (userId?: string) => {
-  return userId
+export const historyPipeline = (userId?: string, attachData = true) => {
+  return userId && attachData
     ? [
         {
           $lookup: {

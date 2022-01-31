@@ -11,7 +11,6 @@ export interface User {
   isAdmin: boolean;
   subscribers: Types.ObjectId[]; // ref to User Document
   subscribes: Types.ObjectId[]; // ref to User Document
-  favorites: Types.ObjectId[]; // ref to Video Document
   history: History[];
   verificationToken?: string;
   recoveryToken?: string;
@@ -37,7 +36,6 @@ const UserSchema = new Schema<User>(
     isAdmin: { type: Boolean, required: true, default: false },
     subscribers: [{ type: Types.ObjectId, ref: 'User' }],
     subscribes: [{ type: Types.ObjectId, ref: 'User' }],
-    favorites: [{ type: Types.ObjectId, ref: 'Video' }],
     history: [
       {
         video: { type: Types.ObjectId, ref: 'Video' },

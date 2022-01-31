@@ -9,6 +9,4 @@ router.get('/', checkToken, historyController.getHistory);
 router.put('/', checkToken, historyController.putHistory);
 router.delete('/', checkToken, historyController.removeHistory);
 
-router.get('/local', historyController.getLocalHistory);
-
 export default router;
