@@ -5,16 +5,16 @@ import * as HistoryService from '../services/history.service';
 export const getHistory: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
   try {
-    const { page, max, skipFullyWatched } = req.query as {
-      [key: string]: string;
+    const params = req.query as {
+      page: string;
+      max: string;
+      skipFullyWatched: string;
     };
 
-    const { videos, count } = await HistoryService.find(
-      req.user.id,
-      page,
-      max,
-      skipFullyWatched ? true : false
-    );
+    const { videos, count } = await HistoryService.find({
+      userId: req.user.id,
+      ...params,
+    });
 
     res.json({ videos, count });
   } catch (err) {

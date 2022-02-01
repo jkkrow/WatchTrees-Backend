@@ -35,36 +35,22 @@ export const historyPipeline = (userId?: string, attachData = true) => {
     ? [
         {
           $lookup: {
-            from: 'users',
+            from: 'histories',
             as: 'history',
-            let: { id: '$_id' },
+            let: { video: '$_id' },
             pipeline: [
-              { $match: { _id: new Types.ObjectId(userId) } },
-              {
-                $project: {
-                  history: {
-                    $filter: {
-                      input: '$history',
-                      as: 'item',
-                      cond: { $eq: ['$$item.video', '$$id'] },
-                    },
-                  },
-                },
-              },
-              { $project: { history: { $arrayElemAt: ['$history', 0] } } },
+              { $match: { user: new Types.ObjectId(userId) } },
+              { $match: { $expr: { $eq: ['$$video', '$video'] } } },
             ],
           },
         },
-        { $unwind: '$history' },
-        { $addFields: { history: '$history.history' } },
-        { $project: { history: { _id: 0, history: 0 } } },
         {
           $addFields: {
             history: {
               $cond: {
-                if: { $eq: ['$history', {}] },
+                if: { $eq: ['$history', []] },
                 then: null,
-                else: '$history',
+                else: { $first: '$history' },
               },
             },
           },

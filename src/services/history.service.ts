@@ -6,12 +6,17 @@ import {
   favoritesPipeline,
 } from './pipelines/video.pipeline';
 
-export const find = async (
-  userId: string,
-  page: string | number,
-  max: string | number,
-  skipFullyWatched: boolean
-) => {
+export const find = async ({
+  userId,
+  page = 1,
+  max = 12,
+  skipFullyWatched = false,
+}: {
+  userId: string;
+  page: number | string;
+  max: number | string;
+  skipFullyWatched: boolean | string;
+}) => {
   const result = await HistoryModel.aggregate([
     { $match: { user: new Types.ObjectId(userId) } },
     { $match: skipFullyWatched ? { 'progress.isEnded': false } : {} },
