@@ -1,254 +1,206 @@
-import { RequestHandler } from 'express';
-
 import * as VideoService from '../services/video.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
+import { asyncHandler } from '../util/async-handler';
 
-export const createVideo: RequestHandler = async (req, res, next) => {
+export const createVideo = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const video = await VideoService.create(req.user.id);
 
-    res.json({ video });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const video = await VideoService.create(req.user.id);
 
-export const updateVideo: RequestHandler = async (req, res, next) => {
+  res.json({ video });
+});
+
+export const updateVideo = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { uploadTree } = req.body;
-    const { id } = req.params;
 
-    await VideoService.update(id, uploadTree);
+  const { uploadTree } = req.body;
+  const { id } = req.params;
 
-    res.json({ message: 'Upload progress saved' });
-  } catch (err) {
-    return next(err);
-  }
-};
+  await VideoService.update(id, uploadTree);
 
-export const deleteVideo: RequestHandler = async (req, res, next) => {
+  res.json({ message: 'Upload progress saved' });
+});
+
+export const deleteVideo = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { id } = req.params;
 
-    await VideoService.remove(id, req.user.id);
+  const { id } = req.params;
 
-    // TODO: Delete videos & thumbnail from aws s3
+  await VideoService.remove(id, req.user.id);
 
-    res.json({ message: 'Video deleted successfully' });
-  } catch (err) {
-    return next(err);
-  }
-};
+  // TODO: Delete videos & thumbnail from aws s3
 
-export const getCreatedVideos: RequestHandler = async (req, res, next) => {
+  res.json({ message: 'Video deleted successfully' });
+});
+
+export const getCreatedVideos = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { page, max } = req.query as { [key: string]: string };
 
-    const { videos, count } = await VideoService.findByCreator(
-      req.user.id,
-      page,
-      max
-    );
+  const { page, max } = req.query as { [key: string]: string };
 
-    res.json({ videos, count });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const { videos, count } = await VideoService.findByCreator(
+    req.user.id,
+    page,
+    max
+  );
 
-export const getCreatedVideo: RequestHandler = async (req, res, next) => {
+  res.json({ videos, count });
+});
+
+export const getCreatedVideo = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { id } = req.params;
 
-    const video = await VideoService.findOne(id);
+  const { id } = req.params;
 
-    if (video.info.creator.toString() !== req.user.id) {
-      throw new HttpError(403, 'Not authorized to this video');
-    }
+  const video = await VideoService.findOne(id);
 
-    res.json({ video });
-  } catch (err) {
-    return next(err);
+  if (video.info.creator.toString() !== req.user.id) {
+    throw new HttpError(403, 'Not authorized to this video');
   }
-};
 
-export const getClientVideos: RequestHandler = async (req, res, next) => {
-  try {
-    const params = req.query as {
-      page: string;
-      max: string;
-      search: string;
-      channelId: string;
-      currentUserId: string;
-      ids: string[];
-    };
+  res.json({ video });
+});
 
-    let result: any;
+export const getClientVideos = asyncHandler(async (req, res) => {
+  const params = req.query as {
+    page: string;
+    max: string;
+    search: string;
+    channelId: string;
+    currentUserId: string;
+    ids: string[];
+  };
 
-    if (params.search) {
-      result = await VideoService.findClientByKeyword(params);
-    } else if (params.channelId) {
-      result = await VideoService.findClientByChannel(params);
-    } else if (params.ids) {
-      result = await VideoService.findClientByIds(params);
-    } else {
-      result = await VideoService.findClient(params);
-    }
+  let result: any;
 
-    res.json({ videos: result.videos, count: result.count });
-  } catch (err) {
-    return next(err);
+  if (params.search) {
+    result = await VideoService.findClientByKeyword(params);
+  } else if (params.channelId) {
+    result = await VideoService.findClientByChannel(params);
+  } else if (params.ids) {
+    result = await VideoService.findClientByIds(params);
+  } else {
+    result = await VideoService.findClient(params);
   }
-};
 
-export const getClientVideo: RequestHandler = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { currentUserId } = req.query as { [key: string]: string };
+  res.json({ videos: result.videos, count: result.count });
+});
 
-    await VideoService.incrementViews(id);
-    const video = await VideoService.findClientOne(id, currentUserId);
+export const getClientVideo = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { currentUserId } = req.query as { [key: string]: string };
 
-    res.json({ video });
-  } catch (err) {
-    return next(err);
-  }
-};
+  await VideoService.incrementViews(id);
+  const video = await VideoService.findClientOne(id, currentUserId);
 
-export const getFavorites: RequestHandler = async (req, res, next) => {
+  res.json({ video });
+});
+
+export const getFavorites = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const params = req.query as { page: string; max: string };
 
-    const { videos, count } = await VideoService.findClientByFavorites(
-      req.user.id,
-      params
-    );
+  const params = req.query as { page: string; max: string };
 
-    res.json({ videos, count });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const { videos, count } = await VideoService.findClientByFavorites(
+    req.user.id,
+    params
+  );
 
-export const toggleFavorites: RequestHandler = async (req, res, next) => {
+  res.json({ videos, count });
+});
+
+export const toggleFavorites = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { videoId } = req.body;
 
-    const video = await VideoService.updateFavorites(videoId, req.user.id);
+  const { videoId } = req.body;
 
-    res.json({ message: 'Added video to favorites', video });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const video = await VideoService.updateFavorites(videoId, req.user.id);
 
-export const initiateVideoUpload: RequestHandler = async (req, res, next) => {
+  res.json({ message: 'Added video to favorites', video });
+});
+
+export const initiateVideoUpload = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { videoId, isRoot, fileName, fileType } = req.body;
 
-    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+  const { videoId, isRoot, fileName, fileType } = req.body;
 
-    const uploadData = await UploadService.initiateMutlipart(
-      fileType,
-      isRoot,
-      key
-    );
+  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-    res.json({ uploadId: uploadData.UploadId });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const uploadData = await UploadService.initiateMutlipart(
+    fileType,
+    isRoot,
+    key
+  );
 
-export const processVideoUpload: RequestHandler = async (req, res, next) => {
+  res.json({ uploadId: uploadData.UploadId });
+});
+
+export const processVideoUpload = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { videoId, fileName, partNumber } = req.body;
-    const { uploadId } = req.params;
 
-    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+  const { videoId, fileName, partNumber } = req.body;
+  const { uploadId } = req.params;
 
-    const presignedUrl = await UploadService.processMultipart(
-      uploadId,
-      partNumber,
-      key
-    );
+  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-    res.json({ presignedUrl });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const presignedUrl = await UploadService.processMultipart(
+    uploadId,
+    partNumber,
+    key
+  );
 
-export const completeVideoUpload: RequestHandler = async (req, res, next) => {
+  res.json({ presignedUrl });
+});
+
+export const completeVideoUpload = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { videoId, fileName, parts } = req.body;
-    const { uploadId } = req.params;
 
-    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+  const { videoId, fileName, parts } = req.body;
+  const { uploadId } = req.params;
 
-    const result = await UploadService.completeMultipart(uploadId, parts, key);
+  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-    res.json({ url: result.Key });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const result = await UploadService.completeMultipart(uploadId, parts, key);
 
-export const cancelVideoUpload: RequestHandler = async (req, res, next) => {
+  res.json({ url: result.Key });
+});
+
+export const cancelVideoUpload = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { videoId, fileName } = req.query;
-    const { uploadId } = req.params;
 
-    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+  const { videoId, fileName } = req.query;
+  const { uploadId } = req.params;
 
-    await UploadService.cancelMultipart(uploadId, key);
+  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-    res.json({ message: 'Video upload cancelled' });
-  } catch (err) {
-    return next(err);
-  }
-};
+  await UploadService.cancelMultipart(uploadId, key);
 
-export const uploadThumbnail: RequestHandler = async (req, res, next) => {
+  res.json({ message: 'Video upload cancelled' });
+});
+
+export const uploadThumbnail = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { thumbnail, fileType } = req.body as {
-      thumbnail: { name: string; url: string };
-      fileType: string;
-    };
 
-    const { presignedUrl, key } = await UploadService.uploadImage(
-      fileType,
-      thumbnail.url
-    );
+  const { thumbnail, fileType } = req.body as {
+    thumbnail: { name: string; url: string };
+    fileType: string;
+  };
 
-    res.json({ presignedUrl, key });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const { presignedUrl, key } = await UploadService.uploadImage(
+    fileType,
+    thumbnail.url
+  );
 
-export const deleteThumbnail: RequestHandler = async (req, res, next) => {
+  res.json({ presignedUrl, key });
+});
+
+export const deleteThumbnail = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { key } = req.query as { [key: string]: string };
 
-    await UploadService.deleteImage(key);
+  const { key } = req.query as { [key: string]: string };
 
-    res.json({ message: 'Thumbnail deleted' });
-  } catch (err) {
-    return next(err);
-  }
-};
+  await UploadService.deleteImage(key);
+
+  res.json({ message: 'Thumbnail deleted' });
+});

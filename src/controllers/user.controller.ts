@@ -1,292 +1,237 @@
-import { RequestHandler } from 'express';
 import { validationResult } from 'express-validator';
 
 import * as UserService from '../services/user.service';
 import * as AuthService from '../services/auth.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
+import { asyncHandler } from '../util/async-handler';
 import { createAuthTokens } from '../util/jwt-token';
 
-export const register: RequestHandler = async (req, res, next) => {
-  try {
-    const { name, email, password } = req.body;
+export const register = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
 
-    const errors = validationResult(req);
+  const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
-      throw new HttpError(422, 'Invalid inputs.');
-    }
-
-    const user = await AuthService.signup(name, email, password);
-
-    const { refreshToken, accessToken } = createAuthTokens(user.id);
-    const userData = {
-      _id: user._id,
-      type: user.type,
-      name: user.name,
-      email: user.email,
-      picture: user.picture,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-    };
-
-    res.status(201).json({
-      message:
-        'Verification email has sent. Please check your email and confirm signup.',
-      accessToken,
-      refreshToken,
-      userData,
-    });
-  } catch (err) {
-    return next(err);
+  if (!errors.isEmpty()) {
+    throw new HttpError(422, 'Invalid inputs.');
   }
-};
 
-export const login: RequestHandler = async (req, res, next) => {
-  try {
-    const { email, password, tokenId } = req.body;
+  const user = await AuthService.signup(name, email, password);
 
-    const user = tokenId
-      ? await AuthService.googleSignin(tokenId)
-      : await AuthService.signin(email, password);
+  const { refreshToken, accessToken } = createAuthTokens(user.id);
+  const userData = {
+    _id: user._id,
+    type: user.type,
+    name: user.name,
+    email: user.email,
+    picture: user.picture,
+    isVerified: user.isVerified,
+    isPremium: user.isPremium,
+  };
 
-    const { refreshToken, accessToken } = createAuthTokens(user.id);
-    const userData = {
-      _id: user.id,
-      type: user.type,
-      name: user.name,
-      email: user.email,
-      picture: user.picture,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-    };
+  res.status(201).json({
+    message:
+      'Verification email has sent. Please check your email and confirm signup.',
+    accessToken,
+    refreshToken,
+    userData,
+  });
+});
 
-    res
-      .status(tokenId ? 201 : 200)
-      .json({ accessToken, refreshToken, userData });
-  } catch (err) {
-    return next(err);
-  }
-};
+export const login = asyncHandler(async (req, res) => {
+  const { email, password, tokenId } = req.body;
 
-export const updateRefreshToken: RequestHandler = async (req, res, next) => {
+  const user = tokenId
+    ? await AuthService.googleSignin(tokenId)
+    : await AuthService.signin(email, password);
+
+  const { refreshToken, accessToken } = createAuthTokens(user.id);
+  const userData = {
+    _id: user.id,
+    type: user.type,
+    name: user.name,
+    email: user.email,
+    picture: user.picture,
+    isVerified: user.isVerified,
+    isPremium: user.isPremium,
+  };
+
+  res.status(tokenId ? 201 : 200).json({ accessToken, refreshToken, userData });
+});
+
+export const updateRefreshToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { refreshToken, accessToken } = createAuthTokens(req.user.id);
 
-    res.json({ accessToken, refreshToken });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const { refreshToken, accessToken } = createAuthTokens(req.user.id);
 
-export const updateAccessToken: RequestHandler = async (req, res, next) => {
+  res.json({ accessToken, refreshToken });
+});
+
+export const updateAccessToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { accessToken } = createAuthTokens(req.user.id);
 
-    res.json({ accessToken });
-  } catch (err) {
-    return next(err);
+  const { accessToken } = createAuthTokens(req.user.id);
+
+  res.json({ accessToken });
+});
+
+export const sendVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const message = await AuthService.sendVerification(email);
+
+  res.json({ message });
+});
+
+export const checkVerification = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  const message = await AuthService.checkVerification(token);
+
+  res.json({ message });
+});
+
+export const sendRecovery = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const message = await AuthService.sendRecovery(email);
+
+  res.json({ message });
+});
+
+export const checkRecovery = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  await AuthService.checkRecovery(token);
+
+  res.json();
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    throw new HttpError(422, 'Invalid inputs.');
   }
-};
 
-export const sendVerification: RequestHandler = async (req, res, next) => {
-  try {
-    const { email } = req.body;
+  const message = await AuthService.resetPassword(token, password);
 
-    const message = await AuthService.sendVerification(email);
+  res.json({ message });
+});
 
-    res.json({ message });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const checkVerification: RequestHandler = async (req, res, next) => {
-  try {
-    const { token } = req.params;
-
-    const message = await AuthService.checkVerification(token);
-
-    res.json({ message });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const sendRecovery: RequestHandler = async (req, res, next) => {
-  try {
-    const { email } = req.body;
-
-    const message = await AuthService.sendRecovery(email);
-
-    res.json({ message });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const checkRecovery: RequestHandler = async (req, res, next) => {
-  try {
-    const { token } = req.params;
-
-    await AuthService.checkRecovery(token);
-
-    res.json();
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const resetPassword: RequestHandler = async (req, res, next) => {
-  try {
-    const { token } = req.params;
-    const { password } = req.body;
-
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      throw new HttpError(422, 'Invalid inputs.');
-    }
-
-    const message = await AuthService.resetPassword(token, password);
-
-    res.json({ message });
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const updateUserName: RequestHandler = async (req, res, next) => {
+export const updateUserName = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { name } = req.body;
 
-    const errors = validationResult(req);
+  const { name } = req.body;
 
-    if (!errors.isEmpty()) {
-      throw new HttpError(422, 'Invalid inputs.');
-    }
+  const errors = validationResult(req);
 
-    await UserService.update(req.user.id, { name });
-
-    res.json({ message: 'User name updated successfully.' });
-  } catch (err) {
-    return next(err);
+  if (!errors.isEmpty()) {
+    throw new HttpError(422, 'Invalid inputs.');
   }
-};
 
-export const updatePassword: RequestHandler = async (req, res, next) => {
+  await UserService.update(req.user.id, { name });
+
+  res.json({ message: 'User name updated successfully.' });
+});
+
+export const updatePassword = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { currentPassword, newPassword } = req.body;
 
-    const errors = validationResult(req);
+  const { currentPassword, newPassword } = req.body;
 
-    if (!errors.isEmpty()) {
-      throw new HttpError(422, 'Invalid inputs.');
-    }
+  const errors = validationResult(req);
 
-    await UserService.updatePassword(req.user.id, currentPassword, newPassword);
-
-    res.json({ message: 'Password updated successfully.' });
-  } catch (err) {
-    return next(err);
+  if (!errors.isEmpty()) {
+    throw new HttpError(422, 'Invalid inputs.');
   }
-};
 
-export const updatePicture: RequestHandler = async (req, res, next) => {
+  await UserService.updatePassword(req.user.id, currentPassword, newPassword);
+
+  res.json({ message: 'Password updated successfully.' });
+});
+
+export const updatePicture = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { isNewFile, fileType } = req.body;
 
-    let url = '';
-    let path = '';
+  const { isNewFile, fileType } = req.body;
 
-    const user = await UserService.findById(req.user.id);
+  let url = '';
+  let path = '';
 
-    if (!user) {
-      throw new HttpError(404, 'User not found');
-    }
+  const user = await UserService.findById(req.user.id);
 
-    if (isNewFile) {
-      const { presignedUrl, key } = await UploadService.uploadImage(
-        fileType,
-        user.picture
-      );
-
-      url = presignedUrl;
-      path = key;
-    } else {
-      user.picture && (await UploadService.deleteImage(user.picture));
-      path = '';
-    }
-
-    await UserService.update(req.user.id, { picture: path });
-
-    res.json({
-      presignedUrl: url,
-      picture: path,
-      message: 'Picture updated successfully.',
-    });
-  } catch (err) {
-    return next(err);
+  if (!user) {
+    throw new HttpError(404, 'User not found');
   }
-};
 
-export const fetchChannelInfo: RequestHandler = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { currentUserId } = req.query as { [key: string]: string };
+  if (isNewFile) {
+    const { presignedUrl, key } = await UploadService.uploadImage(
+      fileType,
+      user.picture
+    );
 
-    const channelInfo = await UserService.getChannelInfo(id, currentUserId);
-
-    if (!channelInfo) {
-      throw new HttpError(404, 'No Channel found');
-    }
-
-    res.json({ channelInfo });
-  } catch (err) {
-    return next(err);
+    url = presignedUrl;
+    path = key;
+  } else {
+    user.picture && (await UploadService.deleteImage(user.picture));
+    path = '';
   }
-};
 
-export const fetchSubscribes: RequestHandler = async (req, res, next) => {
+  await UserService.update(req.user.id, { picture: path });
+
+  res.json({
+    presignedUrl: url,
+    picture: path,
+    message: 'Picture updated successfully.',
+  });
+});
+
+export const fetchChannelInfo = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { currentUserId } = req.query as { [key: string]: string };
+
+  const channelInfo = await UserService.getChannelInfo(id, currentUserId);
+
+  if (!channelInfo) {
+    throw new HttpError(404, 'No Channel found');
+  }
+
+  res.json({ channelInfo });
+});
+
+export const fetchSubscribes = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const subscribes = await UserService.getSubscribes(req.user.id);
 
-    res.json({ subscribes });
-  } catch (err) {
-    return next(err);
-  }
-};
+  const subscribes = await UserService.getSubscribes(req.user.id);
 
-export const updateSubscribes: RequestHandler = async (req, res, next) => {
+  res.json({ subscribes });
+});
+
+export const updateSubscribes = asyncHandler(async (req, res) => {
   if (!req.user) return;
-  try {
-    const { id } = req.params;
 
-    const channelInfo = await UserService.getChannelInfo(id, req.user.id);
+  const { id } = req.params;
 
-    if (!channelInfo) {
-      throw new HttpError(404, 'No Channel found');
-    }
+  const channelInfo = await UserService.getChannelInfo(id, req.user.id);
 
-    if (channelInfo.isSubscribed) {
-      await UserService.unsubscribe(id, req.user.id);
-      channelInfo.subscribers--;
-    } else {
-      await UserService.subscribe(id, req.user.id);
-      channelInfo.subscribers++;
-    }
-
-    res.json({
-      isSubscribed: !channelInfo.isSubscribed,
-      subscribers: channelInfo.subscribers,
-    });
-  } catch (err) {
-    return next(err);
+  if (!channelInfo) {
+    throw new HttpError(404, 'No Channel found');
   }
-};
+
+  if (channelInfo.isSubscribed) {
+    await UserService.unsubscribe(id, req.user.id);
+    channelInfo.subscribers--;
+  } else {
+    await UserService.subscribe(id, req.user.id);
+    channelInfo.subscribers++;
+  }
+
+  res.json({
+    isSubscribed: !channelInfo.isSubscribed,
+    subscribers: channelInfo.subscribers,
+  });
+});
