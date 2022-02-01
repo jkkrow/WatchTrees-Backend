@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 
 import * as VideoService from '../services/video.service';
+import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 
 export const createVideo: RequestHandler = async (req, res, next) => {
@@ -144,6 +145,109 @@ export const toggleFavorites: RequestHandler = async (req, res, next) => {
     const video = await VideoService.updateFavorites(videoId, req.user.id);
 
     res.json({ message: 'Added video to favorites', video });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const initiateVideoUpload: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { videoId, isRoot, fileName, fileType } = req.body;
+
+    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+
+    const uploadData = await UploadService.initiateMutlipart(
+      fileType,
+      isRoot,
+      key
+    );
+
+    res.json({ uploadId: uploadData.UploadId });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const processVideoUpload: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { videoId, fileName, partNumber } = req.body;
+    const { uploadId } = req.params;
+
+    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+
+    const presignedUrl = await UploadService.processMultipart(
+      uploadId,
+      partNumber,
+      key
+    );
+
+    res.json({ presignedUrl });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const completeVideoUpload: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { videoId, fileName, parts } = req.body;
+    const { uploadId } = req.params;
+
+    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+
+    const result = await UploadService.completeMultipart(uploadId, parts, key);
+
+    res.json({ url: result.Key });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const cancelVideoUpload: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { videoId, fileName } = req.query;
+    const { uploadId } = req.params;
+
+    const key = `videos/${req.user.id}/${videoId}/${fileName}`;
+
+    await UploadService.cancelMultipart(uploadId, key);
+
+    res.json({ message: 'Video upload cancelled' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const uploadThumbnail: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { thumbnail, fileType } = req.body as {
+      thumbnail: { name: string; url: string };
+      fileType: string;
+    };
+
+    const { presignedUrl, key } = await UploadService.uploadImage(
+      fileType,
+      thumbnail.url
+    );
+
+    res.json({ presignedUrl, key });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const deleteThumbnail: RequestHandler = async (req, res, next) => {
+  if (!req.user) return;
+  try {
+    const { key } = req.query as { [key: string]: string };
+
+    await UploadService.deleteImage(key);
+
+    res.json({ message: 'Thumbnail deleted' });
   } catch (err) {
     return next(err);
   }

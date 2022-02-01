@@ -4,7 +4,6 @@ import 'dotenv/config';
 
 import { connectDB } from './config/db';
 import { HttpError } from './models/error';
-import uploadRoute from './routes/upload.route';
 import userRoute from './routes/user.route';
 import videoRoute from './routes/video.route';
 import historyRoute from './routes/history.route';
@@ -18,7 +17,6 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-app.use('/api/upload', uploadRoute);
 app.use('/api/users', userRoute);
 app.use('/api/videos', videoRoute);
 app.use('/api/histories', historyRoute);

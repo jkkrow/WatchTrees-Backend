@@ -1,21 +1,11 @@
 import { RequestHandler } from 'express';
 import { validationResult } from 'express-validator';
-import { S3 } from 'aws-sdk';
-import { v1 as uuidv1 } from 'uuid';
-import { parse } from 'path';
 
 import * as UserService from '../services/user.service';
 import * as AuthService from '../services/auth.service';
+import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { createAuthTokens } from '../util/jwt-token';
-
-const s3 = new S3({
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  },
-  region: process.env.S3_BUCKET_REGION!,
-});
 
 export const register: RequestHandler = async (req, res, next) => {
   try {
@@ -81,7 +71,6 @@ export const login: RequestHandler = async (req, res, next) => {
 
 export const updateRefreshToken: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { refreshToken, accessToken } = createAuthTokens(req.user.id);
 
@@ -93,7 +82,6 @@ export const updateRefreshToken: RequestHandler = async (req, res, next) => {
 
 export const updateAccessToken: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { accessToken } = createAuthTokens(req.user.id);
 
@@ -172,7 +160,6 @@ export const resetPassword: RequestHandler = async (req, res, next) => {
 
 export const updateUserName: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { name } = req.body;
 
@@ -192,7 +179,6 @@ export const updateUserName: RequestHandler = async (req, res, next) => {
 
 export const updatePassword: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { currentPassword, newPassword } = req.body;
 
@@ -212,53 +198,36 @@ export const updatePassword: RequestHandler = async (req, res, next) => {
 
 export const updatePicture: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { isNewFile, fileType } = req.body;
+
+    let url = '';
+    let path = '';
 
     const user = await UserService.findById(req.user.id);
 
     if (!user) {
-      throw new HttpError(404);
+      throw new HttpError(404, 'User not found');
     }
-
-    let presignedUrl = '';
-    let newPicture = '';
 
     if (isNewFile) {
-      const { dir, name } = parse(fileType);
+      const { presignedUrl, key } = await UploadService.uploadImage(
+        fileType,
+        user.picture
+      );
 
-      if (dir !== 'image') {
-        throw new HttpError(422, 'Invalid file type');
-      }
-
-      const params = {
-        Bucket: process.env.S3_BUCKET_NAME!,
-        Key: user.picture || `images/${req.user.id}/${uuidv1()}.${name}`,
-        ContentType: fileType,
-      };
-
-      presignedUrl = await s3.getSignedUrlPromise('putObject', params);
-
-      await UserService.update(req.user.id, { picture: params.Key });
-
-      newPicture = params.Key;
+      url = presignedUrl;
+      path = key;
+    } else {
+      user.picture && (await UploadService.deleteImage(user.picture));
+      path = '';
     }
 
-    if (!isNewFile && user.picture) {
-      const params = {
-        Bucket: process.env.S3_BUCKET_NAME!,
-        Key: user.picture,
-      };
-
-      await s3.deleteObject(params).promise();
-
-      await UserService.update(req.user.id, { picture: '' });
-    }
+    await UserService.update(req.user.id, { picture: path });
 
     res.json({
-      presignedUrl,
-      newPicture,
+      presignedUrl: url,
+      picture: path,
       message: 'Picture updated successfully.',
     });
   } catch (err) {
@@ -285,7 +254,6 @@ export const fetchChannelInfo: RequestHandler = async (req, res, next) => {
 
 export const fetchSubscribes: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const subscribes = await UserService.getSubscribes(req.user.id);
 
@@ -297,7 +265,6 @@ export const fetchSubscribes: RequestHandler = async (req, res, next) => {
 
 export const updateSubscribes: RequestHandler = async (req, res, next) => {
   if (!req.user) return;
-
   try {
     const { id } = req.params;
 
