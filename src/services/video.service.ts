@@ -253,30 +253,27 @@ export const findClientByFavorites = async (
     match: { $expr: { $in: [new Types.ObjectId(id), '$data.favorites'] } },
     page: params.page,
     max: params.max,
+    currentUserId: id,
   });
 };
 
 export const updateFavorites = async (id: string, currentUserId: string) => {
   const objectUserId = new Types.ObjectId(currentUserId);
-  return await VideoModel.findByIdAndUpdate(
-    id,
-    [
-      {
-        $set: {
-          'data.favorites': {
-            $cond: [
-              { $in: [objectUserId, '$data.favorites'] },
-              { $setDifference: ['$data.favorites', [objectUserId]] },
-              { $concatArrays: ['$data.favorites', [objectUserId]] },
-            ],
-          },
+  return await VideoModel.updateOne({ _id: id }, [
+    {
+      $set: {
+        'data.favorites': {
+          $cond: [
+            { $in: [objectUserId, '$data.favorites'] },
+            { $setDifference: ['$data.favorites', [objectUserId]] },
+            { $concatArrays: ['$data.favorites', [objectUserId]] },
+          ],
         },
       },
-    ],
-    { new: true }
-  );
+    },
+  ]);
 };
 
 export const incrementViews = async (id: string) => {
-  return await VideoModel.findByIdAndUpdate(id, { $inc: { 'data.views': 1 } });
+  return await VideoModel.updateOne({ _id: id }, { $inc: { 'data.views': 1 } });
 };

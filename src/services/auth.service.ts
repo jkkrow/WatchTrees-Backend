@@ -168,6 +168,8 @@ export const checkRecovery = async (token: string) => {
     token,
     'This link has been expired. Please send another email to reset password'
   );
+
+  return 'Verified token successfully';
 };
 
 export const resetPassword = async (token: string, password: string) => {

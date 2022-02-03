@@ -113,11 +113,11 @@ export const getFavorites = asyncHandler(async (req, res) => {
 export const toggleFavorites = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { videoId } = req.body;
+  const { id } = req.params;
 
-  const video = await VideoService.updateFavorites(videoId, req.user.id);
+  await VideoService.updateFavorites(id, req.user.id);
 
-  res.json({ message: 'Added video to favorites', video });
+  res.json({ message: 'Favorites updated' });
 });
 
 export const initiateVideoUpload = asyncHandler(async (req, res) => {
@@ -182,14 +182,11 @@ export const cancelVideoUpload = asyncHandler(async (req, res) => {
 export const uploadThumbnail = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { thumbnail, fileType } = req.body as {
-    thumbnail: { name: string; url: string };
-    fileType: string;
-  };
+  const { fileType, key: imageKey } = req.body;
 
   const { presignedUrl, key } = await UploadService.uploadImage(
     fileType,
-    thumbnail.url
+    imageKey
   );
 
   res.json({ presignedUrl, key });
@@ -198,7 +195,7 @@ export const uploadThumbnail = asyncHandler(async (req, res) => {
 export const deleteThumbnail = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { key } = req.query as { [key: string]: string };
+  const { key } = req.params;
 
   await UploadService.deleteImage(key);
 

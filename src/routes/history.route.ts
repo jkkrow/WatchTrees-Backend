@@ -7,6 +7,6 @@ const router = Router();
 
 router.get('/', checkToken, historyController.getHistory);
 router.put('/', checkToken, historyController.putHistory);
-router.delete('/', checkToken, historyController.removeHistory);
+router.delete('/:videoId', checkToken, historyController.removeHistory);
 
 export default router;

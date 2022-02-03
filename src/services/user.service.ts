@@ -1,4 +1,4 @@
-import { FilterQuery, startSession, Types } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 
 import { UserModel, User } from '../models/user';
@@ -11,10 +11,6 @@ export const findById = (id: string) => {
 
 export const findOne = (filter: FilterQuery<User>) => {
   return UserModel.findOne(filter);
-};
-
-export const find = (filter: FilterQuery<User>) => {
-  return UserModel.find({ filter });
 };
 
 export const create = async (
@@ -74,89 +70,55 @@ export const updatePassword = async (
   await user.save();
 };
 
-export const getChannelInfo = async (id: string, currentUserId: string) => {
-  const result = await UserModel.aggregate([
-    { $match: { _id: new Types.ObjectId(id) } },
+export const findChannel = async (params: {
+  match: any;
+  currentUserId?: string;
+}) => {
+  return await UserModel.aggregate([
+    { $match: { ...params.match } },
     {
-      $project: {
-        name: 1,
-        picture: 1,
+      $addFields: {
         subscribers: { $size: '$subscribers' },
-        subscribes: { $size: '$subscribes' },
-        isSubscribed: { $in: [currentUserId, '$subscribers'] },
+        isSubscribed: params.currentUserId
+          ? { $in: [new Types.ObjectId(params.currentUserId), '$subscribers'] }
+          : false,
       },
     },
-  ]).exec();
+    { $project: { name: 1, picture: 1, subscribers: 1, isSubscribed: 1 } },
+  ]);
+};
+
+export const findChannelById = async (id: string, currentUserId: string) => {
+  const result = await findChannel({
+    match: { _id: new Types.ObjectId(id) },
+    currentUserId,
+  });
 
   return result[0];
 };
 
-export const getSubscribes = async (id: string) => {
-  const result = await UserModel.aggregate([
-    { $match: { _id: new Types.ObjectId(id) } },
+export const findChannelBySubscribes = async (currentUserId: string) => {
+  return await findChannel({
+    match: {
+      $expr: { $in: [new Types.ObjectId(currentUserId), '$subscribers'] },
+    },
+    currentUserId,
+  });
+};
+
+export const updateSubscribers = async (id: string, currentUserId: string) => {
+  const objectUserId = new Types.ObjectId(currentUserId);
+  await UserModel.updateOne({ _id: id }, [
     {
-      $lookup: {
-        from: 'users',
-        as: 'subscribes',
-        let: { subscribes: '$subscribes' },
-        pipeline: [
-          { $match: { $expr: { $in: ['$_id', '$$subscribes'] } } },
-          {
-            $project: {
-              name: 1,
-              picture: 1,
-              subscribers: { $size: '$subscribers' },
-              subscribes: { $size: '$subscribes' },
-              isSubscribed: { $in: [id ? id : '', '$subscribers'] },
-            },
-          },
-        ],
+      $set: {
+        subscribers: {
+          $cond: [
+            { $in: [objectUserId, '$subscribers'] },
+            { $setDifference: ['$subscribers', [objectUserId]] },
+            { $concatArrays: ['$subscribers', [objectUserId]] },
+          ],
+        },
       },
     },
-    { $project: { subscribes: 1 } },
-  ]).exec();
-
-  const { subscribes } = result[0];
-
-  return subscribes;
-};
-
-export const subscribe = async (targetId: string, currentUserId: string) => {
-  const session = await startSession();
-
-  await session.withTransaction(async () => {
-    await Promise.all([
-      UserModel.updateOne(
-        { _id: targetId },
-        { $addToSet: { subscribers: currentUserId } },
-        { session }
-      ),
-      UserModel.updateOne(
-        { _id: currentUserId },
-        { $addToSet: { subscribes: targetId } },
-        { session }
-      ),
-    ]);
-  });
-
-  await session.endSession();
-};
-
-export const unsubscribe = async (targetId: string, currentUserId: string) => {
-  const session = await startSession();
-
-  await session.withTransaction(async () => {
-    await Promise.all([
-      UserModel.updateOne(
-        { _id: targetId },
-        { $pull: { subscribers: currentUserId } }
-      ),
-      UserModel.updateOne(
-        { _id: currentUserId },
-        { $pull: { subscribes: targetId } }
-      ),
-    ]);
-  });
-
-  await session.endSession();
+  ]);
 };

@@ -31,7 +31,7 @@ export const putHistory = asyncHandler(async (req, res) => {
 export const removeHistory = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { videoId } = req.query as { [key: string]: string };
+  const { videoId } = req.params;
 
   await HistoryService.remove(videoId, req.user.id);
 

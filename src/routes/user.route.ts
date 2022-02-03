@@ -7,9 +7,9 @@ import { checkToken } from '../middlewares/auth.middleware';
 const router = Router();
 
 // Signup & Signin
-router.post('/login', userController.login);
+router.post('/signin', userController.signin);
 router.post(
-  '/register',
+  '/signup',
   [
     body('name').trim().isLength({ min: 4 }),
     body('email').normalizeEmail().isEmail(),
@@ -18,7 +18,7 @@ router.post(
       (value, { req }) => value === req.body.password
     ),
   ],
-  userController.register
+  userController.signup
 );
 
 // Email Verification
@@ -39,7 +39,7 @@ router.patch(
   userController.resetPassword
 );
 
-// Update Token
+// Get Token
 router.get('/refresh-token', checkToken, userController.updateRefreshToken);
 router.get('/access-token', checkToken, userController.updateAccessToken);
 
@@ -65,10 +65,10 @@ router.patch(
 router.patch('/picture', checkToken, userController.updatePicture);
 
 // Channel
-router.get('/channel/:id', userController.fetchChannelInfo);
+router.get('/:id/channel', userController.getChannel);
 
 // Subscribe
-router.get('/subscribes', checkToken, userController.fetchSubscribes);
-router.patch('/subscribes/:id', checkToken, userController.updateSubscribes);
+router.get('/subscribes', checkToken, userController.getSubscribes);
+router.patch('/:id/subscribers', checkToken, userController.updateSubscribers);
 
 export default router;

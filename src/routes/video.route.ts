@@ -1,15 +1,15 @@
 import { Router } from 'express';
 
-import { checkToken, checkVerified } from '../middlewares/auth.middleware';
 import * as videoController from '../controllers/video.controller';
+import { checkToken, checkVerified } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 router.get('/client', videoController.getClientVideos);
-router.get('/client/:id', videoController.getClientVideo);
+router.get('/:id/client', videoController.getClientVideo);
 
 router.get('/favorites', checkToken, videoController.getFavorites);
-router.patch('/favorites', checkToken, videoController.toggleFavorites);
+router.patch('/:id/favorites', checkToken, videoController.toggleFavorites);
 
 router.post(
   '/upload/multipart',
@@ -32,8 +32,13 @@ router.delete(
   checkToken,
   videoController.cancelVideoUpload
 );
+
 router.put('/upload/thumbnail', checkToken, videoController.uploadThumbnail);
-router.delete('/upload/thumbnail', checkToken, videoController.deleteThumbnail);
+router.delete(
+  '/upload/thumbnail/:key',
+  checkToken,
+  videoController.deleteThumbnail
+);
 
 router.get('/', checkToken, videoController.getCreatedVideos);
 router.post('/', checkToken, checkVerified, videoController.createVideo);

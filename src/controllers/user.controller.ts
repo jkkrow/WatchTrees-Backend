@@ -7,7 +7,7 @@ import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
 import { createAuthTokens } from '../util/jwt-token';
 
-export const register = asyncHandler(async (req, res) => {
+export const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
   const errors = validationResult(req);
@@ -38,7 +38,7 @@ export const register = asyncHandler(async (req, res) => {
   });
 });
 
-export const login = asyncHandler(async (req, res) => {
+export const signin = asyncHandler(async (req, res) => {
   const { email, password, tokenId } = req.body;
 
   const user = tokenId
@@ -102,9 +102,9 @@ export const sendRecovery = asyncHandler(async (req, res) => {
 export const checkRecovery = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  await AuthService.checkRecovery(token);
+  const message = await AuthService.checkRecovery(token);
 
-  res.json();
+  res.json({ message });
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
@@ -190,11 +190,11 @@ export const updatePicture = asyncHandler(async (req, res) => {
   });
 });
 
-export const fetchChannelInfo = asyncHandler(async (req, res) => {
+export const getChannel = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { currentUserId } = req.query as { [key: string]: string };
 
-  const channelInfo = await UserService.getChannelInfo(id, currentUserId);
+  const channelInfo = await UserService.findChannelById(id, currentUserId);
 
   if (!channelInfo) {
     throw new HttpError(404, 'No Channel found');
@@ -203,35 +203,20 @@ export const fetchChannelInfo = asyncHandler(async (req, res) => {
   res.json({ channelInfo });
 });
 
-export const fetchSubscribes = asyncHandler(async (req, res) => {
+export const getSubscribes = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const subscribes = await UserService.getSubscribes(req.user.id);
+  const subscribes = await UserService.findChannelBySubscribes(req.user.id);
 
   res.json({ subscribes });
 });
 
-export const updateSubscribes = asyncHandler(async (req, res) => {
+export const updateSubscribers = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
   const { id } = req.params;
 
-  const channelInfo = await UserService.getChannelInfo(id, req.user.id);
+  await UserService.updateSubscribers(id, req.user.id);
 
-  if (!channelInfo) {
-    throw new HttpError(404, 'No Channel found');
-  }
-
-  if (channelInfo.isSubscribed) {
-    await UserService.unsubscribe(id, req.user.id);
-    channelInfo.subscribers--;
-  } else {
-    await UserService.subscribe(id, req.user.id);
-    channelInfo.subscribers++;
-  }
-
-  res.json({
-    isSubscribed: !channelInfo.isSubscribed,
-    subscribers: channelInfo.subscribers,
-  });
+  res.json({ message: 'Subscribes updated' });
 });

@@ -10,8 +10,6 @@ export interface User {
   isPremium: boolean;
   isAdmin: boolean;
   subscribers: Types.ObjectId[]; // ref to User Document
-  subscribes: Types.ObjectId[]; // ref to User Document
-  history: History[];
   verificationToken?: string;
   recoveryToken?: string;
 }
@@ -20,7 +18,6 @@ export interface Channel {
   name: string;
   picture: string;
   subscribers: number;
-  subscribes: number;
   isSubscribed: boolean;
 }
 
@@ -35,18 +32,6 @@ const UserSchema = new Schema<User>(
     isPremium: { type: Boolean, required: true, default: false },
     isAdmin: { type: Boolean, required: true, default: false },
     subscribers: [{ type: Types.ObjectId, ref: 'User' }],
-    subscribes: [{ type: Types.ObjectId, ref: 'User' }],
-    history: [
-      {
-        video: { type: Types.ObjectId, ref: 'Video' },
-        progress: {
-          activeVideoId: { type: String },
-          time: { type: Number },
-          isEnded: { type: Boolean },
-        },
-        updatedAt: { type: Date },
-      },
-    ],
     verificationToken: { type: String },
     recoveryToken: { type: String },
   },
