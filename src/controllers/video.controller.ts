@@ -182,22 +182,18 @@ export const cancelVideoUpload = asyncHandler(async (req, res) => {
 export const uploadThumbnail = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { fileType, key: imageKey } = req.body;
+  const { isNewFile, fileType, key: imageKey } = req.body;
+  let presignedUrl = '';
+  let key = '';
 
-  const { presignedUrl, key } = await UploadService.uploadImage(
-    fileType,
-    imageKey
-  );
+  if (isNewFile) {
+    const result = await UploadService.uploadImage(fileType, imageKey);
+
+    presignedUrl = result.presignedUrl;
+    key = result.key;
+  } else {
+    await UploadService.deleteImage(key);
+  }
 
   res.json({ presignedUrl, key });
-});
-
-export const deleteThumbnail = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const { key } = req.params;
-
-  await UploadService.deleteImage(key);
-
-  res.json({ message: 'Thumbnail deleted' });
 });

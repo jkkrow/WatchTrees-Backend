@@ -33,12 +33,7 @@ router.delete(
   videoController.cancelVideoUpload
 );
 
-router.put('/upload/thumbnail', checkToken, videoController.uploadThumbnail);
-router.delete(
-  '/upload/thumbnail/:key',
-  checkToken,
-  videoController.deleteThumbnail
-);
+router.patch('/upload/thumbnail', checkToken, videoController.uploadThumbnail);
 
 router.get('/', checkToken, videoController.getCreatedVideos);
 router.post('/', checkToken, checkVerified, videoController.createVideo);
