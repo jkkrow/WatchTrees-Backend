@@ -77,14 +77,39 @@ export const findChannel = async (params: {
   return await UserModel.aggregate([
     { $match: { ...params.match } },
     {
+      $lookup: {
+        from: 'videos',
+        as: 'videos',
+        let: { id: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ['$$id', '$info.creator'] },
+              'info.isEditing': false,
+              'info.status': 'public',
+            },
+          },
+        ],
+      },
+    },
+    {
       $addFields: {
+        videos: { $size: '$videos' },
         subscribers: { $size: '$subscribers' },
         isSubscribed: params.currentUserId
           ? { $in: [new Types.ObjectId(params.currentUserId), '$subscribers'] }
           : false,
       },
     },
-    { $project: { name: 1, picture: 1, subscribers: 1, isSubscribed: 1 } },
+    {
+      $project: {
+        name: 1,
+        picture: 1,
+        videos: 1,
+        subscribers: 1,
+        isSubscribed: 1,
+      },
+    },
   ]);
 };
 
