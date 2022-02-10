@@ -2,6 +2,7 @@ import { validationResult } from 'express-validator';
 
 import * as UserService from '../services/user.service';
 import * as AuthService from '../services/auth.service';
+import * as ChannelService from '../services/channel.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
@@ -192,23 +193,47 @@ export const updatePicture = asyncHandler(async (req, res) => {
 
 export const getChannel = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { currentUserId } = req.query as { [key: string]: string };
+  const params = req.query as { currentUserId: string };
 
-  const channelInfo = await UserService.findChannelById(id, currentUserId);
+  const channel = await ChannelService.findById({ id, ...params });
 
-  if (!channelInfo) {
+  if (!channel) {
     throw new HttpError(404, 'No Channel found');
   }
 
-  res.json({ channelInfo });
+  res.json({ channel });
 });
 
 export const getSubscribes = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const subscribes = await UserService.findChannelBySubscribes(req.user.id);
+  const params = req.query as {
+    page: string;
+    max: string;
+  };
 
-  res.json({ subscribes });
+  const { channels, count } = await ChannelService.findBySubscribes({
+    currentUserId: req.user.id,
+    ...params,
+  });
+
+  res.json({ channels, count });
+});
+
+export const getSubscribers = asyncHandler(async (req, res) => {
+  if (!req.user) return;
+
+  const params = req.query as {
+    page: string;
+    max: string;
+  };
+
+  const { channels, count } = await ChannelService.findBySubscribers({
+    currentUserId: req.user.id,
+    ...params,
+  });
+
+  res.json({ channels, count });
 });
 
 export const updateSubscribers = asyncHandler(async (req, res) => {
@@ -216,7 +241,7 @@ export const updateSubscribers = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  await UserService.updateSubscribers(id, req.user.id);
+  await ChannelService.updateSubscribers(id, req.user.id);
 
   res.json({ message: 'Subscribes updated' });
 });

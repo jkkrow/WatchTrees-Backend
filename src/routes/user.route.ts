@@ -69,6 +69,7 @@ router.get('/:id/channel', userController.getChannel);
 
 // Subscribe
 router.get('/subscribes', checkToken, userController.getSubscribes);
+router.get('/subscribers', checkToken, userController.getSubscribers);
 router.patch('/:id/subscribers', checkToken, userController.updateSubscribers);
 
 export default router;

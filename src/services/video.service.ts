@@ -213,9 +213,7 @@ export const findClientByKeyword = async (params: {
   return await findClient({
     match: { $text: { $search: params.search } },
     sort: { score: { $meta: 'textScore' } },
-    page: params.page,
-    max: params.max,
-    currentUserId: params.currentUserId,
+    ...params,
   });
 };
 
@@ -227,9 +225,7 @@ export const findClientByChannel = async (params: {
 }) => {
   return await findClient({
     match: { 'info.creator': new Types.ObjectId(params.channelId) },
-    page: params.page,
-    max: params.max,
-    currentUserId: params.currentUserId,
+    ...params,
   });
 };
 
@@ -251,9 +247,8 @@ export const findClientByFavorites = async (
 ) => {
   return await findClient({
     match: { $expr: { $in: [new Types.ObjectId(id), '$data.favorites'] } },
-    page: params.page,
-    max: params.max,
     currentUserId: id,
+    ...params,
   });
 };
 
