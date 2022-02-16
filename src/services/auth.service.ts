@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
-import { v1 as uuidv1 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import * as UserService from './user.service';
 import { HttpError } from '../models/error';
@@ -67,7 +67,7 @@ export const googleSignin = async (tokenId: string) => {
     throw new HttpError(409, 'Account already exists for this email');
   }
 
-  const hash = await bcrypt.hash(uuidv1() + payload.email, 12);
+  const hash = await bcrypt.hash(uuidv4() + payload.email, 12);
 
   if (!user) {
     user = await UserService.create(

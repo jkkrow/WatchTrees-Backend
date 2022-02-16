@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { v1 as uuidv1 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import { VideoModel, VideoTree } from '../models/video';
 import {
@@ -13,7 +13,7 @@ import { traverseNodes, findNodeById, validateNodes } from '../util/tree';
 export const create = async (currentUserId: string) => {
   const videoTree = {
     root: {
-      id: uuidv1(),
+      id: uuidv4(),
       layer: 0,
       info: null,
       children: [],

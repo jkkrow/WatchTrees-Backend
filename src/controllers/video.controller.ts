@@ -1,3 +1,4 @@
+import * as VideoTreeService from '../services/video-tree.service';
 import * as VideoService from '../services/video.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
@@ -6,7 +7,7 @@ import { asyncHandler } from '../util/async-handler';
 export const createVideo = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const video = await VideoService.create(req.user.id);
+  const video = await VideoTreeService.create(req.user.id);
 
   res.json({ video });
 });
@@ -17,7 +18,7 @@ export const updateVideo = asyncHandler(async (req, res) => {
   const { uploadTree } = req.body;
   const { id } = req.params;
 
-  await VideoService.update(id, uploadTree);
+  await VideoTreeService.update(id, uploadTree);
 
   res.json({ message: 'Upload progress saved' });
 });

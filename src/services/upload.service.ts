@@ -1,6 +1,6 @@
 import { S3 } from 'aws-sdk';
 import { parse } from 'path';
-import { v1 as uuidv1 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import { HttpError } from '../models/error';
 
@@ -82,7 +82,7 @@ export const uploadImage = async (fileType: string, path?: string) => {
 
   const params = {
     Bucket: process.env.S3_BUCKET_NAME!,
-    Key: path || `images/${uuidv1()}.${name}`,
+    Key: path || `images/${uuidv4()}.${name}`,
     ContentType: fileType,
   };
 
