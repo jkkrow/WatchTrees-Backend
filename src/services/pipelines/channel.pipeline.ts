@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 export const channelPipeline = (currentUserId?: string) => [
   {
     $lookup: {
-      from: 'videos',
+      from: 'videotrees',
       as: 'videos',
       let: { id: '$_id' },
       pipeline: [

@@ -26,12 +26,11 @@ export const find = async ({
         videos: [
           {
             $lookup: {
-              from: 'videos',
+              from: 'videotrees',
               as: 'video',
               let: { video: '$video', history: '$$ROOT' },
               pipeline: [
                 { $match: { $expr: { $eq: ['$$video', '$_id'] } } },
-                { $project: { 'root.children': 0 } },
                 { $addFields: { history: '$$history' } },
                 ...rootNodePipe(),
                 ...creatorInfoPipe(),
