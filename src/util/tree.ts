@@ -58,7 +58,7 @@ export const validateNodes = (
   });
 };
 
-export const buildTree = (nodes: VideoNode[]): VideoTree => {
+export const buildTree = (nodes: VideoNode[]): VideoTree['root'] => {
   const map: any = {};
   let root: any = {};
 

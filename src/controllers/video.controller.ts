@@ -1,5 +1,4 @@
 import * as VideoTreeService from '../services/video-tree.service';
-import * as VideoService from '../services/video.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
@@ -28,7 +27,7 @@ export const deleteVideo = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  await VideoService.remove(id, req.user.id);
+  await VideoTreeService.remove(id, req.user.id);
 
   // TODO: Delete videos & thumbnail from aws s3
 
@@ -40,7 +39,7 @@ export const getCreatedVideos = asyncHandler(async (req, res) => {
 
   const { page, max } = req.query as { [key: string]: string };
 
-  const { videos, count } = await VideoService.findByCreator(
+  const { videos, count } = await VideoTreeService.findByCreator(
     req.user.id,
     page,
     max
@@ -54,7 +53,7 @@ export const getCreatedVideo = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  const video = await VideoService.findOne(id);
+  const video = await VideoTreeService.findOne(id);
 
   if (video.info.creator.toString() !== req.user.id) {
     throw new HttpError(403, 'Not authorized to this video');
@@ -76,13 +75,13 @@ export const getClientVideos = asyncHandler(async (req, res) => {
   let result: any;
 
   if (params.search) {
-    result = await VideoService.findClientByKeyword(params);
+    result = await VideoTreeService.findClientByKeyword(params);
   } else if (params.channelId) {
-    result = await VideoService.findClientByChannel(params);
+    result = await VideoTreeService.findClientByChannel(params);
   } else if (params.ids) {
-    result = await VideoService.findClientByIds(params);
+    result = await VideoTreeService.findClientByIds(params);
   } else {
-    result = await VideoService.findClient(params);
+    result = await VideoTreeService.findClient(params);
   }
 
   res.json({ videos: result.videos, count: result.count });
@@ -92,8 +91,8 @@ export const getClientVideo = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { currentUserId } = req.query as { [key: string]: string };
 
-  await VideoService.incrementViews(id);
-  const video = await VideoService.findClientOne(id, currentUserId);
+  await VideoTreeService.incrementViews(id);
+  const video = await VideoTreeService.findClientOne(id, currentUserId);
 
   res.json({ video });
 });
@@ -103,7 +102,7 @@ export const getFavorites = asyncHandler(async (req, res) => {
 
   const params = req.query as { page: string; max: string };
 
-  const { videos, count } = await VideoService.findClientByFavorites(
+  const { videos, count } = await VideoTreeService.findClientByFavorites(
     req.user.id,
     params
   );
@@ -116,7 +115,7 @@ export const toggleFavorites = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  await VideoService.updateFavorites(id, req.user.id);
+  await VideoTreeService.updateFavorites(id, req.user.id);
 
   res.json({ message: 'Favorites updated' });
 });

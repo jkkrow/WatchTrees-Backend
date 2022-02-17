@@ -19,7 +19,7 @@ export const getInsertJob = (videoNodes: VideoNode[]) => {
   return insertBulk;
 };
 
-export const getDeleteJob = (videoNodes: any[]) => {
+export const getDeleteJob = (videoNodes: VideoNode[]) => {
   const deleteBulk = [
     {
       deleteMany: {
@@ -31,7 +31,10 @@ export const getDeleteJob = (videoNodes: any[]) => {
   return deleteBulk;
 };
 
-export const getUpdateJob = (existingNodes: any[], newNodes: VideoNode[]) => {
+export const getUpdateJob = (
+  existingNodes: VideoNode[],
+  newNodes: VideoNode[]
+) => {
   const updateBulk: any[] = [];
 
   for (let existingNode of existingNodes) {
@@ -58,20 +61,18 @@ export const getUpdateJob = (existingNodes: any[], newNodes: VideoNode[]) => {
 
 export const bulkWrite = async (uploadTree: VideoTree) => {
   const uploadNodes = traverseNodes(uploadTree.root);
-  const savedNodes = await findFromRoot(uploadTree.root._id);
+  const savedNodes = await findByRoot(uploadTree.root._id);
 
   // Find created nodes
   const createdNodes = uploadNodes.filter(
     (uploadNode) =>
       !savedNodes.some((savedNode) => savedNode._id === uploadNode._id)
   );
-
   // Find deleted nodes
   const deletedNodes = savedNodes.filter(
     (savedNode) =>
       !uploadNodes.some((uploadNode) => uploadNode._id === savedNode._id)
   );
-
   // Find updated nodes
   const updatedNodes = savedNodes.filter((savedNode) =>
     uploadNodes.some((uploadNode) => uploadNode._id === savedNode._id)
@@ -82,11 +83,9 @@ export const bulkWrite = async (uploadTree: VideoTree) => {
   if (createdNodes.length) {
     bulkJobs.push(...getInsertJob(createdNodes));
   }
-
   if (deletedNodes.length) {
     bulkJobs.push(...getDeleteJob(deletedNodes));
   }
-
   if (updatedNodes.length) {
     bulkJobs.push(...getUpdateJob(updatedNodes, uploadNodes));
   }
@@ -94,7 +93,14 @@ export const bulkWrite = async (uploadTree: VideoTree) => {
   return await VideoNodeModel.bulkWrite(bulkJobs);
 };
 
-export const findFromRoot = async (rootId: string) => {
+export const deleteByRoot = async (rootId: string) => {
+  const savedNodes = await findByRoot(rootId);
+  const deleteBulk = getDeleteJob(savedNodes);
+
+  return await VideoNodeModel.bulkWrite(deleteBulk);
+};
+
+export const findByRoot = async (rootId: string): Promise<VideoNode[]> => {
   const result = await VideoNodeModel.aggregate([
     { $match: { _id: rootId } },
     {

@@ -1,10 +1,8 @@
 import { Types } from 'mongoose';
 
 import { HistoryModel, History } from '../models/history';
-import {
-  creatorInfoPipeline,
-  favoritesPipeline,
-} from './pipelines/video.pipeline';
+import { rootNodePipe } from './pipelines/video-node.pipeline';
+import { creatorInfoPipe, favoritePipe } from './pipelines/video-tree.pipeline';
 
 export const find = async ({
   userId,
@@ -35,8 +33,9 @@ export const find = async ({
                 { $match: { $expr: { $eq: ['$$video', '$_id'] } } },
                 { $project: { 'root.children': 0 } },
                 { $addFields: { history: '$$history' } },
-                ...creatorInfoPipeline(),
-                ...favoritesPipeline(userId),
+                ...rootNodePipe(),
+                ...creatorInfoPipe(),
+                ...favoritePipe(userId),
               ],
             },
           },
