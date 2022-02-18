@@ -44,6 +44,7 @@ const VideoNodeSchema = new Schema<VideoNodeRef>({
       url: { type: String },
     },
     default: null,
+    _id: false,
   },
 });
 
