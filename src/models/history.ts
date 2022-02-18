@@ -1,24 +1,22 @@
 import { model, Schema, Types } from 'mongoose';
 
 export interface History {
-  user: Types.ObjectId; // ref to User Document
-  video: Types.ObjectId; // ref to Video Document
-  progress: {
-    activeVideoId: string;
-    time: number;
-    isEnded: boolean;
-  };
+  user: Types.ObjectId;
+  tree: Types.ObjectId;
+  activeNodeId: string;
+  progress: number;
+  totalProgress: number;
+  isEnded: boolean;
 }
 
 const HistorySchema = new Schema<History>(
   {
     user: { type: Types.ObjectId, required: true, ref: 'User' },
-    video: { type: Types.ObjectId, required: true, ref: 'Video' },
-    progress: {
-      activeVideoId: { type: String },
-      time: { type: Number },
-      isEnded: { type: Boolean },
-    },
+    tree: { type: Types.ObjectId, required: true, ref: 'VideoTree' },
+    activeNodeId: { type: String, required: true },
+    progress: { type: Number, required: true },
+    totalProgress: { type: Number, required: true },
+    isEnded: { type: Boolean, required: true },
   },
   { timestamps: true }
 );

@@ -17,7 +17,7 @@ export const find = async ({
 }) => {
   const result = await HistoryModel.aggregate([
     { $match: { user: new Types.ObjectId(userId) } },
-    { $match: skipFullyWatched ? { 'progress.isEnded': false } : {} },
+    { $match: skipFullyWatched ? { isEnded: false } : {} },
     { $sort: { updatedAt: -1 } },
     { $skip: +max * (+page - 1) },
     { $limit: +max },
@@ -28,9 +28,9 @@ export const find = async ({
             $lookup: {
               from: 'videotrees',
               as: 'video',
-              let: { video: '$video', history: '$$ROOT' },
+              let: { tree: '$tree', history: '$$ROOT' },
               pipeline: [
-                { $match: { $expr: { $eq: ['$$video', '$_id'] } } },
+                { $match: { $expr: { $eq: ['$$tree', '$_id'] } } },
                 { $addFields: { history: '$$history' } },
                 ...rootNodePipe(),
                 ...creatorInfoPipe(),
@@ -57,29 +57,35 @@ export const find = async ({
 
 export const put = async (history: History, currentUserId: string) => {
   const existingHistory = await HistoryModel.findOne({
-    video: history.video,
     user: currentUserId,
+    tree: history.tree,
   });
 
   if (!existingHistory) {
     const newHistory = new HistoryModel({
       user: currentUserId,
-      video: history.video,
+      tree: history.tree,
+      activeNodeId: history.activeNodeId,
       progress: history.progress,
+      totalProgress: history.totalProgress,
+      isEnded: history.isEnded,
     });
 
     return await newHistory.save();
   }
 
+  existingHistory.activeNodeId = history.activeNodeId;
   existingHistory.progress = history.progress;
+  existingHistory.totalProgress = history.totalProgress;
+  existingHistory.isEnded = history.isEnded;
 
   return await existingHistory.save();
 };
 
-export const remove = async (videoId: string, currentUserId: string) => {
+export const remove = async (treeId: string, currentUserId: string) => {
   const history = await HistoryModel.findOne({
     user: currentUserId,
-    video: videoId,
+    tree: treeId,
   });
 
   if (!history) {

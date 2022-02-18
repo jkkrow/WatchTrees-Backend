@@ -7,10 +7,10 @@ export const historyPipe = (userId?: string, attachData = true) => {
           $lookup: {
             from: 'histories',
             as: 'history',
-            let: { video: '$_id' },
+            let: { tree: '$_id' },
             pipeline: [
               { $match: { user: new Types.ObjectId(userId) } },
-              { $match: { $expr: { $eq: ['$$video', '$video'] } } },
+              { $match: { $expr: { $eq: ['$$tree', '$tree'] } } },
             ],
           },
         },
