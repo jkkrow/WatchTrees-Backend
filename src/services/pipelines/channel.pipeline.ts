@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-export const channelPipeline = (currentUserId?: string) => [
+export const channelPipeline = (userId?: string) => [
   {
     $lookup: {
       from: 'videotrees',
@@ -21,8 +21,8 @@ export const channelPipeline = (currentUserId?: string) => [
     $addFields: {
       videos: { $size: '$videos' },
       subscribers: { $size: '$subscribers' },
-      isSubscribed: currentUserId
-        ? { $in: [new Types.ObjectId(currentUserId), '$subscribers'] }
+      isSubscribed: userId
+        ? { $in: [new Types.ObjectId(userId), '$subscribers'] }
         : false,
     },
   },

@@ -17,7 +17,7 @@ export const updateVideo = asyncHandler(async (req, res) => {
   const { uploadTree } = req.body;
   const { id } = req.params;
 
-  await VideoTreeService.update(id, uploadTree);
+  await VideoTreeService.update(id, uploadTree, req.user.id);
 
   res.json({ message: 'Upload progress saved' });
 });
@@ -68,7 +68,7 @@ export const getClientVideos = asyncHandler(async (req, res) => {
     max: string;
     search: string;
     channelId: string;
-    currentUserId: string;
+    userId: string;
     ids: string[];
   };
 
@@ -89,10 +89,10 @@ export const getClientVideos = asyncHandler(async (req, res) => {
 
 export const getClientVideo = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { currentUserId } = req.query as { [key: string]: string };
+  const { userId } = req.query as { [key: string]: string };
 
   await VideoTreeService.incrementViews(id);
-  const video = await VideoTreeService.findClientOne(id, currentUserId);
+  const video = await VideoTreeService.findClientOne(id, userId);
 
   res.json({ video });
 });

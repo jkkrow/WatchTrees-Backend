@@ -8,10 +8,10 @@ import { allNodesPipe, rootNodePipe } from './pipelines/video-node.pipeline';
 import { creatorInfoPipe, favoritePipe } from './pipelines/video-tree.pipeline';
 import { traverseNodes, validateNodes, buildTree } from '../util/tree';
 
-export const create = async (currentUserId: string) => {
-  const root = await VideoNodeService.createRoot();
+export const create = async (userId: string) => {
+  const root = await VideoNodeService.createRoot(userId);
   const info = {
-    creator: new Types.ObjectId(currentUserId),
+    creator: userId,
     title: '',
     tags: [],
     description: '',
@@ -43,7 +43,11 @@ export const create = async (currentUserId: string) => {
   };
 };
 
-export const update = async (id: string, uploadTree: VideoTree) => {
+export const update = async (
+  id: string,
+  uploadTree: VideoTree,
+  userId: string
+) => {
   const videoTree = await VideoTreeModel.findById(id);
 
   if (!videoTree) {
@@ -65,7 +69,7 @@ export const update = async (id: string, uploadTree: VideoTree) => {
   }
 
   // Update Nodes
-  await VideoNodeService.bulkWrite(uploadTree);
+  await VideoNodeService.bulkWrite(uploadTree, userId);
 
   // Update Tree
   videoTree.info = uploadTree.info;
@@ -77,15 +81,15 @@ export const update = async (id: string, uploadTree: VideoTree) => {
   return await videoTree.save();
 };
 
-export const remove = async (id: string, currentUserId: string) => {
+export const remove = async (id: string, userId: string) => {
   const video = await VideoTreeModel.findById(id);
 
   if (!video) return;
-  if (video.info.creator.toString() !== currentUserId) {
+  if (video.info.creator.toString() !== userId) {
     throw new HttpError(403, 'Not authorized to remove video');
   }
 
-  await VideoNodeService.deleteByRoot(video.root);
+  await VideoNodeService.deleteByRoot(video.root, userId);
 
   return await video.remove();
 };
@@ -106,13 +110,13 @@ export const findOne = async (id: string) => {
   return video;
 };
 
-export const findClientOne = async (id: string, currentUserId?: string) => {
+export const findClientOne = async (id: string, userId?: string) => {
   const result = await VideoTreeModel.aggregate([
     { $match: { _id: new Types.ObjectId(id) } },
     ...allNodesPipe(),
     ...creatorInfoPipe(),
-    ...favoritePipe(currentUserId),
-    ...historyPipe(currentUserId),
+    ...favoritePipe(userId),
+    ...historyPipe(userId),
   ]);
 
   if (!result.length) {
@@ -124,7 +128,7 @@ export const findClientOne = async (id: string, currentUserId?: string) => {
 
   if (
     video.info.status === 'private' &&
-    video.info.creator.toString() !== currentUserId
+    video.info.creator.toString() !== userId
   ) {
     throw new HttpError(403, 'Not authorized to video');
   }
@@ -137,14 +141,14 @@ export const find = async ({
   sort = {},
   page = 1,
   max = 12,
-  currentUserId,
+  userId,
   historyData = true,
 }: {
   match?: any;
   sort?: any;
   page?: number | string;
   max?: number | string;
-  currentUserId?: string;
+  userId?: string;
   historyData?: boolean;
 }) => {
   const result = await VideoTreeModel.aggregate([
@@ -157,8 +161,8 @@ export const find = async ({
           { $limit: +max },
           ...rootNodePipe(),
           ...creatorInfoPipe(),
-          ...favoritePipe(currentUserId),
-          ...historyPipe(currentUserId, historyData),
+          ...favoritePipe(userId),
+          ...historyPipe(userId, historyData),
         ],
         totalCount: [{ $count: 'count' }],
       },
@@ -190,20 +194,20 @@ export const findClient = async ({
   sort = {},
   page,
   max,
-  currentUserId,
+  userId,
 }: {
   match?: any;
   sort?: any;
   page: number | string;
   max: number | string;
-  currentUserId?: string;
+  userId?: string;
 }) => {
   return await find({
     match: { 'info.status': 'public', 'info.isEditing': false, ...match },
     sort,
     page,
     max,
-    currentUserId,
+    userId,
   });
 };
 
@@ -211,7 +215,7 @@ export const findClientByKeyword = async (params: {
   search: string;
   page: number | string;
   max: number | string;
-  currentUserId?: string;
+  userId?: string;
 }) => {
   return await findClient({
     match: { $text: { $search: params.search } },
@@ -224,7 +228,7 @@ export const findClientByChannel = async (params: {
   channelId: string;
   page: number | string;
   max: number | string;
-  currentUserId?: string;
+  userId?: string;
 }) => {
   return await findClient({
     match: { 'info.creator': new Types.ObjectId(params.channelId) },
@@ -234,13 +238,13 @@ export const findClientByChannel = async (params: {
 
 export const findClientByIds = async (params: {
   ids: string[];
-  currentUserId?: string;
+  userId?: string;
 }) => {
   return await findClient({
     match: { _id: { $in: params.ids.map((id) => new Types.ObjectId(id)) } },
     page: 1,
     max: params.ids.length,
-    currentUserId: params.currentUserId,
+    userId: params.userId,
   });
 };
 
@@ -250,13 +254,13 @@ export const findClientByFavorites = async (
 ) => {
   return await findClient({
     match: { $expr: { $in: [new Types.ObjectId(id), '$data.favorites'] } },
-    currentUserId: id,
+    userId: id,
     ...params,
   });
 };
 
-export const updateFavorites = async (id: string, currentUserId: string) => {
-  const objectUserId = new Types.ObjectId(currentUserId);
+export const updateFavorites = async (id: string, userId: string) => {
+  const objectUserId = new Types.ObjectId(userId);
   return await VideoTreeModel.updateOne({ _id: id }, [
     {
       $set: {

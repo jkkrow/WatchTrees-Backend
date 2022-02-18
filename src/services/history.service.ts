@@ -55,15 +55,15 @@ export const find = async ({
   };
 };
 
-export const put = async (history: History, currentUserId: string) => {
+export const put = async (history: History, userId: string) => {
   const existingHistory = await HistoryModel.findOne({
-    user: currentUserId,
+    user: userId,
     tree: history.tree,
   });
 
   if (!existingHistory) {
     const newHistory = new HistoryModel({
-      user: currentUserId,
+      user: userId,
       tree: history.tree,
       activeNodeId: history.activeNodeId,
       progress: history.progress,
@@ -82,9 +82,9 @@ export const put = async (history: History, currentUserId: string) => {
   return await existingHistory.save();
 };
 
-export const remove = async (treeId: string, currentUserId: string) => {
+export const remove = async (treeId: string, userId: string) => {
   const history = await HistoryModel.findOne({
-    user: currentUserId,
+    user: userId,
     tree: treeId,
   });
 

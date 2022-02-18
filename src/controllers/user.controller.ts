@@ -193,7 +193,7 @@ export const updatePicture = asyncHandler(async (req, res) => {
 
 export const getChannel = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const params = req.query as { currentUserId: string };
+  const params = req.query as { userId: string };
 
   const channel = await ChannelService.findById({ id, ...params });
 
@@ -213,7 +213,7 @@ export const getSubscribes = asyncHandler(async (req, res) => {
   };
 
   const { channels, count } = await ChannelService.findBySubscribes({
-    currentUserId: req.user.id,
+    userId: req.user.id,
     ...params,
   });
 
@@ -229,7 +229,7 @@ export const getSubscribers = asyncHandler(async (req, res) => {
   };
 
   const { channels, count } = await ChannelService.findBySubscribers({
-    currentUserId: req.user.id,
+    userId: req.user.id,
     ...params,
   });
 

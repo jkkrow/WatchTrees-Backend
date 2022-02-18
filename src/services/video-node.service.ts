@@ -1,26 +1,37 @@
 import { v4 as uuidv4 } from 'uuid';
+import { Types } from 'mongoose';
 
 import { VideoNodeModel, VideoNode } from '../models/video-node';
 import { VideoTree } from '../models/video-tree';
 import { traverseNodes } from '../util/tree';
 
-export const createRoot = async () => {
-  const root = { _id: uuidv4(), layer: 0, info: null };
+export const createRoot = async (userId: string) => {
+  const root = {
+    _id: uuidv4(),
+    parentId: null,
+    layer: 0,
+    creator: userId,
+    info: null,
+  };
   const node = new VideoNodeModel(root);
 
   return await node.save();
 };
 
-export const findByRoot = async (rootId: string): Promise<VideoNode[]> => {
+export const findByRoot = async (
+  rootId: string,
+  userId: string
+): Promise<VideoNode[]> => {
   const result = await VideoNodeModel.aggregate([
-    { $match: { _id: rootId } },
+    { $match: { _id: rootId, creator: new Types.ObjectId(userId) } },
     {
       $graphLookup: {
         from: 'videonodes',
         startWith: '$_id',
         connectFromField: '_id',
-        connectToField: '_prevId',
+        connectToField: 'parentId',
         as: 'children',
+        restrictSearchWithMatch: { creator: new Types.ObjectId(userId) },
       },
     },
   ]);
@@ -28,16 +39,16 @@ export const findByRoot = async (rootId: string): Promise<VideoNode[]> => {
   return result.length ? [result[0], ...result[0].children] : [];
 };
 
-export const deleteByRoot = async (rootId: string) => {
-  const savedNodes = await findByRoot(rootId);
+export const deleteByRoot = async (rootId: string, userId: string) => {
+  const savedNodes = await findByRoot(rootId, userId);
   const deleteBulk = _getDeleteJob(savedNodes);
 
   return await VideoNodeModel.bulkWrite(deleteBulk);
 };
 
-export const bulkWrite = async (newTree: VideoTree) => {
+export const bulkWrite = async (newTree: VideoTree, userId: string) => {
   const newNodes = traverseNodes(newTree.root);
-  const savedNodes = await findByRoot(newTree.root._id);
+  const savedNodes = await findByRoot(newTree.root._id, userId);
 
   // Find created nodes
   const createdNodes = newNodes.filter(
@@ -55,7 +66,7 @@ export const bulkWrite = async (newTree: VideoTree) => {
   const bulkJobs: any[] = [];
 
   if (createdNodes.length) {
-    bulkJobs.push(..._getInsertJob(createdNodes));
+    bulkJobs.push(..._getInsertJob(createdNodes, userId));
   }
   if (deletedNodes.length) {
     bulkJobs.push(..._getDeleteJob(deletedNodes));
@@ -67,9 +78,11 @@ export const bulkWrite = async (newTree: VideoTree) => {
   return await VideoNodeModel.bulkWrite(bulkJobs);
 };
 
-const _getInsertJob = (videoNodes: VideoNode[]) => {
+const _getInsertJob = (videoNodes: VideoNode[], userId: string) => {
   const insertBulk = videoNodes.map((videoNode) => ({
-    insertOne: { document: videoNode },
+    insertOne: {
+      document: { ...videoNode, creator: new Types.ObjectId(userId) },
+    },
   }));
 
   return insertBulk;

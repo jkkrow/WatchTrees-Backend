@@ -70,8 +70,8 @@ export const buildTree = (nodes: VideoNode[]): VideoTree['root'] => {
   nodes.forEach((node, index) => {
     node = nodes[index];
 
-    if (node._prevId) {
-      nodes[map[node._prevId]].children.push(node);
+    if (node.parentId) {
+      nodes[map[node.parentId]].children.push(node);
     } else {
       root = node;
     }

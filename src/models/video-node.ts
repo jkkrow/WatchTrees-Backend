@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 
 export interface NodeInfo {
   name: string;
@@ -19,15 +19,17 @@ export interface VideoNode extends VideoNodeRef {
 
 export interface VideoNodeRef {
   _id: string;
-  _prevId?: string;
+  parentId: string | null;
   layer: number;
+  creator: Types.ObjectId;
   info: NodeInfo | null;
 }
 
 const VideoNodeSchema = new Schema<VideoNodeRef>({
-  _id: { type: String, required: true },
-  _prevId: { type: String, ref: 'VideoNode' },
+  _id: { type: String },
+  parentId: { type: String, ref: 'VideoNode', defualt: null },
   layer: { type: Number, required: true },
+  creator: { type: Types.ObjectId, required: true, ref: 'User' },
   info: {
     type: {
       name: { type: String },

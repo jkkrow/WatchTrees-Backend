@@ -8,13 +8,13 @@ export const find = async ({
   sort = {},
   page = 1,
   max = 12,
-  currentUserId,
+  userId,
 }: {
   match?: any;
   sort?: any;
   page?: number | string;
   max?: number | string;
-  currentUserId?: string;
+  userId?: string;
 }) => {
   const result = await UserModel.aggregate([
     { $match: { ...match } },
@@ -24,7 +24,7 @@ export const find = async ({
           { $sort: { ...sort, _id: -1 } },
           { $skip: +max * (+page - 1) },
           { $limit: +max },
-          ...channelPipeline(currentUserId),
+          ...channelPipeline(userId),
         ],
         totalCount: [{ $count: 'count' }],
       },
@@ -38,10 +38,7 @@ export const find = async ({
   };
 };
 
-export const findById = async (params: {
-  id: string;
-  currentUserId: string;
-}) => {
+export const findById = async (params: { id: string; userId: string }) => {
   const result = await find({
     match: { _id: new Types.ObjectId(params.id) },
     ...params,
@@ -54,7 +51,7 @@ export const findByKeyword = async (params: {
   search: string;
   page: number | string;
   max: number | string;
-  currentUserId?: string;
+  userId?: string;
 }) => {
   return await find({
     match: { $text: { $search: params.search } },
@@ -66,12 +63,12 @@ export const findByKeyword = async (params: {
 export const findBySubscribes = async (params: {
   page: number | string;
   max: number | string;
-  currentUserId: string;
+  userId: string;
 }) => {
   return await find({
     match: {
       $expr: {
-        $in: [new Types.ObjectId(params.currentUserId), '$subscribers'],
+        $in: [new Types.ObjectId(params.userId), '$subscribers'],
       },
     },
     ...params,
@@ -81,10 +78,10 @@ export const findBySubscribes = async (params: {
 export const findBySubscribers = async (params: {
   page: number | string;
   max: number | string;
-  currentUserId: string;
+  userId: string;
 }) => {
   const result = await UserModel.aggregate([
-    { $match: { _id: new Types.ObjectId(params.currentUserId) } },
+    { $match: { _id: new Types.ObjectId(params.userId) } },
     {
       $lookup: {
         from: 'users',
@@ -97,7 +94,7 @@ export const findBySubscribers = async (params: {
               channels: [
                 { $skip: +params.max * (+params.page - 1) },
                 { $limit: +params.max },
-                ...channelPipeline(params.currentUserId),
+                ...channelPipeline(params.userId),
               ],
               totalCount: [{ $count: 'count' }],
             },
@@ -115,8 +112,8 @@ export const findBySubscribers = async (params: {
   };
 };
 
-export const updateSubscribers = async (id: string, currentUserId: string) => {
-  const objectUserId = new Types.ObjectId(currentUserId);
+export const updateSubscribers = async (id: string, userId: string) => {
+  const objectUserId = new Types.ObjectId(userId);
   await UserModel.updateOne({ _id: id }, [
     {
       $set: {
