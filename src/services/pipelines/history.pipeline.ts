@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 
 export const historyPipe = (userId?: string, attachData = true) => {
-  return userId && attachData
+  return attachData
     ? [
         {
           $lookup: {
@@ -9,7 +9,7 @@ export const historyPipe = (userId?: string, attachData = true) => {
             as: 'history',
             let: { tree: '$_id' },
             pipeline: [
-              { $match: { user: new Types.ObjectId(userId) } },
+              { $match: { user: userId ? new Types.ObjectId(userId) : '' } },
               { $match: { $expr: { $eq: ['$$tree', '$tree'] } } },
             ],
           },
