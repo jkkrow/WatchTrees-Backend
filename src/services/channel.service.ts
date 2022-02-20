@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import { UserModel } from '../models/user';
+import { HttpError } from '../models/error';
 import { channelPipeline } from './pipelines/channel.pipeline';
 
 export const find = async ({
@@ -106,9 +107,15 @@ export const findBySubscribers = async (params: {
     { $project: { subscribers: 1 } },
   ]);
 
+  if (!result.length) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  const { subscribers } = result[0];
+
   return {
-    channels: result.length ? result[0].subscribers[0].channels : [],
-    count: result.length ? result[0].subscribers[0].totalCount.count : 0,
+    channels: subscribers.length ? subscribers[0].channels : [],
+    count: subscribers.length ? subscribers[0].totalCount.count : 0,
   };
 };
 
