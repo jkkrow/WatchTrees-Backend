@@ -89,7 +89,7 @@ export const sendVerification = async (email: string) => {
   }
 
   if (user.isVerified) {
-    return 'You have already been verified';
+    throw new HttpError(400, 'You have already been verified');
   }
 
   const verificationToken = createToken({ type: 'verification' }, '1d');
@@ -114,7 +114,10 @@ export const checkVerification = async (token: string) => {
   const user = await UserService.findOne({ verificationToken: token });
 
   if (!user) {
-    throw new HttpError(404, 'User not found');
+    throw new HttpError(
+      400,
+      'This link is invalid or already has been used. Please send another verification email'
+    );
   }
 
   if (user.isVerified) {
@@ -161,7 +164,10 @@ export const checkRecovery = async (token: string) => {
   const user = await UserService.findOne({ recoveryToken: token });
 
   if (!user) {
-    throw new HttpError(404, 'User not found');
+    throw new HttpError(
+      400,
+      'This link is invalid or already has been used. Please send another email to reset password'
+    );
   }
 
   verifyToken(
@@ -176,7 +182,10 @@ export const resetPassword = async (token: string, password: string) => {
   const user = await UserService.findOne({ recoveryToken: token });
 
   if (!user) {
-    throw new HttpError(404, 'User not found');
+    throw new HttpError(
+      400,
+      'This link is invalid or already has been used. Please send another email to reset password'
+    );
   }
 
   const hash = await bcrypt.hash(password, 12);
