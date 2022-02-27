@@ -19,11 +19,11 @@ export const find = async ({
     { $match: { user: new Types.ObjectId(userId) } },
     { $match: skipFullyWatched ? { isEnded: false } : {} },
     { $sort: { updatedAt: -1 } },
-    { $skip: +max * (+page - 1) },
-    { $limit: +max },
     {
       $facet: {
         videos: [
+          { $skip: +max * (+page - 1) },
+          { $limit: +max },
           {
             $lookup: {
               from: 'videotrees',
