@@ -11,8 +11,9 @@ export const getHistory = asyncHandler(async (req, res) => {
   };
 
   const { videos, count } = await HistoryService.find({
-    userId: req.user.id,
     ...params,
+    skipFullyWatched: JSON.parse(params.skipFullyWatched),
+    userId: req.user.id,
   });
 
   res.json({ videos, count });

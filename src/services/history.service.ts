@@ -13,7 +13,7 @@ export const find = async ({
   userId: string;
   page: number | string;
   max: number | string;
-  skipFullyWatched: boolean | string;
+  skipFullyWatched: boolean;
 }) => {
   const result = await HistoryModel.aggregate([
     { $match: { user: new Types.ObjectId(userId) } },
