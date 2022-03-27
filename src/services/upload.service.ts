@@ -12,11 +12,7 @@ const s3 = new S3({
   region: process.env.S3_BUCKET_REGION!,
 });
 
-export const initiateMutlipart = async (
-  fileType: string,
-  isRoot: boolean,
-  path: string
-) => {
+export const initiateMutlipart = async (fileType: string, path: string) => {
   const { dir } = parse(fileType);
 
   if (dir !== 'video') {
@@ -27,7 +23,6 @@ export const initiateMutlipart = async (
     Bucket: process.env.S3_BUCKET_NAME!,
     Key: path,
     ContentType: fileType,
-    Metadata: { root: `${isRoot}` },
   };
 
   return await s3.createMultipartUpload(params).promise();

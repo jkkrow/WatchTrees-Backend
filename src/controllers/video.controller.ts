@@ -123,15 +123,11 @@ export const toggleFavorites = asyncHandler(async (req, res) => {
 export const initiateVideoUpload = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { videoId, isRoot, fileName, fileType } = req.body;
+  const { videoId, fileName, fileType } = req.body;
 
   const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-  const uploadData = await UploadService.initiateMutlipart(
-    fileType,
-    isRoot,
-    key
-  );
+  const uploadData = await UploadService.initiateMutlipart(fileType, key);
 
   res.json({ uploadId: uploadData.UploadId });
 });
