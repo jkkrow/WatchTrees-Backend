@@ -135,18 +135,14 @@ export const initiateVideoUpload = asyncHandler(async (req, res) => {
 export const processVideoUpload = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { videoId, fileName, partNumber } = req.body;
+  const { videoId, fileName, partCount } = req.body;
   const { uploadId } = req.params;
 
   const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-  const presignedUrl = await UploadService.processMultipart(
-    uploadId,
-    partNumber,
-    key
-  );
+  const result = await UploadService.processMultipart(uploadId, partCount, key);
 
-  res.json({ presignedUrl });
+  res.json(result);
 });
 
 export const completeVideoUpload = asyncHandler(async (req, res) => {

@@ -30,17 +30,30 @@ export const initiateMutlipart = async (fileType: string, path: string) => {
 
 export const processMultipart = async (
   uploadId: string,
-  partNumber: string | number,
+  partCount: number,
   path: string
 ) => {
   const params = {
     Bucket: process.env.S3_BUCKET_NAME!,
     Key: path,
     UploadId: uploadId,
-    PartNumber: partNumber,
   };
 
-  return await s3.getSignedUrlPromise('uploadPart', params);
+  const presignedUrlPromises: Promise<string>[] = [];
+
+  for (let index = 0; index < partCount; index++) {
+    presignedUrlPromises.push(
+      s3.getSignedUrlPromise('uploadPart', { ...params, PartNumber: index + 1 })
+    );
+  }
+
+  // Get presigned urls
+  const presignedUrls = await Promise.all(presignedUrlPromises);
+
+  return presignedUrls.map((presignedUrl, index) => ({
+    presignedUrl,
+    partNumber: index + 1,
+  }));
 };
 
 export const completeMultipart = async (
