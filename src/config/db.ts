@@ -1,12 +1,20 @@
-import { connect } from 'mongoose';
+import mongoose from 'mongoose';
 
-export const connectDB = async (callback: () => void): Promise<void> => {
+mongoose.Promise = global.Promise;
+let connection: any = null;
+
+export const connectDB = async () => {
   try {
-    await connect(process.env.MONGODB_URI!);
+    if (connection && mongoose.connection.readyState === 1) {
+      console.log('Using Existing MongoDB Connection');
+      return Promise.resolve(connection);
+    }
+
+    connection = await mongoose.connect(process.env.MONGODB_URI!);
 
     console.log('MongoDB Connected');
 
-    callback();
+    return connection;
   } catch (err) {
     console.log(err);
     process.exit(1);
