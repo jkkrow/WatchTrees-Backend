@@ -1,16 +1,8 @@
-import { S3 } from 'aws-sdk';
 import { parse } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
+import { s3 } from '../config/aws';
 import { HttpError } from '../models/error';
-
-const s3 = new S3({
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  },
-  region: process.env.S3_BUCKET_REGION!,
-});
 
 export const initiateMutlipart = async (fileType: string, path: string) => {
   const { dir } = parse(fileType);
@@ -20,7 +12,7 @@ export const initiateMutlipart = async (fileType: string, path: string) => {
   }
 
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
     ContentType: fileType,
   };
@@ -34,7 +26,7 @@ export const processMultipart = async (
   path: string
 ) => {
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
     UploadId: uploadId,
   };
@@ -59,7 +51,7 @@ export const completeMultipart = async (
   path: string
 ) => {
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
     UploadId: uploadId,
     MultipartUpload: { Parts: parts },
@@ -70,7 +62,7 @@ export const completeMultipart = async (
 
 export const cancelMultipart = async (uploadId: string, path: string) => {
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
     UploadId: uploadId,
   };
@@ -86,7 +78,7 @@ export const uploadImage = async (fileType: string, path?: string) => {
   }
 
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path || `images/${uuidv4()}.${name}`,
     ContentType: fileType,
   };
@@ -98,7 +90,7 @@ export const uploadImage = async (fileType: string, path?: string) => {
 
 export const deleteImage = async (path: string) => {
   const params = {
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
   };
 
