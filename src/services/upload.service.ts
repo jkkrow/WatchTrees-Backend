@@ -50,10 +50,7 @@ export const processMultipart = async (
   // Get presigned urls
   const presignedUrls = await Promise.all(presignedUrlPromises);
 
-  return presignedUrls.map((presignedUrl, index) => ({
-    presignedUrl,
-    partNumber: index + 1,
-  }));
+  return presignedUrls;
 };
 
 export const completeMultipart = async (
