@@ -11,7 +11,8 @@
     },
     "ignorePatterns": [
         "dist/",
-        "node_modules/"
+        "node_modules/",
+        "*.config.*"
     ],
     "plugins": [
         "@typescript-eslint"

@@ -81,6 +81,28 @@ export const googleSignin = async (tokenId: string) => {
   return user;
 };
 
+export const updatePassword = async (
+  id: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  const user = await UserService.findById(id);
+
+  if (!user) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.password);
+
+  if (!isValid) {
+    throw new HttpError(401, 'Invalid password');
+  }
+
+  const hash = await bcrypt.hash(newPassword, 12);
+
+  await UserService.update(user.id, { password: hash });
+};
+
 export const sendVerification = async (email: string) => {
   const user = await UserService.findOne({ email });
 

@@ -150,7 +150,7 @@ export const updatePassword = asyncHandler(async (req, res) => {
     throw new HttpError(422, 'Invalid inputs.');
   }
 
-  await UserService.updatePassword(req.user.id, currentPassword, newPassword);
+  await AuthService.updatePassword(req.user.id, currentPassword, newPassword);
 
   res.json({ message: 'Password updated successfully.' });
 });
