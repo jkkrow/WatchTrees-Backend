@@ -79,33 +79,36 @@ export const updateAccessToken = asyncHandler(async (req, res) => {
 export const sendVerification = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  const message = await AuthService.sendVerification(email);
+  await AuthService.sendVerification(email);
 
-  res.json({ message });
+  res.json({
+    message:
+      'Verification email has sent. Please check your email and confirm signup',
+  });
 });
 
 export const checkVerification = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  const message = await AuthService.checkVerification(token);
+  await AuthService.checkVerification(token);
 
-  res.json({ message });
+  res.json({ message: 'Your account has been successfully verified' });
 });
 
 export const sendRecovery = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  const message = await AuthService.sendRecovery(email);
+  await AuthService.sendRecovery(email);
 
-  res.json({ message });
+  res.json({ message: 'Recovery email has sent successfully' });
 });
 
 export const checkRecovery = asyncHandler(async (req, res) => {
   const { token } = req.params;
 
-  const message = await AuthService.checkRecovery(token);
+  await AuthService.checkRecovery(token);
 
-  res.json({ message });
+  res.json({ message: 'Verified token successfully' });
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
@@ -118,9 +121,9 @@ export const resetPassword = asyncHandler(async (req, res) => {
     throw new HttpError(422, 'Invalid inputs.');
   }
 
-  const message = await AuthService.resetPassword(token, password);
+  await AuthService.resetPassword(token, password);
 
-  res.json({ message });
+  res.json({ message: 'Password has changed successfully' });
 });
 
 export const updateUserName = asyncHandler(async (req, res) => {

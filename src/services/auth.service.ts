@@ -100,7 +100,7 @@ export const updatePassword = async (
 
   const hash = await bcrypt.hash(newPassword, 12);
 
-  await UserService.update(user.id, { password: hash });
+  return await UserService.update(user.id, { password: hash });
 };
 
 export const sendVerification = async (email: string) => {
@@ -129,7 +129,7 @@ export const sendVerification = async (email: string) => {
       `,
   });
 
-  return 'Verification email has sent. Please check your email and confirm signup';
+  return verificationToken;
 };
 
 export const checkVerification = async (token: string) => {
@@ -143,7 +143,7 @@ export const checkVerification = async (token: string) => {
   }
 
   if (user.isVerified) {
-    return "You've already been verified";
+    throw new HttpError(400, "You've already been verified");
   }
 
   verifyToken(
@@ -151,9 +151,7 @@ export const checkVerification = async (token: string) => {
     'This verification link has expired. Please send another email from Account Settings page'
   );
 
-  await UserService.update(user.id, { isVerified: true });
-
-  return 'Your account has been successfully verified';
+  return await UserService.update(user.id, { isVerified: true });
 };
 
 export const sendRecovery = async (email: string) => {
@@ -179,7 +177,7 @@ export const sendRecovery = async (email: string) => {
       `,
   });
 
-  return 'Recovery email has sent successfully';
+  return recoveryToken;
 };
 
 export const checkRecovery = async (token: string) => {
@@ -197,7 +195,7 @@ export const checkRecovery = async (token: string) => {
     'This link has been expired. Please send another email to reset password'
   );
 
-  return 'Verified token successfully';
+  return true;
 };
 
 export const resetPassword = async (token: string, password: string) => {
@@ -212,10 +210,8 @@ export const resetPassword = async (token: string, password: string) => {
 
   const hash = await bcrypt.hash(password, 12);
 
-  await UserService.update(user.id, {
+  return await UserService.update(user.id, {
     password: hash,
     recoveryToken: '',
   });
-
-  return 'Password has changed successfully';
 };
