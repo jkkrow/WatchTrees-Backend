@@ -54,14 +54,22 @@ const VideoTreeSchema = new Schema<VideoTreeRef>(
     root: { type: String, required: true, ref: 'VideoNode' },
     info: {
       creator: { type: Types.ObjectId, required: true, ref: 'User' },
-      title: { type: String },
+      title: { type: String, default: 'Untitled' },
       tags: [{ type: String }],
       description: { type: String },
-      thumbnail: { name: { type: String }, url: { type: String } },
-      size: { type: Number, required: true },
-      maxDuration: { type: Number, required: true },
-      minDuration: { type: Number, required: true },
-      status: { type: String, required: true, enum: ['public', 'private'] },
+      thumbnail: {
+        name: { type: String, default: '' },
+        url: { type: String, default: '' },
+      },
+      size: { type: Number, required: true, default: 0 },
+      maxDuration: { type: Number, required: true, default: 0 },
+      minDuration: { type: Number, required: true, default: 0 },
+      status: {
+        type: String,
+        required: true,
+        enum: ['public', 'private'],
+        default: 'public',
+      },
       isEditing: { type: Boolean, required: true, default: true },
     },
     data: {

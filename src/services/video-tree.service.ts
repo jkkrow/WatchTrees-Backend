@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { WithId } from 'mongodb';
 
 import * as VideoNodeService from './video-node.service';
 import { VideoTreeModel, VideoTree } from '../models/video-tree';
@@ -6,41 +7,32 @@ import { HttpError } from '../models/error';
 import { historyPipe } from './pipelines/history.pipeline';
 import { allNodesPipe, rootNodePipe } from './pipelines/video-node.pipeline';
 import { creatorInfoPipe, favoritePipe } from './pipelines/video-tree.pipeline';
-import { traverseNodes, validateNodes, buildTree } from '../util/tree';
+import { validateNodes, buildTree } from '../util/tree';
 
 export const create = async (userId: string) => {
   const root = await VideoNodeService.createRoot(userId);
-  const info = {
-    creator: userId,
-    title: '',
-    tags: [],
-    description: '',
-    size: 0,
-    maxDuration: 0,
-    minDuration: 0,
-    thumbnail: { name: '', url: '' },
-    status: 'public',
-    isEditing: true,
-  };
-  const data = {
-    views: 0,
-    favorites: [],
-  };
 
-  const videoTreeModel = new VideoTreeModel({ root: root._id, info, data });
-  await videoTreeModel.save();
+  const videoTreeRef = new VideoTreeModel({
+    root: root._id,
+    info: { creator: userId },
+  });
+  await videoTreeRef.save();
 
-  return {
-    _id: videoTreeModel._id,
+  const videoTree: WithId<VideoTree> = {
+    _id: videoTreeRef._id,
     root: {
-      _id: root._id,
+      _id: root.id,
       layer: root.layer,
+      parentId: root.parentId,
       info: root.info,
+      creator: root.creator,
       children: [],
     },
-    info,
-    data,
+    info: videoTreeRef.info,
+    data: videoTreeRef.data,
   };
+
+  return videoTree;
 };
 
 export const update = async (
@@ -57,15 +49,6 @@ export const update = async (
     uploadTree.info.creator.toString() !== videoTree.info.creator.toString()
   ) {
     throw new HttpError(403);
-  }
-
-  // Refactor Tree
-  const nodes = traverseNodes(uploadTree.root);
-  for (let node of nodes) {
-    if (!node.info) continue;
-    if (node.info.progress > 0 && node.info.progress < 100) {
-      node.info = null;
-    }
   }
 
   // Update Nodes
@@ -107,7 +90,7 @@ export const findOne = async (id: string) => {
   const video = result[0];
   video.root = buildTree([video.root, ...video.root.children]);
 
-  return video;
+  return video as VideoTree;
 };
 
 export const findClientOne = async (id: string, userId?: string) => {

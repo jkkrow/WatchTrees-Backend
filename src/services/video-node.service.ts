@@ -50,6 +50,14 @@ export const bulkWrite = async (newTree: VideoTree, userId: string) => {
   const newNodes = traverseNodes(newTree.root);
   const savedNodes = await findByRoot(newTree.root._id, userId);
 
+  // Node info only updated when finished uploading
+  for (let node of newNodes) {
+    if (!node.info) continue;
+    if (node.info.progress > 0 && node.info.progress < 100) {
+      node.info = null;
+    }
+  }
+
   // Find created nodes
   const createdNodes = newNodes.filter(
     (newNode) => !savedNodes.some((savedNode) => savedNode._id === newNode._id)
