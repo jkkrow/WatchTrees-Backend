@@ -52,13 +52,13 @@ describe('AuthService', () => {
     });
   });
 
-  describe('google-signin', () => {
+  describe('googleSignin', () => {
     it('should only receive valid token', async () => {
       await expect(AuthService.googleSignin('123456')).rejects.toThrow();
     });
   });
 
-  describe('update-password', () => {
+  describe('updatePassword', () => {
     it('should update password', async () => {
       const user = await AuthService.signup(
         'Test',
@@ -92,7 +92,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('send-verification', () => {
+  describe('sendVerification', () => {
     it('should return verification token', async () => {
       const user = await AuthService.signup(
         'Test',
@@ -124,7 +124,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('check-verification', () => {
+  describe('checkVerification', () => {
     it('should update verified status', async () => {
       const user = await AuthService.signup(
         'Test',
@@ -143,7 +143,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('send-recovery', () => {
+  describe('sendRecovery', () => {
     it('should return a recovery token', async () => {
       const user = await AuthService.signup(
         'Test',
@@ -163,7 +163,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('check-recovery', () => {
+  describe('checkRecovery', () => {
     it('should return true', async () => {
       const user = await AuthService.signup(
         'Test',
@@ -182,7 +182,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('reset-password', () => {
+  describe('resetPassword', () => {
     it('should update password', async () => {
       const user = await AuthService.signup(
         'Test',
