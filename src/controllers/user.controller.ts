@@ -57,7 +57,7 @@ export const signin = asyncHandler(async (req, res) => {
     isPremium: user.isPremium,
   };
 
-  res.status(tokenId ? 201 : 200).json({ accessToken, refreshToken, userData });
+  res.json({ accessToken, refreshToken, userData });
 });
 
 export const updateRefreshToken = asyncHandler(async (req, res) => {
@@ -71,7 +71,7 @@ export const updateRefreshToken = asyncHandler(async (req, res) => {
 export const updateAccessToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { accessToken } = createAuthTokens(req.user.id);
+  const { accessToken } = createAuthTokens(req.user.id, true);
 
   res.json({ accessToken });
 });

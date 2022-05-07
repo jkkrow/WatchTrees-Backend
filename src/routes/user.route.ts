@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 
-import * as userController from '../controllers/user.controller';
+import * as UserController from '../controllers/user.controller';
 import { checkToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Signup & Signin
-router.post('/signin', userController.signin);
+router.post('/signin', UserController.signin);
 router.post(
   '/signup',
   [
@@ -18,16 +18,16 @@ router.post(
       (value, { req }) => value === req.body.password
     ),
   ],
-  userController.signup
+  UserController.signup
 );
 
 // Email Verification
-router.post('/verification', userController.sendVerification);
-router.get('/verification/:token', userController.checkVerification);
+router.post('/verification', UserController.sendVerification);
+router.get('/verification/:token', UserController.checkVerification);
 
 // Reset Password
-router.post('/recovery', userController.sendRecovery);
-router.get('/recovery/:token', userController.checkRecovery);
+router.post('/recovery', UserController.sendRecovery);
+router.get('/recovery/:token', UserController.checkRecovery);
 router.patch(
   '/recovery/:token/password',
   [
@@ -36,19 +36,19 @@ router.patch(
       (value, { req }) => value === req.body.password
     ),
   ],
-  userController.resetPassword
+  UserController.resetPassword
 );
 
 // Get Token
-router.get('/refresh-token', checkToken, userController.updateRefreshToken);
-router.get('/access-token', checkToken, userController.updateAccessToken);
+router.get('/refresh-token', checkToken, UserController.updateRefreshToken);
+router.get('/access-token', checkToken, UserController.updateAccessToken);
 
 // Update User
 router.patch(
   '/name',
   checkToken,
   [body('name').trim().isLength({ min: 4 })],
-  userController.updateUserName
+  UserController.updateUserName
 );
 router.patch(
   '/password',
@@ -60,16 +60,16 @@ router.patch(
       (value, { req }) => value === req.body.newPassword
     ),
   ],
-  userController.updatePassword
+  UserController.updatePassword
 );
-router.patch('/picture', checkToken, userController.updatePicture);
+router.patch('/picture', checkToken, UserController.updatePicture);
 
 // Channel
-router.get('/:id/channel', userController.getChannel);
+router.get('/:id/channel', UserController.getChannel);
 
 // Subscribe
-router.get('/subscribes', checkToken, userController.getSubscribes);
-router.get('/subscribers', checkToken, userController.getSubscribers);
-router.patch('/:id/subscribers', checkToken, userController.updateSubscribers);
+router.get('/subscribes', checkToken, UserController.getSubscribes);
+router.get('/subscribers', checkToken, UserController.getSubscribers);
+router.patch('/:id/subscribers', checkToken, UserController.updateSubscribers);
 
 export default router;
