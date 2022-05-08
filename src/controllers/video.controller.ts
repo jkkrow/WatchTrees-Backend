@@ -1,6 +1,5 @@
 import * as VideoTreeService from '../services/video-tree.service';
 import * as UploadService from '../services/upload.service';
-import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
 
 export const createVideo = asyncHandler(async (req, res) => {
@@ -53,11 +52,7 @@ export const getCreatedVideo = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  const video = await VideoTreeService.findOne(id);
-
-  if (video.info.creator.toString() !== req.user.id) {
-    throw new HttpError(403, 'Not authorized to this video');
-  }
+  const video = await VideoTreeService.findOneByCreator(id, req.user.id);
 
   res.json({ video });
 });

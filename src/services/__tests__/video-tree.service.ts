@@ -170,6 +170,22 @@ describe('VideoTreeService', () => {
     });
   });
 
+  describe('findOneByCreator', () => {
+    it('should be failed if creator not matched', async () => {
+      const tree = await VideoTreeService.create(user.id);
+      const anotherUser = await UserService.create(
+        'native',
+        'Another',
+        'another@test.com',
+        'password'
+      );
+
+      await expect(
+        VideoTreeService.findOneByCreator(tree._id.toString(), anotherUser.id)
+      ).rejects.toThrow();
+    });
+  });
+
   describe('find', () => {
     it('should return videos and count', async () => {
       const result = await VideoTreeService.find({});

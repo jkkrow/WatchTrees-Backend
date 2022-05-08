@@ -119,6 +119,16 @@ export const findClientOne = async (id: string, userId?: string) => {
   return video;
 };
 
+export const findOneByCreator = async (id: string, userId: string) => {
+  const video = await findOne(id);
+
+  if (video.info.creator.toString() !== userId) {
+    throw new HttpError(403, 'Not authorized to this video');
+  }
+
+  return video;
+};
+
 export const find = async ({
   match = {},
   sort = {},
