@@ -35,10 +35,10 @@ router.delete(
 
 router.patch('/upload/thumbnail', checkToken, VideoController.uploadThumbnail);
 
-router.get('/', checkToken, VideoController.getCreatedVideos);
-router.post('/', checkToken, checkVerified, VideoController.createVideo);
+router.get('/created', checkToken, VideoController.getCreatedVideos);
+router.get('/created/:id', checkToken, VideoController.getCreatedVideo);
 
-router.get('/:id', checkToken, VideoController.getCreatedVideo);
+router.post('/', checkToken, checkVerified, VideoController.createVideo);
 router.patch('/:id', checkToken, checkVerified, VideoController.updateVideo);
 router.delete('/:id', checkToken, checkVerified, VideoController.deleteVideo);
 
