@@ -8,7 +8,7 @@ export const createVideo = asyncHandler(async (req, res) => {
 
   const video = await VideoTreeService.create(req.user.id);
 
-  res.json({ video });
+  res.status(201).json({ video });
 });
 
 export const updateVideo = asyncHandler(async (req, res) => {
