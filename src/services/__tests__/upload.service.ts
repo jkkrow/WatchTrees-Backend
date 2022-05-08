@@ -3,7 +3,7 @@ import * as UploadService from '../upload.service';
 describe('UploadService', () => {
   describe('initiateMultipart', () => {
     it('should create return an upload id', async () => {
-      const result = await UploadService.initiateMutlipart(
+      const result = await UploadService.initiateMultipart(
         'video/mp4',
         'test.mp4'
       );
@@ -13,14 +13,14 @@ describe('UploadService', () => {
 
     it('should be failed if file type is other than video', async () => {
       await expect(
-        UploadService.initiateMutlipart('image/png', 'test.png')
+        UploadService.initiateMultipart('image/png', 'test.png')
       ).rejects.toThrow();
     });
   });
 
   describe('processMultipart', () => {
     it('should return a presigned url for every parts', async () => {
-      const result = await UploadService.initiateMutlipart(
+      const result = await UploadService.initiateMultipart(
         'video/mp4',
         'test.mp4'
       );
@@ -37,7 +37,7 @@ describe('UploadService', () => {
 
   describe('completeMultipart', () => {
     it('should return a complete result only if all parts uploaded successfully', async () => {
-      const initiateResult = await UploadService.initiateMutlipart(
+      const initiateResult = await UploadService.initiateMultipart(
         'video/mp4',
         'test.mp4'
       );
@@ -53,7 +53,7 @@ describe('UploadService', () => {
 
   describe('cancelMultipart', () => {
     it('should cancel a multipart upload', async () => {
-      const result = await UploadService.initiateMutlipart(
+      const result = await UploadService.initiateMultipart(
         'video/mp4',
         'test.mp4'
       );

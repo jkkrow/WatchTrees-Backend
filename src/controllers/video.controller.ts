@@ -122,7 +122,7 @@ export const initiateVideoUpload = asyncHandler(async (req, res) => {
 
   const key = `videos/${req.user.id}/${videoId}/${fileName}`;
 
-  const uploadData = await UploadService.initiateMutlipart(fileType, key);
+  const uploadData = await UploadService.initiateMultipart(fileType, key);
 
   res.json({ uploadId: uploadData.UploadId });
 });

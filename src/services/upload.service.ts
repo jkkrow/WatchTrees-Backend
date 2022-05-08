@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { s3 } from '../config/aws';
 import { HttpError } from '../models/error';
 
-export const initiateMutlipart = async (fileType: string, path: string) => {
+export const initiateMultipart = async (fileType: string, path: string) => {
   const { dir } = parse(fileType);
 
   if (dir !== 'video') {
