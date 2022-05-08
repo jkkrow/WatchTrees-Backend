@@ -6,7 +6,7 @@ import { checkToken, checkVerified } from '../middlewares/auth.middleware';
 const router = Router();
 
 router.get('/client', VideoController.getClientVideos);
-router.get('/:id/client', VideoController.getClientVideo);
+router.get('/client/:id', VideoController.getClientVideo);
 
 router.get('/favorites', checkToken, VideoController.getFavorites);
 router.patch('/:id/favorites', checkToken, VideoController.toggleFavorites);
