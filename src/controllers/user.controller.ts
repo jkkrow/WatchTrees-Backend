@@ -6,7 +6,11 @@ import * as ChannelService from '../services/channel.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
-import { createAuthTokens } from '../util/jwt-token';
+import {
+  createRefreshToken,
+  createAccessToken,
+  verifyToken,
+} from '../util/jwt-token';
 
 export const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -19,7 +23,8 @@ export const signup = asyncHandler(async (req, res) => {
 
   const user = await AuthService.signup(name, email, password);
 
-  const { refreshToken, accessToken } = createAuthTokens(user.id);
+  const refreshToken = createRefreshToken(user.id);
+  const accessToken = createAccessToken(user.id);
   const userData = {
     _id: user._id,
     type: user.type,
@@ -46,7 +51,8 @@ export const signin = asyncHandler(async (req, res) => {
     ? await AuthService.googleSignin(tokenId)
     : await AuthService.signin(email, password);
 
-  const { refreshToken, accessToken } = createAuthTokens(user.id);
+  const refreshToken = createRefreshToken(user.id);
+  const accessToken = createAccessToken(user.id);
   const userData = {
     _id: user.id,
     type: user.type,
@@ -61,17 +67,32 @@ export const signin = asyncHandler(async (req, res) => {
 });
 
 export const updateRefreshToken = asyncHandler(async (req, res) => {
-  if (!req.user) return;
+  const { authorization } = req.headers;
 
-  const { refreshToken, accessToken } = createAuthTokens(req.user.id);
+  if (!authorization) {
+    throw new HttpError(403);
+  }
+
+  const token = authorization.split(' ')[1];
+  const decodedToken = verifyToken(token);
+
+  const refreshToken = createRefreshToken(decodedToken.userId);
+  const accessToken = createAccessToken(decodedToken.userId);
 
   res.json({ accessToken, refreshToken });
 });
 
 export const updateAccessToken = asyncHandler(async (req, res) => {
-  if (!req.user) return;
+  const { authorization } = req.headers;
 
-  const { accessToken } = createAuthTokens(req.user.id, true);
+  if (!authorization) {
+    throw new HttpError(403);
+  }
+
+  const token = authorization.split(' ')[1];
+  const decodedToken = verifyToken(token);
+
+  const accessToken = createAccessToken(decodedToken.userId);
 
   res.json({ accessToken });
 });

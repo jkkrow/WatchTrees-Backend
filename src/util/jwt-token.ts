@@ -6,22 +6,16 @@ export const createToken = (payload: string | object | Buffer, exp: string) => {
   return jwt.sign(payload, process.env.JWT_KEY!, { expiresIn: exp });
 };
 
-export const createAuthTokens = (userId: string, onlyAccess?: boolean) => {
-  const payload = { userId };
+export const createRefreshToken = (userId: string) => {
+  return jwt.sign({ userId, type: 'refresh' }, process.env.JWT_KEY!, {
+    expiresIn: '7d',
+  });
+};
 
-  let refreshToken = '';
-
-  if (!onlyAccess) {
-    refreshToken = jwt.sign(payload, process.env.JWT_KEY!, {
-      expiresIn: '7d',
-    });
-  }
-
-  const accessToken = jwt.sign(payload, process.env.JWT_KEY!, {
+export const createAccessToken = (userId: string) => {
+  return jwt.sign({ userId, type: 'access' }, process.env.JWT_KEY!, {
     expiresIn: '15m',
   });
-
-  return onlyAccess ? { accessToken } : { refreshToken, accessToken };
 };
 
 export const verifyToken = (token: string, message?: string) => {

@@ -8,7 +8,7 @@ import * as AuthService from '../../services/auth.service';
 import * as UploadService from '../../services/upload.service';
 import * as ChannelService from '../../services/channel.service';
 import { User } from '../../models/user';
-import { createAuthTokens } from '../../util/jwt-token';
+import { createRefreshToken, createAccessToken } from '../../util/jwt-token';
 
 describe('UserController', () => {
   let user: HydratedDocument<User>;
@@ -24,10 +24,9 @@ describe('UserController', () => {
       'test@example.com',
       'password'
     );
-    const tokens = createAuthTokens(user.id);
 
-    refreshToken = tokens.refreshToken!;
-    accessToken = tokens.accessToken;
+    refreshToken = createRefreshToken(user.id);
+    accessToken = createAccessToken(user.id);
   });
   afterAll(closeDB);
 

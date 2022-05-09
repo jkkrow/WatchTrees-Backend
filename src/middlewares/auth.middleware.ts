@@ -17,6 +17,10 @@ export const checkToken: RequestHandler = (req, res, next) => {
     const token = authorization.split(' ')[1];
     const decodedToken = verifyToken(token);
 
+    if (decodedToken.type !== 'access') {
+      throw new HttpError(403, 'Require access token');
+    }
+
     req.user = { id: decodedToken.userId };
 
     next();

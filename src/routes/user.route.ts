@@ -40,8 +40,8 @@ router.patch(
 );
 
 // Get Token
-router.get('/refresh-token', checkToken, UserController.updateRefreshToken);
-router.get('/access-token', checkToken, UserController.updateAccessToken);
+router.get('/refresh-token', UserController.updateRefreshToken);
+router.get('/access-token', UserController.updateAccessToken);
 
 // Update User
 router.patch(
