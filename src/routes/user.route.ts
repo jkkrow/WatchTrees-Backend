@@ -65,11 +65,14 @@ router.patch(
 router.patch('/picture', checkToken, UserController.updatePicture);
 
 // Channel
-router.get('/:id/channel', UserController.getChannel);
+router.get('/channel/:id', UserController.getChannel);
 
 // Subscribe
 router.get('/subscribes', checkToken, UserController.getSubscribes);
 router.get('/subscribers', checkToken, UserController.getSubscribers);
 router.patch('/:id/subscribers', checkToken, UserController.updateSubscribers);
+
+// Delete user
+router.delete('/account', checkToken, UserController.deleteAccount);
 
 export default router;

@@ -248,3 +248,11 @@ export const updateSubscribers = asyncHandler(async (req, res) => {
 
   res.json({ message: 'Subscribes updated' });
 });
+
+export const deleteAccount = asyncHandler(async (req, res) => {
+  if (!req.user) return;
+
+  await AuthService.deleteAccount(req.user.id);
+
+  res.json({ message: 'Deleted account successfully' });
+});

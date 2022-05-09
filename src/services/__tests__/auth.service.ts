@@ -215,4 +215,18 @@ describe('AuthService', () => {
       expect(updatedUser.recoveryToken).toBeFalsy();
     });
   });
+
+  describe('deleteAccount', () => {
+    it('should mark user as deleted', async () => {
+      const user = await AuthService.signup(
+        'Test',
+        'test@example.com',
+        'password'
+      );
+
+      const updatedUser = await AuthService.deleteAccount(user.id);
+
+      expect(updatedUser.isDeleted).toBeTruthy();
+    });
+  });
 });

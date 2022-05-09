@@ -294,7 +294,7 @@ describe('UserController', () => {
       );
 
       const res = await request(app)
-        .get(endpoint + ':id/channel')
+        .get(endpoint + 'channel/:id')
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -339,6 +339,29 @@ describe('UserController', () => {
 
       const res = await request(app)
         .patch(endpoint + ':id/subscribers')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(spy).toBeCalled();
+      expect(res.body.message).toBeTruthy();
+    });
+  });
+
+  describe('deleteAccount', () => {
+    it('should be failed without authorization token', async () => {
+      await request(app)
+        .delete(endpoint + 'account')
+        .expect(403);
+    });
+
+    it('should return a json with message', async () => {
+      const spy = jest
+        .spyOn(AuthService, 'deleteAccount')
+        .mockImplementationOnce(() => ({} as any));
+
+      const res = await request(app)
+        .delete(endpoint + 'account')
         .set({ Authorization: 'Bearer ' + accessToken })
         .expect('Content-Type', /json/)
         .expect(200);

@@ -215,3 +215,7 @@ export const resetPassword = async (token: string, password: string) => {
     recoveryToken: '',
   });
 };
+
+export const deleteAccount = async (id: string) => {
+  return await UserService.update(id, { isDeleted: true });
+};
