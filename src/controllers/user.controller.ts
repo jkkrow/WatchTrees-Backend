@@ -3,7 +3,6 @@ import { validationResult } from 'express-validator';
 import * as UserService from '../services/user.service';
 import * as AuthService from '../services/auth.service';
 import * as ChannelService from '../services/channel.service';
-import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
 import {
@@ -139,7 +138,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    throw new HttpError(422, 'Invalid inputs.');
+    throw new HttpError(422, 'Invalid inputs');
   }
 
   await AuthService.resetPassword(token, password);
@@ -155,12 +154,12 @@ export const updateUserName = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    throw new HttpError(422, 'Invalid inputs.');
+    throw new HttpError(422, 'Invalid inputs');
   }
 
   await UserService.update(req.user.id, { name });
 
-  res.json({ message: 'User name updated successfully.' });
+  res.json({ message: 'User name updated successfully' });
 });
 
 export const updatePassword = asyncHandler(async (req, res) => {
@@ -171,48 +170,22 @@ export const updatePassword = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    throw new HttpError(422, 'Invalid inputs.');
+    throw new HttpError(422, 'Invalid inputs');
   }
 
   await AuthService.updatePassword(req.user.id, currentPassword, newPassword);
 
-  res.json({ message: 'Password updated successfully.' });
+  res.json({ message: 'Password updated successfully' });
 });
 
 export const updatePicture = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { isNewFile, fileType } = req.body;
+  const { picture } = req.body;
 
-  let url = '';
-  let path = '';
+  await UserService.update(req.user.id, { picture });
 
-  const user = await UserService.findById(req.user.id);
-
-  if (!user) {
-    throw new HttpError(404, 'User not found');
-  }
-
-  if (isNewFile) {
-    const { presignedUrl, key } = await UploadService.uploadImage(
-      fileType,
-      user.picture
-    );
-
-    url = presignedUrl;
-    path = key;
-  } else {
-    user.picture && (await UploadService.deleteImage(user.picture));
-    path = '';
-  }
-
-  await UserService.update(req.user.id, { picture: path });
-
-  res.json({
-    presignedUrl: url,
-    picture: path,
-    message: 'Picture updated successfully.',
-  });
+  res.json({ message: 'Profile picture updated successfully' });
 });
 
 export const getChannel = asyncHandler(async (req, res) => {

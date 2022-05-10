@@ -5,7 +5,6 @@ import { connectDB, closeDB } from '../../test/db';
 import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as AuthService from '../../services/auth.service';
-import * as UploadService from '../../services/upload.service';
 import * as ChannelService from '../../services/channel.service';
 import { User } from '../../models/user';
 import { createRefreshToken, createAccessToken } from '../../util/jwt-token';
@@ -236,48 +235,12 @@ describe('UserController', () => {
   });
 
   describe('updateUserPicture', () => {
-    it('should return a presigned url if there is new file', async () => {
-      const uploadSpy = jest
-        .spyOn(UploadService, 'uploadImage')
-        .mockImplementationOnce(() =>
-          Promise.resolve({
-            presignedUrl: 'adsfsaf',
-            key: 'test.png',
-          })
-        );
-      const userSpy = jest
-        .spyOn(UserService, 'update')
-        .mockImplementationOnce(() => ({} as any));
-
-      const res = await request(app)
-        .patch(endpoint + 'picture')
-        .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ isNewFile: true, fileType: 'image/png' })
-        .expect(200);
-
-      expect(uploadSpy).toBeCalled();
-      expect(userSpy).toBeCalled();
-      expect(res.body.presignedUrl).toBeTruthy();
-    });
-
-    it('should delete image if there is no file', async () => {
-      await UserService.update(user.id, { picture: 'test.png' });
-
-      const uploadSpy = jest
-        .spyOn(UploadService, 'deleteImage')
-        .mockImplementationOnce(() => ({} as any));
-      const userSpy = jest
-        .spyOn(UserService, 'update')
-        .mockImplementationOnce(() => ({} as any));
-
+    it('should return a json with message', async () => {
       await request(app)
         .patch(endpoint + 'picture')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ isNewFile: false, fileType: 'image/png' })
+        .send({ picture: '' })
         .expect(200);
-
-      expect(uploadSpy).toBeCalled();
-      expect(userSpy).toBeCalled();
     });
   });
 

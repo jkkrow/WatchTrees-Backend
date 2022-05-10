@@ -70,7 +70,7 @@ export const cancelMultipart = async (uploadId: string, path: string) => {
   return await s3.abortMultipartUpload(params).promise();
 };
 
-export const uploadImage = async (fileType: string, path?: string) => {
+export const uploadImage = async (fileType: string) => {
   const { dir, name } = parse(fileType);
 
   if (dir !== 'image') {
@@ -79,7 +79,7 @@ export const uploadImage = async (fileType: string, path?: string) => {
 
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
-    Key: path || `images/${uuidv4()}.${name}`,
+    Key: `images/${uuidv4()}.${name}`,
     ContentType: fileType,
   };
 

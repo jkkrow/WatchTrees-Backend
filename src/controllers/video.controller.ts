@@ -1,5 +1,4 @@
 import * as VideoTreeService from '../services/video-tree.service';
-import * as UploadService from '../services/upload.service';
 import { asyncHandler } from '../util/async-handler';
 
 export const createVideo = asyncHandler(async (req, res) => {
@@ -113,78 +112,4 @@ export const toggleFavorites = asyncHandler(async (req, res) => {
   await VideoTreeService.updateFavorites(id, req.user.id);
 
   res.json({ message: 'Favorites updated' });
-});
-
-export const initiateVideoUpload = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const { videoId, fileName, fileType } = req.body;
-
-  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
-
-  const uploadData = await UploadService.initiateMultipart(fileType, key);
-
-  res.json({ uploadId: uploadData.UploadId });
-});
-
-export const processVideoUpload = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const { videoId, fileName, partCount } = req.body;
-  const { uploadId } = req.params;
-
-  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
-
-  const presignedUrls = await UploadService.processMultipart(
-    uploadId,
-    partCount,
-    key
-  );
-
-  res.json({ presignedUrls });
-});
-
-export const completeVideoUpload = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const { videoId, fileName, parts } = req.body;
-  const { uploadId } = req.params;
-
-  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
-
-  const result = await UploadService.completeMultipart(uploadId, parts, key);
-
-  res.json({ url: result.Key });
-});
-
-export const cancelVideoUpload = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const { videoId, fileName } = req.query;
-  const { uploadId } = req.params;
-
-  const key = `videos/${req.user.id}/${videoId}/${fileName}`;
-
-  await UploadService.cancelMultipart(uploadId, key);
-
-  res.json({ message: 'Video upload cancelled' });
-});
-
-export const uploadThumbnail = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const { isNewFile, fileType, key: imageKey } = req.body;
-  let presignedUrl = '';
-  let key = '';
-
-  if (isNewFile) {
-    const result = await UploadService.uploadImage(fileType, imageKey);
-
-    presignedUrl = result.presignedUrl;
-    key = result.key;
-  } else {
-    await UploadService.deleteImage(key);
-  }
-
-  res.json({ presignedUrl, key });
 });

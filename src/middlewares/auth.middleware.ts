@@ -42,7 +42,7 @@ export const checkVerified: RequestHandler = async (req, res, next) => {
     }
 
     if (!user.isVerified) {
-      throw new HttpError(403, 'Account not verified');
+      throw new HttpError(403, 'Account need to be verified for this job');
     }
 
     next();
