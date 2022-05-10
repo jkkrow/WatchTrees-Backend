@@ -73,6 +73,6 @@ router.get('/subscribers', checkToken, UserController.getSubscribers);
 router.patch('/:id/subscribers', checkToken, UserController.updateSubscribers);
 
 // Delete user
-router.delete('/account', checkToken, UserController.deleteAccount);
+router.post('/deletion', checkToken, UserController.deleteAccount);
 
 export default router;

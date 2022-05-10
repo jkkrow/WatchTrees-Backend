@@ -246,6 +246,9 @@ export const updateSubscribers = asyncHandler(async (req, res) => {
 export const deleteAccount = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
+  const { email, password } = req.body;
+
+  await AuthService.verifyAccount(req.user.id, email, password);
   await AuthService.deleteAccount(req.user.id);
 
   res.json({ message: 'Deleted account successfully' });

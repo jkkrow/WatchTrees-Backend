@@ -216,6 +216,35 @@ export const resetPassword = async (token: string, password: string) => {
   });
 };
 
+export const verifyAccount = async (
+  id: string,
+  email: string,
+  password: string
+) => {
+  const user = await UserService.findById(id);
+
+  if (!user) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  if (user.email !== email) {
+    throw new HttpError(401, 'Invalid email or password');
+  }
+
+  const isValid = await bcrypt.compare(password, user.password);
+
+  if (!isValid) {
+    throw new HttpError(401, 'Invalid email or password');
+  }
+
+  return true;
+};
+
 export const deleteAccount = async (id: string) => {
-  return await UserService.update(id, { isDeleted: true });
+  // Mark user as deleted
+  await UserService.update(id, { isDeleted: true });
+
+  // Handle user created contents
+
+  // Send email to inform that account has been deleted
 };
