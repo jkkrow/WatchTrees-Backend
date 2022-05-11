@@ -10,6 +10,18 @@ describe('UserService', () => {
     it('should have a form of ObjectId', async () => {
       await expect(UserService.findById('asdfasfasf')).rejects.toThrow();
     });
+
+    it('should be failed if user is marked as deleted', async () => {
+      const user = await UserService.create(
+        'native',
+        'Test',
+        'test@example.com',
+        'password'
+      );
+      await UserService.update(user.id, { deleted: true });
+
+      await expect(UserService.findById(user.id)).rejects.toThrow();
+    });
   });
 
   describe('findOne', () => {
@@ -17,6 +29,20 @@ describe('UserService', () => {
       const result = await UserService.findOne({ email: 'test@example.com' });
 
       expect(result).toBeDefined();
+    });
+
+    it('should be failed if user is marked as deleted', async () => {
+      const user = await UserService.create(
+        'native',
+        'Test',
+        'test@example.com',
+        'password'
+      );
+      await UserService.update(user.id, { deleted: true });
+
+      await expect(
+        UserService.findOne({ email: user.email })
+      ).rejects.toThrow();
     });
   });
 

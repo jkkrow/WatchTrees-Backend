@@ -1,19 +1,27 @@
+import { HydratedDocument } from 'mongoose';
+
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import * as AuthService from '../auth.service';
 import * as UserService from '../user.service';
+import { User } from '../../models/user';
 
 jest.mock('../../util/send-email.ts');
 
 describe('AuthService', () => {
+  let user: HydratedDocument<User>;
+
   beforeAll(connectDB);
+  beforeEach(async () => {
+    user = await AuthService.signup('Test', 'test@example.com', 'password');
+  });
   afterEach(clearDB);
   afterAll(closeDB);
 
   describe('signup', () => {
     it('should create a new user', async () => {
       const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
+        'Test2',
+        'test2@example.com',
         'password'
       );
 
@@ -21,31 +29,18 @@ describe('AuthService', () => {
     });
 
     it('should be failed if there is existing email', async () => {
-      await AuthService.signup('Test', 'test@example.com', 'password');
       await expect(
         AuthService.signup('Test', 'test@example.com', 'password')
       ).rejects.toThrow();
     });
 
     it('should hash a password', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       expect(user.password).not.toEqual('password');
     });
   });
 
   describe('signin', () => {
     it('should sign in a user', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       await expect(
         AuthService.signin(user.email, 'password')
       ).resolves.not.toThrow();
@@ -60,12 +55,6 @@ describe('AuthService', () => {
 
   describe('updatePassword', () => {
     it('should update password', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const updatedUser = await AuthService.updatePassword(
         user.id,
         'password',
@@ -76,12 +65,6 @@ describe('AuthService', () => {
     });
 
     it('should hash password', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const updatedUser = await AuthService.updatePassword(
         user.id,
         'password',
@@ -94,12 +77,6 @@ describe('AuthService', () => {
 
   describe('sendVerification', () => {
     it('should return verification token', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const token = await AuthService.sendVerification(user.email);
 
       expect(token).toBeDefined();
@@ -107,17 +84,11 @@ describe('AuthService', () => {
 
     it("should be failed if email doesn't exist", async () => {
       await expect(
-        AuthService.sendVerification('test@example.com')
+        AuthService.sendVerification('test2@example.com')
       ).rejects.toThrow();
     });
 
     it('should be failed if user already verified', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       await UserService.update(user.id, { isVerified: true });
 
       await expect(AuthService.sendVerification(user.email)).rejects.toThrow();
@@ -126,12 +97,6 @@ describe('AuthService', () => {
 
   describe('checkVerification', () => {
     it('should update verified status', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const token = await AuthService.sendVerification(user.email);
       const updatedUser = await AuthService.checkVerification(token);
 
@@ -145,12 +110,6 @@ describe('AuthService', () => {
 
   describe('sendRecovery', () => {
     it('should return a recovery token', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const token = await AuthService.sendRecovery(user.email);
 
       expect(token).toBeDefined();
@@ -158,19 +117,13 @@ describe('AuthService', () => {
 
     it("should be failed if email doesn't exist", async () => {
       await expect(
-        AuthService.sendRecovery('test@example.com')
+        AuthService.sendRecovery('test2@example.com')
       ).rejects.toThrow();
     });
   });
 
   describe('checkRecovery', () => {
     it('should return true', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const token = await AuthService.sendRecovery(user.email);
       const result = await AuthService.checkRecovery(token);
 
@@ -184,12 +137,6 @@ describe('AuthService', () => {
 
   describe('resetPassword', () => {
     it('should update password', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const token = await AuthService.sendRecovery(user.email);
       const updatedUser = await AuthService.resetPassword(token, 'newPassword');
 
@@ -203,12 +150,6 @@ describe('AuthService', () => {
     });
 
     it('should reset recovery token', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
-        'password'
-      );
-
       const token = await AuthService.sendRecovery(user.email);
       const updatedUser = await AuthService.resetPassword(token, 'newPassword');
 
@@ -217,16 +158,20 @@ describe('AuthService', () => {
   });
 
   describe('deleteAccount', () => {
+    it('should be failed with invalid email and password', async () => {
+      await expect(
+        AuthService.deleteAccount(user.id, 'test2@example.com', 'pwd')
+      ).rejects.toThrow();
+    });
+
     it('should mark user as deleted', async () => {
-      const user = await AuthService.signup(
-        'Test',
-        'test@example.com',
+      const updatedUser = await AuthService.deleteAccount(
+        user.id,
+        user.email,
         'password'
       );
 
-      const updatedUser = await AuthService.deleteAccount(user.id);
-
-      expect(updatedUser.isDeleted).toBeTruthy();
+      expect(updatedUser.deleted).toBeTruthy();
     });
   });
 });

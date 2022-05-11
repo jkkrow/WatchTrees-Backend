@@ -37,6 +37,7 @@ export interface VideoTreeRef {
   root: string;
   info: TreeInfo;
   data: TreeData;
+  deleted: boolean;
 }
 
 export interface VideoTreeClient extends VideoTree {
@@ -76,6 +77,7 @@ const VideoTreeSchema = new Schema<VideoTreeRef>(
       views: { type: Number, required: true, default: 0 },
       favorites: [{ type: Types.ObjectId, required: true, ref: 'User' }],
     },
+    deleted: { type: Boolean },
   },
   { timestamps: true }
 );

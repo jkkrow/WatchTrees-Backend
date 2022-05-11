@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
 
 import * as UserService from './user.service';
+import * as VideoTreeService from './video-tree.service';
 import { HttpError } from '../models/error';
 import { createToken, verifyToken } from '../util/jwt-token';
 import { sendEmail } from '../util/send-email';
@@ -216,12 +217,13 @@ export const resetPassword = async (token: string, password: string) => {
   });
 };
 
-export const verifyAccount = async (
+export const deleteAccount = async (
   id: string,
   email: string,
   password: string
 ) => {
-  const user = await UserService.findById(id);
+  // Verify user
+  let user = await UserService.findById(id);
 
   if (!user) {
     throw new HttpError(404, 'User not found');
@@ -237,14 +239,23 @@ export const verifyAccount = async (
     throw new HttpError(401, 'Invalid email or password');
   }
 
-  return true;
-};
-
-export const deleteAccount = async (id: string) => {
   // Mark user as deleted
-  await UserService.update(id, { isDeleted: true });
+  user = await UserService.update(id, { deleted: true });
 
   // Handle user created contents
+  await VideoTreeService.deleteByCreator(id);
 
   // Send email to inform that account has been deleted
+  await sendEmail({
+    to: user.email,
+    subject: 'Account deleted',
+    message: `
+      <h3>Your account has been deleted successfully</h3>
+      <p>Your account and created contents will no longer be available.</p>
+      <p>Also, you will no longer receive email from our services.</p>
+      <p>Thank you for using our services.</p>
+      `,
+  });
+
+  return user;
 };

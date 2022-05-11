@@ -30,7 +30,12 @@ export const find = async ({
               as: 'video',
               let: { tree: '$tree', history: '$$ROOT' },
               pipeline: [
-                { $match: { $expr: { $eq: ['$$tree', '$_id'] } } },
+                {
+                  $match: {
+                    $expr: { $eq: ['$$tree', '$_id'] },
+                    deleted: false || undefined || null,
+                  },
+                },
                 { $addFields: { history: '$$history' } },
                 ...rootNodePipe(),
                 ...creatorInfoPipe(),

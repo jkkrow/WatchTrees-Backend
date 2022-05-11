@@ -4,12 +4,24 @@ import { UserModel, User } from '../models/user';
 import { HttpError } from '../models/error';
 import { createToken } from '../util/jwt-token';
 
-export const findById = (id: string) => {
-  return UserModel.findById(id);
+export const findById = async (id: string) => {
+  const user = await UserModel.findById(id);
+
+  if (user && user.deleted) {
+    throw new HttpError(400, 'This account has been terminated');
+  }
+
+  return user;
 };
 
-export const findOne = (filter: FilterQuery<User>) => {
-  return UserModel.findOne(filter);
+export const findOne = async (filter: FilterQuery<User>) => {
+  const user = await UserModel.findOne(filter);
+
+  if (user && user.deleted) {
+    throw new HttpError(400, 'This account has been terminated');
+  }
+
+  return user;
 };
 
 export const create = async (

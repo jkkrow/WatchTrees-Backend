@@ -248,8 +248,7 @@ export const deleteAccount = asyncHandler(async (req, res) => {
 
   const { email, password } = req.body;
 
-  await AuthService.verifyAccount(req.user.id, email, password);
-  await AuthService.deleteAccount(req.user.id);
+  await AuthService.deleteAccount(req.user.id, email, password);
 
   res.json({ message: 'Deleted account successfully' });
 });

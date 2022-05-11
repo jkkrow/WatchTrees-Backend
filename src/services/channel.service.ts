@@ -18,7 +18,7 @@ export const find = async ({
   userId?: string;
 }) => {
   const result = await UserModel.aggregate([
-    { $match: { ...match } },
+    { $match: { deleted: false || undefined || null, ...match } },
     {
       $facet: {
         channels: [

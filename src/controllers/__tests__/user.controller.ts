@@ -313,7 +313,7 @@ describe('UserController', () => {
   describe('deleteAccount', () => {
     it('should be failed without authorization token', async () => {
       await request(app)
-        .delete(endpoint + 'account')
+        .post(endpoint + 'deletion')
         .expect(403);
     });
 
@@ -323,7 +323,7 @@ describe('UserController', () => {
         .mockImplementationOnce(() => ({} as any));
 
       const res = await request(app)
-        .delete(endpoint + 'account')
+        .post(endpoint + 'deletion')
         .set({ Authorization: 'Bearer ' + accessToken })
         .expect('Content-Type', /json/)
         .expect(200);

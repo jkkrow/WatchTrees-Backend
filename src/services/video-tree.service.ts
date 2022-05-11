@@ -42,7 +42,7 @@ export const update = async (
 ) => {
   const videoTree = await VideoTreeModel.findById(id);
 
-  if (!videoTree) {
+  if (!videoTree || (videoTree && videoTree.deleted)) {
     throw new HttpError(404, 'Video not found');
   }
   if (
@@ -79,15 +79,20 @@ export const remove = async (id: string, userId: string) => {
 
 export const findOne = async (id: string) => {
   const result = await VideoTreeModel.aggregate([
-    { $match: { _id: new Types.ObjectId(id) } },
+    {
+      $match: {
+        _id: new Types.ObjectId(id),
+      },
+    },
     ...allNodesPipe(),
   ]);
 
-  if (!result.length) {
+  const video = result[0];
+
+  if (!video || (video && video.deleted)) {
     throw new HttpError(404, 'Video not found');
   }
 
-  const video = result[0];
   video.root = buildTree([video.root, ...video.root.children]);
 
   return video as VideoTree;
@@ -102,11 +107,12 @@ export const findClientOne = async (id: string, userId?: string) => {
     ...historyPipe(userId),
   ]);
 
-  if (!result.length) {
+  const video = result[0];
+
+  if (!video || (video && video.deleted)) {
     throw new HttpError(404, 'Video not found');
   }
 
-  const video = result[0];
   video.root = buildTree([video.root, ...video.root.children]);
 
   if (
@@ -145,7 +151,12 @@ export const find = async ({
   historyData?: boolean;
 }) => {
   const result = await VideoTreeModel.aggregate([
-    { $match: { ...match } },
+    {
+      $match: {
+        deleted: false || undefined || null,
+        ...match,
+      },
+    },
     {
       $facet: {
         videos: [
@@ -196,7 +207,11 @@ export const findClient = async ({
   userId?: string;
 }) => {
   return await find({
-    match: { 'info.status': 'public', 'info.isEditing': false, ...match },
+    match: {
+      'info.status': 'public',
+      'info.isEditing': false,
+      ...match,
+    },
     sort,
     page,
     max,
@@ -273,5 +288,12 @@ export const incrementViews = async (id: string) => {
   return await VideoTreeModel.updateOne(
     { _id: id },
     { $inc: { 'data.views': 1 } }
+  );
+};
+
+export const deleteByCreator = async (userId: string) => {
+  return await VideoTreeModel.updateMany(
+    { 'info.creator': userId },
+    { $set: { deleted: true } }
   );
 };

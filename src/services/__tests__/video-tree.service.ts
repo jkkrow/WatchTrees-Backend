@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { connectDB, closeDB } from '../../test/db';
 import * as VideoTreeService from '../video-tree.service';
 import * as UserService from '../user.service';
+import { VideoTreeModel } from '../../models/video-tree';
 import { User } from '../../models/user';
 import { traverseNodes } from '../../util/tree';
 
@@ -243,6 +244,21 @@ describe('VideoTreeService', () => {
       const fetchedTree = await VideoTreeService.findOne(tree._id.toString());
 
       expect(fetchedTree.data.favorites).toHaveLength(0);
+    });
+  });
+
+  describe('deleteByCreator', () => {
+    it('should mark as deleted for every videos that user created', async () => {
+      const tree1 = await VideoTreeService.create(user.id);
+      const tree2 = await VideoTreeService.create(user.id);
+
+      await VideoTreeService.deleteByCreator(user.id);
+
+      const deletedTree1 = await VideoTreeModel.findById(tree1._id);
+      const deletedTree2 = await VideoTreeModel.findById(tree2._id);
+
+      expect(deletedTree1!.deleted).toBeTruthy();
+      expect(deletedTree2!.deleted).toBeTruthy();
     });
   });
 });
