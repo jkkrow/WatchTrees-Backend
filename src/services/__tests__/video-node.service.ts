@@ -51,7 +51,7 @@ describe('VideoNodeService', () => {
       },
     ];
 
-    await VideoTreeService.update(tree._id.toString(), tree, user.id);
+    await VideoTreeService.updateAll(tree._id.toString(), tree, user.id);
   });
   afterAll(closeDB);
 
@@ -102,7 +102,7 @@ describe('VideoNodeService', () => {
     });
   });
 
-  describe('bulkWrite', () => {
+  describe('updateByTree', () => {
     it('should insert new nodes that not existed before', async () => {
       tree.root.children = [
         {
@@ -147,7 +147,7 @@ describe('VideoNodeService', () => {
           children: [],
         },
       ];
-      await VideoNodeService.bulkWrite(tree, user.id);
+      await VideoNodeService.updateByTree(tree, user.id);
       const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
 
       expect(nodes).toHaveLength(6);
@@ -192,7 +192,7 @@ describe('VideoNodeService', () => {
           children: [],
         },
       ];
-      await VideoNodeService.bulkWrite(tree, user.id);
+      await VideoNodeService.updateByTree(tree, user.id);
       const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
       const firstChild = nodes.find((node) => node._id === '1')!;
 
@@ -210,7 +210,7 @@ describe('VideoNodeService', () => {
           children: [],
         },
       ];
-      await VideoNodeService.bulkWrite(tree, user.id);
+      await VideoNodeService.updateByTree(tree, user.id);
       const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
 
       expect(nodes).toHaveLength(2);

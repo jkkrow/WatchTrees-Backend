@@ -67,20 +67,16 @@ describe('UploadService', () => {
     });
   });
 
-  describe('uploadImage', () => {
+  describe('uploadObject', () => {
     it('should return a presigned url', async () => {
-      const result = await UploadService.uploadImage('image/png');
+      const result = await UploadService.uploadObject('image/png', 'test.mp3');
       expect(result).toHaveProperty('presignedUrl');
-    });
-
-    it('should be failed if file type is other than image', async () => {
-      await expect(UploadService.uploadImage('video/mp4')).rejects.toThrow();
     });
   });
 
   describe('deleteImage', () => {
     it('should return empty object if nothing changed', async () => {
-      const result = await UploadService.deleteImage('test.png');
+      const result = await UploadService.deleteObject('test.png');
       expect(result).toStrictEqual({});
     });
   });

@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 
 import { UserModel } from '../models/user';
 import { HttpError } from '../models/error';
-import { channelPipeline } from './pipelines/channel.pipeline';
+import { channelPipe } from './pipelines/channel.pipeline';
 
 export const find = async ({
   match = {},
@@ -25,7 +25,7 @@ export const find = async ({
           { $sort: { ...sort, _id: -1 } },
           { $skip: +max * (+page - 1) },
           { $limit: +max },
-          ...channelPipeline(userId),
+          ...channelPipe(userId),
         ],
         totalCount: [{ $count: 'count' }],
       },
@@ -95,7 +95,7 @@ export const findBySubscribers = async (params: {
               channels: [
                 { $skip: +params.max * (+params.page - 1) },
                 { $limit: +params.max },
-                ...channelPipeline(params.userId),
+                ...channelPipe(params.userId),
               ],
               totalCount: [{ $count: 'count' }],
             },

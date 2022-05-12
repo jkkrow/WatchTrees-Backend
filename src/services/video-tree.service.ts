@@ -35,7 +35,7 @@ export const create = async (userId: string) => {
   return videoTree;
 };
 
-export const update = async (
+export const updateAll = async (
   id: string,
   uploadTree: VideoTree,
   userId: string
@@ -52,7 +52,7 @@ export const update = async (
   }
 
   // Update Nodes
-  await VideoNodeService.bulkWrite(uploadTree, userId);
+  await VideoNodeService.updateByTree(uploadTree, userId);
 
   // Update Tree
   videoTree.info = uploadTree.info;
@@ -67,14 +67,22 @@ export const update = async (
 export const remove = async (id: string, userId: string) => {
   const video = await VideoTreeModel.findById(id);
 
-  if (!video) return;
+  if (!video) {
+    throw new HttpError(404, 'Video not found');
+  }
+
   if (video.info.creator.toString() !== userId) {
     throw new HttpError(403, 'Not authorized to remove video');
   }
 
-  await VideoNodeService.deleteByRoot(video.root, userId);
+  const root = await VideoNodeService.deleteByRoot(video.root, userId);
 
-  return await video.remove();
+  if (!root?.info) {
+    return await video.remove();
+  }
+
+  video.deleted = true;
+  return await video.save();
 };
 
 export const findOne = async (id: string) => {
@@ -292,8 +300,9 @@ export const incrementViews = async (id: string) => {
 };
 
 export const deleteByCreator = async (userId: string) => {
-  return await VideoTreeModel.updateMany(
+  await VideoTreeModel.updateMany(
     { 'info.creator': userId },
     { $set: { deleted: true } }
   );
+  await VideoNodeService.deleteByCreator(userId);
 };

@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import * as UserService from '../services/user.service';
 import * as AuthService from '../services/auth.service';
 import * as ChannelService from '../services/channel.service';
+import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
 import {
@@ -249,6 +250,14 @@ export const deleteAccount = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   await AuthService.deleteAccount(req.user.id, email, password);
+
+  const videoPath = `videos/${req.user.id}/`;
+  const imagePath = `images/${req.user.id}/`;
+
+  await Promise.all([
+    UploadService.deleteDirectory(videoPath),
+    UploadService.deleteDirectory(imagePath),
+  ]);
 
   res.json({ message: 'Deleted account successfully' });
 });

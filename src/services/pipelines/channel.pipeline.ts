@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-export const channelPipeline = (userId?: string) => [
+export const channelPipe = (userId?: string) => [
   {
     $lookup: {
       from: 'videotrees',

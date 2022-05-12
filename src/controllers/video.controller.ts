@@ -1,4 +1,5 @@
 import * as VideoTreeService from '../services/video-tree.service';
+import * as UploadService from '../services/upload.service';
 import { asyncHandler } from '../util/async-handler';
 
 export const createVideo = asyncHandler(async (req, res) => {
@@ -15,7 +16,7 @@ export const updateVideo = asyncHandler(async (req, res) => {
   const { uploadTree } = req.body;
   const { id } = req.params;
 
-  await VideoTreeService.update(id, uploadTree, req.user.id);
+  await VideoTreeService.updateAll(id, uploadTree, req.user.id);
 
   res.json({ message: 'Upload progress saved' });
 });
@@ -25,9 +26,10 @@ export const deleteVideo = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  await VideoTreeService.remove(id, req.user.id);
+  const videoTree = await VideoTreeService.remove(id, req.user.id);
 
-  // TODO: Delete videos & thumbnail from aws s3
+  const path = `videos/${req.user.id}/${videoTree.id}/`;
+  await UploadService.deleteDirectory(path);
 
   res.json({ message: 'Video deleted successfully' });
 });

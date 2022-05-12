@@ -30,6 +30,7 @@ export const allNodesPipe = () => {
               as: 'children',
               restrictSearchWithMatch: {
                 $expr: { $eq: ['$creator', '$$creator'] },
+                deleted: false || undefined || null,
               },
             },
           },

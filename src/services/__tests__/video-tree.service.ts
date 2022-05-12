@@ -35,7 +35,7 @@ describe('VideoTreeService', () => {
       const tree = await VideoTreeService.create(user.id);
       tree.info.title = 'Testing';
 
-      const updatedTree = await VideoTreeService.update(
+      const updatedTree = await VideoTreeService.updateAll(
         tree._id.toString(),
         tree,
         user.id
@@ -48,7 +48,7 @@ describe('VideoTreeService', () => {
       const tree = await VideoTreeService.create(user.id);
       tree.data.views = 100;
 
-      const updatedTree = await VideoTreeService.update(
+      const updatedTree = await VideoTreeService.updateAll(
         tree._id.toString(),
         tree,
         user.id
@@ -109,7 +109,11 @@ describe('VideoTreeService', () => {
         },
       ];
 
-      await VideoTreeService.update(newTree._id.toString(), newTree, user.id);
+      await VideoTreeService.updateAll(
+        newTree._id.toString(),
+        newTree,
+        user.id
+      );
       const fetchedTree = await VideoTreeService.findOne(
         newTree._id.toString()
       );
@@ -139,7 +143,7 @@ describe('VideoTreeService', () => {
         },
       ];
 
-      await VideoTreeService.update(tree1._id.toString(), tree1, user.id);
+      await VideoTreeService.updateAll(tree1._id.toString(), tree1, user.id);
       const fetchedTree = await VideoTreeService.findOne(tree2._id.toString());
 
       expect(fetchedTree.root.children).toHaveLength(0);
@@ -163,7 +167,7 @@ describe('VideoTreeService', () => {
       const tree = await VideoTreeService.create(user.id);
       tree.info.status = 'private';
 
-      await VideoTreeService.update(tree._id.toString(), tree, user.id);
+      await VideoTreeService.updateAll(tree._id.toString(), tree, user.id);
 
       await expect(
         VideoTreeService.findClientOne(tree._id.toString())

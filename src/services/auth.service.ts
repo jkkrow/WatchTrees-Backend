@@ -233,6 +233,8 @@ export const deleteAccount = async (
     throw new HttpError(401, 'Invalid email or password');
   }
 
+  // TODO: Add case for google account
+
   const isValid = await bcrypt.compare(password, user.password);
 
   if (!isValid) {

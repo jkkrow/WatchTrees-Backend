@@ -1,16 +1,6 @@
-import { parse } from 'path';
-import { v4 as uuidv4 } from 'uuid';
-
 import { s3 } from '../config/aws';
-import { HttpError } from '../models/error';
 
 export const initiateMultipart = async (fileType: string, path: string) => {
-  const { dir } = parse(fileType);
-
-  if (dir !== 'video') {
-    throw new HttpError(422, 'Invalid file type');
-  }
-
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
@@ -70,16 +60,10 @@ export const cancelMultipart = async (uploadId: string, path: string) => {
   return await s3.abortMultipartUpload(params).promise();
 };
 
-export const uploadImage = async (fileType: string) => {
-  const { dir, name } = parse(fileType);
-
-  if (dir !== 'image') {
-    throw new HttpError(422, 'Invalid file type');
-  }
-
+export const uploadObject = async (fileType: string, path: string) => {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
-    Key: `images/${uuidv4()}.${name}`,
+    Key: path,
     ContentType: fileType,
   };
 
@@ -88,11 +72,68 @@ export const uploadImage = async (fileType: string) => {
   return { presignedUrl, key: params.Key };
 };
 
-export const deleteImage = async (path: string) => {
+export const deleteObject = async (path: string) => {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: path,
   };
 
   return await s3.deleteObject(params).promise();
+};
+
+export const deleteDirectory = async (path: string) => {
+  const prefixes = await getDirectoryPrefixes(path);
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
+    Key: path,
+  };
+  const deleteParams = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
+    Delete: {
+      Objects: prefixes,
+    },
+  };
+
+  if (prefixes.length > 0) {
+    return s3.deleteObjects(deleteParams).promise();
+  }
+
+  return s3.deleteObject(params).promise();
+};
+
+export const getDirectoryPrefixes = async (path: string) => {
+  const prefixes: { Key: string }[] = [];
+  const promises: Promise<{ Key: string }[]>[] = [];
+  const listParams = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME!,
+    Prefix: path,
+    Delimiter: '/',
+  };
+
+  const listedObjects = await s3.listObjectsV2(listParams).promise();
+  const listedContents = listedObjects.Contents;
+  const listedPrefixes = listedObjects.CommonPrefixes;
+
+  if (listedContents && listedContents.length) {
+    listedContents.forEach(({ Key }) => {
+      Key && prefixes.push({ Key });
+    });
+  }
+
+  if (listedPrefixes && listedPrefixes.length) {
+    listedPrefixes.forEach(({ Prefix }) => {
+      Prefix && prefixes.push({ Key: Prefix });
+      Prefix && promises.push(getDirectoryPrefixes(Prefix));
+    });
+  }
+
+  const subPrefixes = await Promise.all(promises);
+
+  subPrefixes.forEach((arrPrefixes) => {
+    arrPrefixes.forEach((prefix) => {
+      prefixes.push(prefix);
+    });
+  });
+
+  return prefixes;
 };

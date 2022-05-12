@@ -31,7 +31,10 @@ export const findByRoot = async (
         connectFromField: '_id',
         connectToField: 'parentId',
         as: 'children',
-        restrictSearchWithMatch: { creator: new Types.ObjectId(userId) },
+        restrictSearchWithMatch: {
+          creator: new Types.ObjectId(userId),
+          deleted: false || undefined || null,
+        },
       },
     },
   ]);
@@ -39,14 +42,30 @@ export const findByRoot = async (
   return result.length ? [result[0], ...result[0].children] : [];
 };
 
-export const deleteByRoot = async (rootId: string, userId: string) => {
-  const savedNodes = await findByRoot(rootId, userId);
-  const deleteBulk = _getDeleteJob(savedNodes);
-
-  return await VideoNodeModel.bulkWrite(deleteBulk);
+export const findByCreator = async (userId: string) => {
+  return await VideoNodeModel.aggregate([
+    { $match: { creator: new Types.ObjectId(userId) } },
+  ]);
 };
 
-export const bulkWrite = async (newTree: VideoTree, userId: string) => {
+export const deleteByRoot = async (rootId: string, userId: string) => {
+  const savedNodes = await findByRoot(rootId, userId);
+  const deleteBulk = _getDeleteJobs(savedNodes);
+
+  const rootNode = savedNodes.find((node) => node._id === rootId);
+  await VideoNodeModel.bulkWrite(deleteBulk);
+
+  return rootNode;
+};
+
+export const deleteByCreator = async (userId: string) => {
+  const savedNodes = await findByCreator(userId);
+  const deleteBulk = _getDeleteJobs(savedNodes);
+
+  await VideoNodeModel.bulkWrite(deleteBulk);
+};
+
+export const updateByTree = async (newTree: VideoTree, userId: string) => {
   const newNodes = traverseNodes(newTree.root);
   const savedNodes = await findByRoot(newTree.root._id, userId);
 
@@ -74,19 +93,19 @@ export const bulkWrite = async (newTree: VideoTree, userId: string) => {
   const bulkJobs: any[] = [];
 
   if (createdNodes.length) {
-    bulkJobs.push(..._getInsertJob(createdNodes, userId));
+    bulkJobs.push(..._getInsertJobs(createdNodes, userId));
   }
   if (deletedNodes.length) {
-    bulkJobs.push(..._getDeleteJob(deletedNodes));
+    bulkJobs.push(..._getDeleteJobs(deletedNodes));
   }
   if (updatedNodes.length) {
-    bulkJobs.push(..._getUpdateJob(updatedNodes, newNodes));
+    bulkJobs.push(..._getUpdateJobs(updatedNodes, newNodes));
   }
 
   return await VideoNodeModel.bulkWrite(bulkJobs);
 };
 
-const _getInsertJob = (videoNodes: VideoNode[], userId: string) => {
+const _getInsertJobs = (videoNodes: VideoNode[], userId: string) => {
   const insertBulk = videoNodes.map((videoNode) => ({
     insertOne: {
       document: { ...videoNode, creator: new Types.ObjectId(userId) },
@@ -96,11 +115,20 @@ const _getInsertJob = (videoNodes: VideoNode[], userId: string) => {
   return insertBulk;
 };
 
-const _getDeleteJob = (videoNodes: VideoNode[]) => {
+const _getDeleteJobs = (videoNodes: VideoNode[]) => {
+  const deletedNodes = videoNodes.filter((videoNode) => !videoNode.info);
+  const markedAsDeletedNodes = videoNodes.filter((videoNode) => videoNode.info);
+
   const deleteBulk = [
     {
       deleteMany: {
-        filter: { _id: { $in: videoNodes.map((videoNode) => videoNode._id) } },
+        filter: { _id: { $in: deletedNodes.map((node) => node._id) } },
+      },
+    },
+    {
+      updateMany: {
+        filter: { _id: { $in: markedAsDeletedNodes.map((node) => node._id) } },
+        update: { $set: { deleted: true } },
       },
     },
   ];
@@ -108,7 +136,7 @@ const _getDeleteJob = (videoNodes: VideoNode[]) => {
   return deleteBulk;
 };
 
-const _getUpdateJob = (savedNodes: VideoNode[], newNodes: VideoNode[]) => {
+const _getUpdateJobs = (savedNodes: VideoNode[], newNodes: VideoNode[]) => {
   const updateBulk: any[] = [];
 
   // Preserve converted videos
@@ -137,7 +165,7 @@ const _getUpdateJob = (savedNodes: VideoNode[], newNodes: VideoNode[]) => {
       updateBulk.push({
         updateOne: {
           filter: { _id: savedNode._id },
-          update: { info: newNode.info },
+          update: { $set: { info: newNode.info } },
         },
       });
     });
