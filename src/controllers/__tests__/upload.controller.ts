@@ -40,12 +40,17 @@ describe('UploadController', () => {
         .expect(403);
     });
 
-    it('should have videoId, fileName, and fileType in request body', async () => {
+    it('should be failed if file type is other than video', async () => {
       await UserService.update(user.id, { isVerified: true });
       await request(app)
         .post(endpoint + 'multipart')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .expect(500);
+        .send({
+          videoId: 'test-id',
+          fileName: 'test.png',
+          fileType: 'image/png',
+        })
+        .expect(422);
     });
 
     it('should return upload id', async () => {
@@ -143,18 +148,37 @@ describe('UploadController', () => {
       await request(app)
         .put(endpoint + 'image')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ fileType: 'image/png', key: 'test.png' })
         .expect(403);
     });
 
-    it('should delete image if there already is', async () => {
+    it('should be failed if prefix is not equal to user id', async () => {
       await UserService.update(user.id, { isVerified: true });
-      const spy = jest.spyOn(UploadService, 'deleteImage');
 
       await request(app)
         .put(endpoint + 'image')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ fileType: 'image/png', key: 'test.png' })
+        .send({ fileType: 'image/png', key: 'images/test-id/test.png' })
+        .expect(403);
+    });
+
+    it('should be failed if file type is other than image', async () => {
+      await UserService.update(user.id, { isVerified: true });
+
+      await request(app)
+        .put(endpoint + 'image')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .send({ fileType: 'video/mp4', key: `images/${user.id}/test.mp4` })
+        .expect(422);
+    });
+
+    it('should delete image if there already is', async () => {
+      await UserService.update(user.id, { isVerified: true });
+      const spy = jest.spyOn(UploadService, 'deleteObject');
+
+      await request(app)
+        .put(endpoint + 'image')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .send({ fileType: 'image/png', key: `images/${user.id}/test.png` })
         .expect(200);
 
       expect(spy).toBeCalled();
@@ -162,7 +186,7 @@ describe('UploadController', () => {
 
     it('should return a presigned url and key for new image', async () => {
       await UserService.update(user.id, { isVerified: true });
-      const spy = jest.spyOn(UploadService, 'uploadImage');
+      const spy = jest.spyOn(UploadService, 'uploadObject');
 
       const res = await request(app)
         .put(endpoint + 'image')
@@ -191,14 +215,24 @@ describe('UploadController', () => {
         .expect(403);
     });
 
-    it('should delete image', async () => {
+    it('should be failed if prefix is not equal to user id', async () => {
       await UserService.update(user.id, { isVerified: true });
-      const spy = jest.spyOn(UploadService, 'deleteImage');
 
       await request(app)
         .delete(endpoint + 'image')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .query({ key: 'test.png' })
+        .query({ key: 'images/test-id/test.png' })
+        .expect(403);
+    });
+
+    it('should delete image', async () => {
+      await UserService.update(user.id, { isVerified: true });
+      const spy = jest.spyOn(UploadService, 'deleteObject');
+
+      await request(app)
+        .delete(endpoint + 'image')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .query({ key: `images/${user.id}/test.png` })
         .expect(200);
 
       expect(spy).toBeCalled();

@@ -1,8 +1,9 @@
 import { HydratedDocument } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-import { connectDB, closeDB } from '../../test/db';
+import { connectDB, clearDB, closeDB } from '../../test/db';
 import * as VideoTreeService from '../video-tree.service';
+import * as VideoNodeService from '../video-node.service';
 import * as UserService from '../user.service';
 import { VideoTreeModel } from '../../models/video-tree';
 import { User } from '../../models/user';
@@ -11,8 +12,8 @@ import { traverseNodes } from '../../util/tree';
 describe('VideoTreeService', () => {
   let user: HydratedDocument<User>;
 
-  beforeAll(async () => {
-    await connectDB();
+  beforeAll(connectDB);
+  beforeEach(async () => {
     user = await UserService.create(
       'native',
       'Test',
@@ -20,6 +21,7 @@ describe('VideoTreeService', () => {
       'password'
     );
   });
+  afterEach(clearDB);
   afterAll(closeDB);
 
   describe('create', () => {
@@ -35,7 +37,7 @@ describe('VideoTreeService', () => {
       const tree = await VideoTreeService.create(user.id);
       tree.info.title = 'Testing';
 
-      const updatedTree = await VideoTreeService.updateAll(
+      const updatedTree = await VideoTreeService.update(
         tree._id.toString(),
         tree,
         user.id
@@ -48,7 +50,7 @@ describe('VideoTreeService', () => {
       const tree = await VideoTreeService.create(user.id);
       tree.data.views = 100;
 
-      const updatedTree = await VideoTreeService.updateAll(
+      const updatedTree = await VideoTreeService.update(
         tree._id.toString(),
         tree,
         user.id
@@ -109,11 +111,7 @@ describe('VideoTreeService', () => {
         },
       ];
 
-      await VideoTreeService.updateAll(
-        newTree._id.toString(),
-        newTree,
-        user.id
-      );
+      await VideoTreeService.update(newTree._id.toString(), newTree, user.id);
       const fetchedTree = await VideoTreeService.findOne(
         newTree._id.toString()
       );
@@ -143,7 +141,7 @@ describe('VideoTreeService', () => {
         },
       ];
 
-      await VideoTreeService.updateAll(tree1._id.toString(), tree1, user.id);
+      await VideoTreeService.update(tree1._id.toString(), tree1, user.id);
       const fetchedTree = await VideoTreeService.findOne(tree2._id.toString());
 
       expect(fetchedTree.root.children).toHaveLength(0);
@@ -167,7 +165,7 @@ describe('VideoTreeService', () => {
       const tree = await VideoTreeService.create(user.id);
       tree.info.status = 'private';
 
-      await VideoTreeService.updateAll(tree._id.toString(), tree, user.id);
+      await VideoTreeService.update(tree._id.toString(), tree, user.id);
 
       await expect(
         VideoTreeService.findClientOne(tree._id.toString())
@@ -252,17 +250,21 @@ describe('VideoTreeService', () => {
   });
 
   describe('deleteByCreator', () => {
-    it('should mark as deleted for every videos that user created', async () => {
-      const tree1 = await VideoTreeService.create(user.id);
-      const tree2 = await VideoTreeService.create(user.id);
+    it('should mark as deleted for every video trees that user created', async () => {
+      const tree = await VideoTreeService.create(user.id);
+
+      await VideoTreeService.deleteByCreator(user.id);
+      const deletedTree1 = await VideoTreeModel.findById(tree._id);
+
+      expect(deletedTree1!.deleted).toBeTruthy();
+    });
+
+    it('should also delete nodes by the user', async () => {
+      const spy = jest.spyOn(VideoNodeService, 'deleteByCreator');
 
       await VideoTreeService.deleteByCreator(user.id);
 
-      const deletedTree1 = await VideoTreeModel.findById(tree1._id);
-      const deletedTree2 = await VideoTreeModel.findById(tree2._id);
-
-      expect(deletedTree1!.deleted).toBeTruthy();
-      expect(deletedTree2!.deleted).toBeTruthy();
+      expect(spy).toBeCalled();
     });
   });
 });

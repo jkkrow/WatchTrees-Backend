@@ -16,7 +16,7 @@ export const updateVideo = asyncHandler(async (req, res) => {
   const { uploadTree } = req.body;
   const { id } = req.params;
 
-  await VideoTreeService.updateAll(id, uploadTree, req.user.id);
+  await VideoTreeService.update(id, uploadTree, req.user.id);
 
   res.json({ message: 'Upload progress saved' });
 });

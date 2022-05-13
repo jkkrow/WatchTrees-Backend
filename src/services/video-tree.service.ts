@@ -35,7 +35,7 @@ export const create = async (userId: string) => {
   return videoTree;
 };
 
-export const updateAll = async (
+export const update = async (
   id: string,
   uploadTree: VideoTree,
   userId: string

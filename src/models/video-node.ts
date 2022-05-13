@@ -28,7 +28,7 @@ export interface VideoNodeRef {
 
 const VideoNodeSchema = new Schema<VideoNodeRef>({
   _id: { type: String },
-  parentId: { type: String, ref: 'VideoNode', defualt: null },
+  parentId: { type: String, ref: 'VideoNode', default: null },
   layer: { type: Number, required: true },
   creator: { type: Types.ObjectId, required: true, ref: 'User' },
   info: {

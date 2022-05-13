@@ -1,58 +1,43 @@
-import { HydratedDocument } from 'mongoose';
-import { WithId } from 'mongodb';
+import { HydratedDocument, Types } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
-import { connectDB, closeDB } from '../../test/db';
+import { connectDB, closeDB, clearDB } from '../../test/db';
 import * as VideoNodeService from '../video-node.service';
-import * as VideoTreeService from '../video-tree.service';
 import * as UserService from '../user.service';
-import { VideoTree } from '../../models/video-tree';
+import {
+  VideoNodeModel,
+  VideoNode,
+  VideoNodeRef,
+} from '../../models/video-node';
 import { User } from '../../models/user';
 
 describe('VideoNodeService', () => {
   let user: HydratedDocument<User>;
-  let tree: WithId<VideoTree>;
+  let root: HydratedDocument<VideoNodeRef>;
+  const createChild = async (parentId: string, userId: string) => {
+    const node: VideoNode = {
+      _id: uuidv4(),
+      layer: 1,
+      info: null,
+      parentId: parentId,
+      creator: new Types.ObjectId(userId),
+      children: [],
+    };
+    await new VideoNodeModel(node).save();
+    return node;
+  };
 
-  beforeAll(async () => {
-    await connectDB();
+  beforeAll(connectDB);
+  beforeEach(async () => {
     user = await UserService.create(
       'native',
       'Test',
       'test@example.com',
       'password'
     );
+    root = await VideoNodeService.createRoot(user.id);
   });
-  beforeAll(async () => {
-    tree = await VideoTreeService.create(user.id);
-    tree.root.children = [
-      {
-        _id: '1',
-        layer: 1,
-        parentId: tree.root._id,
-        info: null,
-        creator: user.id,
-        children: [
-          {
-            _id: '1-1',
-            layer: 2,
-            parentId: '1',
-            info: null,
-            creator: user.id,
-            children: [],
-          },
-        ],
-      },
-      {
-        _id: '2',
-        layer: 1,
-        parentId: tree.root._id,
-        info: null,
-        creator: user.id,
-        children: [],
-      },
-    ];
-
-    await VideoTreeService.updateAll(tree._id.toString(), tree, user.id);
-  });
+  afterEach(clearDB);
   afterAll(closeDB);
 
   describe('createRoot', () => {
@@ -64,8 +49,12 @@ describe('VideoNodeService', () => {
 
   describe('findByRoot', () => {
     it('should return all nodes which has same root', async () => {
-      const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
-      expect(nodes).toHaveLength(4);
+      await createChild(root.id, user.id);
+      await createChild(root.id, user.id);
+
+      const nodes = await VideoNodeService.findByRoot(root.id, user.id);
+
+      expect(nodes).toHaveLength(3);
     });
 
     it('should only return nodes that matching creator', async () => {
@@ -75,143 +64,130 @@ describe('VideoNodeService', () => {
         'test2@example.com',
         'password'
       );
-      await VideoTreeService.create(anotherUser.id);
-
-      const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
-      expect(nodes).toHaveLength(4);
-    });
-  });
-
-  describe('deleteByRoot', () => {
-    it('should delete all nodes which has same root', async () => {
-      await VideoNodeService.deleteByRoot(tree.root._id, user.id);
-      const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
-
-      expect(nodes).toHaveLength(0);
-    });
-
-    it('should only delete nodes that matching creator', async () => {
-      const anotherTree = await VideoTreeService.create(user.id);
-      await VideoNodeService.deleteByRoot(tree.root._id, user.id);
-      const nodes = await VideoNodeService.findByRoot(
-        anotherTree.root._id,
-        user.id
-      );
+      await VideoNodeService.createRoot(anotherUser.id);
+      const nodes = await VideoNodeService.findByRoot(root.id, user.id);
 
       expect(nodes).toHaveLength(1);
     });
   });
 
+  describe('findByCreator', () => {
+    it('should return all nodes which has same creator', async () => {
+      const nodes = await VideoNodeService.findByCreator(user.id);
+
+      expect(nodes).toHaveLength(1);
+    });
+  });
+
+  describe('deleteByRoot', () => {
+    it('should delete all nodes which has same root', async () => {
+      await VideoNodeService.deleteByRoot(root.id, user.id);
+      const nodes = await VideoNodeService.findByRoot(root.id, user.id);
+
+      expect(nodes).toHaveLength(0);
+    });
+
+    it('should only delete nodes that matching creator', async () => {
+      const anotherRoot = await VideoNodeService.createRoot(user.id);
+      await VideoNodeService.deleteByRoot(root.id, user.id);
+      const nodes = await VideoNodeService.findByRoot(anotherRoot.id, user.id);
+
+      expect(nodes).toHaveLength(1);
+    });
+  });
+
+  describe('deleteByCreator', () => {
+    it('should delete all nodes which has same creator', async () => {
+      await VideoNodeService.deleteByCreator(user.id);
+      const nodes = await VideoNodeService.findByCreator(user.id);
+
+      expect(nodes).toHaveLength(0);
+    });
+  });
+
   describe('updateByTree', () => {
     it('should insert new nodes that not existed before', async () => {
-      tree.root.children = [
-        {
-          _id: '1',
-          layer: 1,
-          parentId: tree.root._id,
-          info: null,
-          creator: user.id,
-          children: [
-            {
-              _id: '1-1',
-              layer: 2,
-              parentId: '1',
-              info: null,
-              creator: user.id,
-              children: [],
-            },
-            {
-              _id: '1-2',
-              layer: 2,
-              parentId: '1',
-              info: null,
-              creator: user.id,
-              children: [],
-            },
-          ],
+      const child1 = await createChild(root.id, user.id);
+      const child2 = await createChild(root.id, user.id);
+      const tree = {
+        root: {
+          _id: root.id,
+          parentId: root.parentId,
+          layer: root.layer,
+          creator: root.creator,
+          info: root.info,
+          children: [child1, child2],
         },
-        {
-          _id: '2',
-          layer: 1,
-          parentId: tree.root._id,
-          info: null,
-          creator: user.id,
-          children: [],
-        },
-        {
-          _id: '3',
-          layer: 2,
-          parentId: tree.root._id,
-          info: null,
-          creator: user.id,
-          children: [],
-        },
-      ];
-      await VideoNodeService.updateByTree(tree, user.id);
-      const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
+        info: {} as any,
+        data: {} as any,
+      };
 
-      expect(nodes).toHaveLength(6);
+      await VideoNodeService.updateByTree(tree, user.id);
+      const nodes = await VideoNodeService.findByRoot(root.id, user.id);
+
+      expect(nodes).toHaveLength(3);
     });
 
     it('should update nodes if already existed', async () => {
-      tree.root.children = [
-        {
-          _id: '1',
-          layer: 1,
-          parentId: tree.root._id,
-          info: {
-            name: 'Test name',
-            label: 'Test label',
-            url: 'test.mp4',
-            size: 100,
-            duration: 30,
-            isConverted: false,
-            selectionTimeStart: 20,
-            selectionTimeEnd: 30,
-            progress: 100,
-            error: null,
-          },
-          creator: user.id,
-          children: [
-            {
-              _id: '1-1',
-              layer: 2,
-              parentId: '1',
-              info: null,
-              creator: user.id,
-              children: [],
-            },
-          ],
+      const child1 = await createChild(root.id, user.id);
+      const child2 = await createChild(root.id, user.id);
+      const tree = {
+        root: {
+          _id: root.id,
+          parentId: root.parentId,
+          layer: root.layer,
+          creator: root.creator,
+          info: root.info,
+          children: [child1, child2],
         },
-        {
-          _id: '2',
-          layer: 1,
-          parentId: tree.root._id,
-          info: null,
-          creator: user.id,
-          children: [],
-        },
-      ];
+        info: {} as any,
+        data: {} as any,
+      };
       await VideoNodeService.updateByTree(tree, user.id);
-      const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
-      const firstChild = nodes.find((node) => node._id === '1')!;
+
+      tree.root.children[0].info = {
+        name: 'Test name',
+        label: 'Test label',
+        url: 'test.mp4',
+        size: 100,
+        duration: 30,
+        isConverted: false,
+        selectionTimeStart: 20,
+        selectionTimeEnd: 30,
+        progress: 100,
+        error: null,
+      };
+
+      await VideoNodeService.updateByTree(tree, user.id);
+
+      const nodes = await VideoNodeService.findByRoot(root.id, user.id);
+      const firstChild = nodes.find((node) => node._id === child1._id)!;
 
       expect(firstChild.info).not.toBeNull();
     });
 
     it('should delete nodes if not existing anymore', async () => {
-      tree.root.children = [
-        {
-          _id: '1',
-          layer: 1,
-          parentId: tree.root._id,
-          info: null,
-          creator: user.id,
-          children: [],
+      const child1 = await createChild(root.id, user.id);
+      const child2 = await createChild(root.id, user.id);
+      const tree = {
+        root: {
+          _id: root.id,
+          parentId: root.parentId,
+          layer: root.layer,
+          creator: root.creator,
+          info: root.info,
+          children: [child1, child2],
         },
-      ];
+        info: {} as any,
+        data: {} as any,
+      };
+
       await VideoNodeService.updateByTree(tree, user.id);
-      const nodes = await VideoNodeService.findByRoot(tree.root._id, user.id);
+
+      tree.root.children.pop();
+      await VideoNodeService.updateByTree(tree, user.id);
+
+      const nodes = await VideoNodeService.findByRoot(root.id, user.id);
 
       expect(nodes).toHaveLength(2);
     });

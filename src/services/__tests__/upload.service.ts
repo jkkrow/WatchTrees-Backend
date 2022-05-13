@@ -10,12 +10,6 @@ describe('UploadService', () => {
 
       expect(result).toHaveProperty('UploadId');
     });
-
-    it('should be failed if file type is other than video', async () => {
-      await expect(
-        UploadService.initiateMultipart('image/png', 'test.png')
-      ).rejects.toThrow();
-    });
   });
 
   describe('processMultipart', () => {
@@ -74,10 +68,26 @@ describe('UploadService', () => {
     });
   });
 
-  describe('deleteImage', () => {
-    it('should return empty object if nothing changed', async () => {
+  describe('deleteObject', () => {
+    it('should return delete result', async () => {
       const result = await UploadService.deleteObject('test.png');
-      expect(result).toStrictEqual({});
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('deleteDirectory', () => {
+    it('should return delete result', async () => {
+      const result = await UploadService.deleteDirectory('images/test.png');
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('getDirectoryPrefixes', () => {
+    it('should return prefixes of given path', async () => {
+      const prefixes = await UploadService.getDirectoryPrefixes(
+        'images/test.png'
+      );
+      expect(prefixes.length).toBeDefined();
     });
   });
 });

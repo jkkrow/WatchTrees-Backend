@@ -1,11 +1,12 @@
 import request from 'supertest';
 import { HydratedDocument } from 'mongoose';
 
-import { connectDB, closeDB } from '../../test/db';
+import { connectDB, clearDB, closeDB } from '../../test/db';
 import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as AuthService from '../../services/auth.service';
 import * as ChannelService from '../../services/channel.service';
+import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
 import { createRefreshToken, createAccessToken } from '../../util/jwt-token';
 
@@ -15,8 +16,8 @@ describe('UserController', () => {
   let accessToken: string;
   const endpoint = '/api/users/';
 
-  beforeAll(async () => {
-    await connectDB();
+  beforeAll(connectDB);
+  beforeEach(async () => {
     user = await UserService.create(
       'native',
       'Test',
@@ -27,6 +28,7 @@ describe('UserController', () => {
     refreshToken = createRefreshToken(user.id);
     accessToken = createAccessToken(user.id);
   });
+  afterEach(clearDB);
   afterAll(closeDB);
 
   describe('signup', () => {
@@ -317,9 +319,12 @@ describe('UserController', () => {
         .expect(403);
     });
 
-    it('should return a json with message', async () => {
-      const spy = jest
+    it('should delete S3 objects that user uploaded', async () => {
+      const authSpy = jest
         .spyOn(AuthService, 'deleteAccount')
+        .mockImplementationOnce(() => ({} as any));
+      const uploadSpy = jest
+        .spyOn(UploadService, 'deleteDirectory')
         .mockImplementationOnce(() => ({} as any));
 
       const res = await request(app)
@@ -328,7 +333,8 @@ describe('UserController', () => {
         .expect('Content-Type', /json/)
         .expect(200);
 
-      expect(spy).toBeCalled();
+      expect(authSpy).toBeCalled();
+      expect(uploadSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();
     });
   });
