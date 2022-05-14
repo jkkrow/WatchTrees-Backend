@@ -247,9 +247,15 @@ export const updateSubscribers = asyncHandler(async (req, res) => {
 export const deleteAccount = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { email, password } = req.body;
+  const { email, password, tokenId } = req.body;
 
-  await AuthService.deleteAccount(req.user.id, email, password);
+  if (tokenId) {
+    await AuthService.verifyGoogleAccount(req.user.id, tokenId);
+  } else {
+    await AuthService.verifyNativeAccount(req.user.id, email, password);
+  }
+
+  await AuthService.deleteAccount(req.user.id);
 
   const videoPath = `videos/${req.user.id}/`;
   const imagePath = `images/${req.user.id}/`;

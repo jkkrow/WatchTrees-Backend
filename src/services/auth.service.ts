@@ -217,13 +217,12 @@ export const resetPassword = async (token: string, password: string) => {
   });
 };
 
-export const deleteAccount = async (
+export const verifyNativeAccount = async (
   id: string,
   email: string,
   password: string
 ) => {
-  // Verify user
-  let user = await UserService.findById(id);
+  const user = await UserService.findById(id);
 
   if (!user) {
     throw new HttpError(404, 'User not found');
@@ -233,16 +232,40 @@ export const deleteAccount = async (
     throw new HttpError(401, 'Invalid email or password');
   }
 
-  // TODO: Add case for google account
-
   const isValid = await bcrypt.compare(password, user.password);
 
   if (!isValid) {
     throw new HttpError(401, 'Invalid email or password');
   }
 
+  return user;
+};
+
+export const verifyGoogleAccount = async (id: string, tokenId: string) => {
+  const user = await UserService.findById(id);
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+  const result = await client.verifyIdToken({
+    idToken: tokenId,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = result.getPayload();
+
+  if (!user) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  if (!payload || payload.email !== user.email) {
+    throw new HttpError(401, 'Invalid account email');
+  }
+
+  return user;
+};
+
+export const deleteAccount = async (id: string) => {
   // Mark user as deleted
-  user = await UserService.update(id, { deleted: true });
+  const user = await UserService.update(id, { deleted: true });
 
   // Handle user created contents
   await VideoTreeService.deleteByCreator(id);
