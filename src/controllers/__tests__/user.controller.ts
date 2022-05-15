@@ -319,8 +319,37 @@ describe('UserController', () => {
         .expect(403);
     });
 
+    it('should verify google account with tokenId', async () => {
+      const verifyGoogleAccountSpy = jest
+        .spyOn(AuthService, 'verifyGoogleAccount')
+        .mockImplementationOnce(() => ({} as any));
+
+      await request(app)
+        .post(endpoint + 'deletion')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .send({ tokenId: 'asdfasdf' });
+
+      expect(verifyGoogleAccountSpy).toBeCalled();
+    });
+
+    it('should verify native account without tokenId', async () => {
+      const verifyNativeAccountSpy = jest
+        .spyOn(AuthService, 'verifyNativeAccount')
+        .mockImplementationOnce(() => ({} as any));
+
+      await request(app)
+        .post(endpoint + 'deletion')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .send({ email: 'test@example.com', password: 'password' });
+
+      expect(verifyNativeAccountSpy).toBeCalled();
+    });
+
     it('should delete S3 objects that user uploaded', async () => {
-      const authSpy = jest
+      const verifyAccountSpy = jest
+        .spyOn(AuthService, 'verifyNativeAccount')
+        .mockImplementationOnce(() => ({} as any));
+      const deleteAccountSpy = jest
         .spyOn(AuthService, 'deleteAccount')
         .mockImplementationOnce(() => ({} as any));
       const uploadSpy = jest
@@ -330,10 +359,11 @@ describe('UserController', () => {
       const res = await request(app)
         .post(endpoint + 'deletion')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .expect('Content-Type', /json/)
+        .send({ email: 'test@example.com', password: 'password' })
         .expect(200);
 
-      expect(authSpy).toBeCalled();
+      expect(verifyAccountSpy).toBeCalled();
+      expect(deleteAccountSpy).toBeCalled();
       expect(uploadSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();
     });

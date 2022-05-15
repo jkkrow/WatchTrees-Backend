@@ -158,19 +158,37 @@ describe('AuthService', () => {
     });
   });
 
-  describe('deleteAccount', () => {
-    it('should be failed with invalid email and password', async () => {
+  describe('verifyNativeAccount', () => {
+    it('should take user id, email, and password', async () => {
       await expect(
-        AuthService.deleteAccount(user.id, 'test2@example.com', 'pwd')
+        AuthService.verifyNativeAccount(user.id, 'test@example.com', 'password')
+      ).resolves.not.toThrow();
+    });
+
+    it('should be failed if email not matched', async () => {
+      await expect(
+        AuthService.verifyNativeAccount(user.id, 'asdf@test.com', 'password')
       ).rejects.toThrow();
     });
 
+    it('should be failed if password not matched', async () => {
+      await expect(
+        AuthService.verifyNativeAccount(user.id, 'test@example.com', 'pwd')
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('verifyGoogleAccount', () => {
+    it('should be failed with invalid tokenId', async () => {
+      await expect(
+        AuthService.verifyGoogleAccount(user.id, 'asdfasdf')
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('deleteAccount', () => {
     it('should mark user as deleted', async () => {
-      const updatedUser = await AuthService.deleteAccount(
-        user.id,
-        user.email,
-        'password'
-      );
+      const updatedUser = await AuthService.deleteAccount(user.id);
 
       expect(updatedUser.deleted).toBeTruthy();
     });
@@ -178,7 +196,7 @@ describe('AuthService', () => {
     it('should delete all created videos', async () => {
       const spy = jest.spyOn(VideoTreeService, 'deleteByCreator');
 
-      await AuthService.deleteAccount(user.id, user.email, 'password');
+      await AuthService.deleteAccount(user.id);
 
       expect(spy).toBeCalled();
     });
