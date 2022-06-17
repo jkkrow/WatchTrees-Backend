@@ -8,7 +8,7 @@ import * as AuthService from '../../services/auth.service';
 import * as ChannelService from '../../services/channel.service';
 import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
-import { createRefreshToken, createAccessToken } from '../../util/jwt-token';
+import { createRefreshToken, createAccessToken } from '../../util/jwt';
 
 describe('UserController', () => {
   let user: HydratedDocument<User>;

@@ -2,7 +2,7 @@ import { FilterQuery } from 'mongoose';
 
 import { UserModel, User } from '../models/user';
 import { HttpError } from '../models/error';
-import { createToken } from '../util/jwt-token';
+import { createToken } from '../util/jwt';
 
 export const findById = async (id: string) => {
   const user = await UserModel.findById(id);

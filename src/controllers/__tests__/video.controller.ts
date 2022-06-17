@@ -6,7 +6,7 @@ import app from '../../app';
 import * as VideoTreeService from '../../services/video-tree.service';
 import * as UserService from '../../services/user.service';
 import { User } from '../../models/user';
-import { createAccessToken } from '../../util/jwt-token';
+import { createAccessToken } from '../../util/jwt';
 
 describe('VideoController', () => {
   let user: HydratedDocument<User>;

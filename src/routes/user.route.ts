@@ -2,7 +2,10 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 
 import * as UserController from '../controllers/user.controller';
-import { checkToken } from '../middlewares/auth.middleware';
+import {
+  checkAccessToken,
+  checkRefreshToken,
+} from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -40,19 +43,27 @@ router.patch(
 );
 
 // Get Token
-router.get('/refresh-token', UserController.updateRefreshToken);
-router.get('/access-token', UserController.updateAccessToken);
+router.get(
+  '/refresh-token',
+  checkRefreshToken,
+  UserController.updateRefreshToken
+);
+router.get(
+  '/access-token',
+  checkRefreshToken,
+  UserController.updateAccessToken
+);
 
 // Update User
 router.patch(
   '/name',
-  checkToken,
+  checkAccessToken,
   [body('name').trim().isLength({ min: 4 })],
   UserController.updateUserName
 );
 router.patch(
   '/password',
-  checkToken,
+  checkAccessToken,
   [
     body('currentPassword').trim().notEmpty(),
     body('newPassword').trim().isStrongPassword(),
@@ -62,17 +73,21 @@ router.patch(
   ],
   UserController.updatePassword
 );
-router.patch('/picture', checkToken, UserController.updatePicture);
+router.patch('/picture', checkAccessToken, UserController.updatePicture);
 
 // Channel
 router.get('/channel/:id', UserController.getChannel);
 
 // Subscribe
-router.get('/subscribes', checkToken, UserController.getSubscribes);
-router.get('/subscribers', checkToken, UserController.getSubscribers);
-router.patch('/:id/subscribers', checkToken, UserController.updateSubscribers);
+router.get('/subscribes', checkAccessToken, UserController.getSubscribes);
+router.get('/subscribers', checkAccessToken, UserController.getSubscribers);
+router.patch(
+  '/:id/subscribers',
+  checkAccessToken,
+  UserController.updateSubscribers
+);
 
 // Delete user
-router.post('/deletion', checkToken, UserController.deleteAccount);
+router.post('/deletion', checkAccessToken, UserController.deleteAccount);
 
 export default router;

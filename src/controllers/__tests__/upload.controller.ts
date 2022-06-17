@@ -6,7 +6,7 @@ import app from '../../app';
 import * as UploadService from '../../services/upload.service';
 import * as UserService from '../../services/user.service';
 import { User } from '../../models/user';
-import { createAccessToken } from '../../util/jwt-token';
+import { createAccessToken } from '../../util/jwt';
 
 describe('UploadController', () => {
   let user: HydratedDocument<User>;

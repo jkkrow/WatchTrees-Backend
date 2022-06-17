@@ -2,9 +2,9 @@ import { RequestHandler } from 'express';
 
 import * as UserService from '../services/user.service';
 import { HttpError } from '../models/error';
-import { verifyToken } from '../util/jwt-token';
+import { verifyToken } from '../util/jwt';
 
-export const checkToken: RequestHandler = (req, res, next) => {
+export const checkAccessToken: RequestHandler = (req, res, next) => {
   if (req.method === 'OPTIONS') return next();
 
   try {
@@ -19,6 +19,31 @@ export const checkToken: RequestHandler = (req, res, next) => {
 
     if (decodedToken.type !== 'access') {
       throw new HttpError(403, 'Require access token');
+    }
+
+    req.user = { id: decodedToken.userId };
+
+    next();
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const checkRefreshToken: RequestHandler = async (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+
+  try {
+    const { authorization } = req.headers;
+
+    if (!authorization) {
+      throw new HttpError(403);
+    }
+
+    const token = authorization.split(' ')[1];
+    const decodedToken = verifyToken(token);
+
+    if (decodedToken.type !== 'refresh') {
+      throw new HttpError(403, 'Require refresh token');
     }
 
     req.user = { id: decodedToken.userId };

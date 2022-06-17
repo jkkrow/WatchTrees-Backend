@@ -6,11 +6,7 @@ import * as ChannelService from '../services/channel.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
-import {
-  createRefreshToken,
-  createAccessToken,
-  verifyToken,
-} from '../util/jwt-token';
+import { createRefreshToken, createAccessToken } from '../util/jwt';
 
 export const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -67,32 +63,18 @@ export const signin = asyncHandler(async (req, res) => {
 });
 
 export const updateRefreshToken = asyncHandler(async (req, res) => {
-  const { authorization } = req.headers;
+  if (!req.user) return;
 
-  if (!authorization) {
-    throw new HttpError(403);
-  }
-
-  const token = authorization.split(' ')[1];
-  const decodedToken = verifyToken(token);
-
-  const refreshToken = createRefreshToken(decodedToken.userId);
-  const accessToken = createAccessToken(decodedToken.userId);
+  const refreshToken = createRefreshToken(req.user.id);
+  const accessToken = createAccessToken(req.user.id);
 
   res.json({ accessToken, refreshToken });
 });
 
 export const updateAccessToken = asyncHandler(async (req, res) => {
-  const { authorization } = req.headers;
+  if (!req.user) return;
 
-  if (!authorization) {
-    throw new HttpError(403);
-  }
-
-  const token = authorization.split(' ')[1];
-  const decodedToken = verifyToken(token);
-
-  const accessToken = createAccessToken(decodedToken.userId);
+  const accessToken = createAccessToken(req.user.id);
 
   res.json({ accessToken });
 });

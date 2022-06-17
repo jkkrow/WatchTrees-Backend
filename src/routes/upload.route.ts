@@ -1,36 +1,44 @@
 import { Router } from 'express';
 
 import * as UploadController from '../controllers/upload.controller';
-import { checkToken, checkVerified } from '../middlewares/auth.middleware';
+import {
+  checkAccessToken,
+  checkVerified,
+} from '../middlewares/auth.middleware';
 
 const router = Router();
 
 router.post(
   '/multipart',
-  checkToken,
+  checkAccessToken,
   checkVerified,
   UploadController.initiateMultipartUpload
 );
 router.put(
   '/multipart/:uploadId',
-  checkToken,
+  checkAccessToken,
   UploadController.processMultipartUpload
 );
 router.post(
   '/multipart/:uploadId',
-  checkToken,
+  checkAccessToken,
   UploadController.completeMultipartUpload
 );
 router.delete(
   '/multipart/:uploadId',
-  checkToken,
+  checkAccessToken,
   UploadController.cancelMultipartUpload
 );
 
-router.put('/image', checkToken, checkVerified, UploadController.uploadImage);
+router.put(
+  '/image',
+  checkAccessToken,
+  checkVerified,
+  UploadController.uploadImage
+);
 router.delete(
   '/image',
-  checkToken,
+  checkAccessToken,
   checkVerified,
   UploadController.deleteImage
 );

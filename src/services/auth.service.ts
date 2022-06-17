@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as UserService from './user.service';
 import * as VideoTreeService from './video-tree.service';
 import { HttpError } from '../models/error';
-import { createToken, verifyToken } from '../util/jwt-token';
+import { createToken, verifyToken } from '../util/jwt';
 import { sendEmail } from '../util/send-email';
 
 export const signup = async (name: string, email: string, password: string) => {
