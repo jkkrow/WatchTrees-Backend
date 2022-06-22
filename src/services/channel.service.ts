@@ -82,14 +82,21 @@ export const findBySubscribers = async (params: {
   userId: string;
 }) => {
   const result = await UserModel.aggregate([
-    { $match: { _id: new Types.ObjectId(params.userId) } },
+    {
+      $match: { _id: new Types.ObjectId(params.userId) },
+    },
     {
       $lookup: {
         from: 'users',
         as: 'subscribers',
         let: { subscribers: '$subscribers' },
         pipeline: [
-          { $match: { $expr: { $in: ['$_id', '$$subscribers'] } } },
+          {
+            $match: {
+              $expr: { $in: ['$_id', '$$subscribers'] },
+              deleted: false || undefined || null,
+            },
+          },
           {
             $facet: {
               channels: [
@@ -121,17 +128,28 @@ export const findBySubscribers = async (params: {
 
 export const updateSubscribers = async (id: string, userId: string) => {
   const objectUserId = new Types.ObjectId(userId);
-  await UserModel.updateOne({ _id: id }, [
-    {
-      $set: {
-        subscribers: {
-          $cond: [
-            { $in: [objectUserId, '$subscribers'] },
-            { $setDifference: ['$subscribers', [objectUserId]] },
-            { $concatArrays: ['$subscribers', [objectUserId]] },
-          ],
+  const result = await UserModel.updateOne(
+    { _id: id, deleted: false || undefined || null },
+    [
+      {
+        $set: {
+          subscribers: {
+            $cond: [
+              { $in: [objectUserId, '$subscribers'] },
+              { $setDifference: ['$subscribers', [objectUserId]] },
+              { $concatArrays: ['$subscribers', [objectUserId]] },
+            ],
+          },
         },
       },
-    },
-  ]);
+    ]
+  );
+
+  if (!result.matchedCount) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  if (!result.modifiedCount) {
+    throw new HttpError(500, 'Failed to update subscribes');
+  }
 };
