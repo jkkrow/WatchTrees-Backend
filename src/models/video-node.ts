@@ -23,7 +23,6 @@ export interface VideoNodeRef {
   layer: number;
   creator: Types.ObjectId;
   info: NodeInfo | null;
-  deleted?: boolean;
 }
 
 const VideoNodeSchema = new Schema<VideoNodeRef>({
@@ -47,7 +46,6 @@ const VideoNodeSchema = new Schema<VideoNodeRef>({
     default: null,
     _id: false,
   },
-  deleted: { type: Boolean },
 });
 
 export const VideoNodeModel = model<VideoNodeRef>('VideoNode', VideoNodeSchema);

@@ -31,10 +31,7 @@ export const findByRoot = async (
         connectFromField: '_id',
         connectToField: 'parentId',
         as: 'children',
-        restrictSearchWithMatch: {
-          creator: new Types.ObjectId(userId),
-          deleted: false || undefined || null,
-        },
+        restrictSearchWithMatch: { creator: new Types.ObjectId(userId) },
       },
     },
   ]);
@@ -116,19 +113,10 @@ const _getInsertJobs = (videoNodes: VideoNode[], userId: string) => {
 };
 
 const _getDeleteJobs = (videoNodes: VideoNode[]) => {
-  const deletedNodes = videoNodes.filter((videoNode) => !videoNode.info);
-  const markedAsDeletedNodes = videoNodes.filter((videoNode) => videoNode.info);
-
   const deleteBulk = [
     {
       deleteMany: {
-        filter: { _id: { $in: deletedNodes.map((node) => node._id) } },
-      },
-    },
-    {
-      updateMany: {
-        filter: { _id: { $in: markedAsDeletedNodes.map((node) => node._id) } },
-        update: { $set: { deleted: true } },
+        filter: { _id: { $in: videoNodes.map((node) => node._id) } },
       },
     },
   ];

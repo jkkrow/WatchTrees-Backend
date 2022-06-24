@@ -42,7 +42,7 @@ export const update = async (
 ) => {
   const videoTree = await VideoTreeModel.findById(id);
 
-  if (!videoTree || (videoTree && videoTree.deleted)) {
+  if (!videoTree) {
     throw new HttpError(404, 'Video not found');
   }
   if (
@@ -75,29 +75,20 @@ export const remove = async (id: string, userId: string) => {
     throw new HttpError(403, 'Not authorized to remove video');
   }
 
-  const root = await VideoNodeService.deleteByRoot(video.root, userId);
+  await VideoNodeService.deleteByRoot(video.root, userId);
 
-  if (!root?.info) {
-    return await video.remove();
-  }
-
-  video.deleted = true;
-  return await video.save();
+  return await video.remove();
 };
 
 export const findOne = async (id: string) => {
   const result = await VideoTreeModel.aggregate([
-    {
-      $match: {
-        _id: new Types.ObjectId(id),
-      },
-    },
+    { $match: { _id: new Types.ObjectId(id) } },
     ...allNodesPipe(),
   ]);
 
   const video = result[0];
 
-  if (!video || (video && video.deleted)) {
+  if (!video) {
     throw new HttpError(404, 'Video not found');
   }
 
@@ -117,7 +108,7 @@ export const findClientOne = async (id: string, userId?: string) => {
 
   const video = result[0];
 
-  if (!video || (video && video.deleted)) {
+  if (!video) {
     throw new HttpError(404, 'Video not found');
   }
 
@@ -159,12 +150,7 @@ export const find = async ({
   historyData?: boolean;
 }) => {
   const result = await VideoTreeModel.aggregate([
-    {
-      $match: {
-        deleted: false || undefined || null,
-        ...match,
-      },
-    },
+    { $match: match },
     {
       $facet: {
         videos: [
@@ -300,9 +286,6 @@ export const incrementViews = async (id: string) => {
 };
 
 export const deleteByCreator = async (userId: string) => {
-  await VideoTreeModel.updateMany(
-    { 'info.creator': userId },
-    { $set: { deleted: true } }
-  );
+  await VideoTreeModel.deleteMany({ 'info.creator': userId });
   await VideoNodeService.deleteByCreator(userId);
 };
