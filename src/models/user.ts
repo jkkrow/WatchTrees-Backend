@@ -10,8 +10,6 @@ export interface User {
   isPremium: boolean;
   isAdmin: boolean;
   subscribers: Types.ObjectId[]; // ref to User Document
-  verificationToken?: string;
-  recoveryToken?: string;
 }
 
 export interface Channel {
@@ -32,8 +30,6 @@ const UserSchema = new Schema<User>(
     isPremium: { type: Boolean, required: true, default: false },
     isAdmin: { type: Boolean, required: true, default: false },
     subscribers: [{ type: Types.ObjectId, ref: 'User' }],
-    verificationToken: { type: String },
-    recoveryToken: { type: String },
   },
   { timestamps: true }
 );

@@ -6,7 +6,7 @@ import * as ChannelService from '../services/channel.service';
 import * as UploadService from '../services/upload.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
-import { createRefreshToken, createAccessToken } from '../util/jwt';
+import { createToken } from '../util/jwt';
 
 export const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -19,8 +19,8 @@ export const signup = asyncHandler(async (req, res) => {
 
   const user = await AuthService.signup(name, email, password);
 
-  const refreshToken = createRefreshToken(user.id);
-  const accessToken = createAccessToken(user.id);
+  const refreshToken = createToken(user.id, 'refresh', '7d');
+  const accessToken = createToken(user.id, 'access', '15m');
   const userData = {
     _id: user._id,
     type: user.type,
@@ -47,8 +47,8 @@ export const signin = asyncHandler(async (req, res) => {
     ? await AuthService.googleSignin(tokenId)
     : await AuthService.signin(email, password);
 
-  const refreshToken = createRefreshToken(user.id);
-  const accessToken = createAccessToken(user.id);
+  const refreshToken = createToken(user.id, 'refresh', '7d');
+  const accessToken = createToken(user.id, 'access', '15m');
   const userData = {
     _id: user.id,
     type: user.type,
@@ -65,8 +65,8 @@ export const signin = asyncHandler(async (req, res) => {
 export const updateRefreshToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const refreshToken = createRefreshToken(req.user.id);
-  const accessToken = createAccessToken(req.user.id);
+  const refreshToken = createToken(req.user.id, 'refresh', '7d');
+  const accessToken = createToken(req.user.id, 'access', '15m');
 
   res.json({ accessToken, refreshToken });
 });
@@ -74,7 +74,7 @@ export const updateRefreshToken = asyncHandler(async (req, res) => {
 export const updateAccessToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const accessToken = createAccessToken(req.user.id);
+  const accessToken = createToken(req.user.id, 'access', '15m');
 
   res.json({ accessToken });
 });
@@ -124,7 +124,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
     throw new HttpError(422, 'Invalid inputs');
   }
 
-  await AuthService.resetPassword(token, password);
+  const userId = await AuthService.checkRecovery(token);
+  await AuthService.resetPassword(userId, password);
 
   res.json({ message: 'Password has changed successfully' });
 });

@@ -15,11 +15,7 @@ export const checkAccessToken: RequestHandler = (req, res, next) => {
     }
 
     const token = authorization.split(' ')[1];
-    const decodedToken = verifyToken(token);
-
-    if (decodedToken.type !== 'access') {
-      throw new HttpError(403, 'Require access token');
-    }
+    const decodedToken = verifyToken(token, 'access');
 
     req.user = { id: decodedToken.userId };
 
@@ -40,11 +36,7 @@ export const checkRefreshToken: RequestHandler = async (req, res, next) => {
     }
 
     const token = authorization.split(' ')[1];
-    const decodedToken = verifyToken(token);
-
-    if (decodedToken.type !== 'refresh') {
-      throw new HttpError(403, 'Require refresh token');
-    }
+    const decodedToken = verifyToken(token, 'refresh');
 
     req.user = { id: decodedToken.userId };
 
@@ -63,7 +55,7 @@ export const checkVerified: RequestHandler = async (req, res, next) => {
     const user = await UserService.findById(req.user.id);
 
     if (!user.isVerified) {
-      throw new HttpError(403, 'Account need to be verified for this job');
+      throw new HttpError(403, 'Account needs to be verified for this job');
     }
 
     next();

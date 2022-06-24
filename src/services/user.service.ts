@@ -2,7 +2,6 @@ import { FilterQuery } from 'mongoose';
 
 import { UserModel, User } from '../models/user';
 import { HttpError } from '../models/error';
-import { createToken } from '../util/jwt';
 
 export const findById = async (id: string) => {
   const user = await UserModel.findById(id);
@@ -25,10 +24,6 @@ export const create = async (
   password: string
 ) => {
   const user = new UserModel({ type, name, email, password });
-
-  if (type === 'native') {
-    user.verificationToken = createToken({ type: 'verification' }, '1d');
-  }
 
   if (type === 'google') {
     user.isVerified = true;

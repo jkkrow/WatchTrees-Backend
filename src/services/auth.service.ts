@@ -17,6 +17,7 @@ export const signup = async (name: string, email: string, password: string) => {
 
   const hash = await bcrypt.hash(password, 12);
   const user = await UserService.create('native', name, email, hash);
+  const verificationToken = createToken(user.id, 'verification', '1d');
 
   await sendEmail({
     to: user.email,
@@ -25,7 +26,7 @@ export const signup = async (name: string, email: string, password: string) => {
       <h3>Verify your email address</h3>
       <p>You've just created new account with this email address.</p>
       <p>Please verify your email and complete signup process.</p>
-      <a href=${process.env.CLIENT_URL}/auth/verification/${user.verificationToken}>Verify email</a>
+      <a href=${process.env.CLIENT_URL}/auth/verification/${verificationToken}>Verify email</a>
       `,
   });
 
@@ -111,9 +112,7 @@ export const sendVerification = async (email: string) => {
     throw new HttpError(400, 'You have already been verified');
   }
 
-  const verificationToken = createToken({ type: 'verification' }, '1d');
-
-  await UserService.update(user.id, { verificationToken });
+  const verificationToken = createToken(user.id, 'verification', '1d');
 
   await sendEmail({
     to: user.email,
@@ -130,23 +129,17 @@ export const sendVerification = async (email: string) => {
 };
 
 export const checkVerification = async (token: string) => {
-  const user = await UserService.findOne({ verificationToken: token });
+  const decodedToken = verifyToken(
+    token,
+    'verification',
+    'This verification link is either invalid or expired. Please send another email from Account page.'
+  );
 
-  if (!user) {
-    throw new HttpError(
-      400,
-      'This link is invalid or already has been used. Please send another verification email'
-    );
-  }
+  const user = await UserService.findById(decodedToken.userId);
 
   if (user.isVerified) {
     throw new HttpError(400, "You've already been verified");
   }
-
-  verifyToken(
-    token,
-    'This verification link has expired. Please send another email from Account Settings page'
-  );
 
   return await UserService.update(user.id, { isVerified: true });
 };
@@ -158,9 +151,7 @@ export const sendRecovery = async (email: string) => {
     throw new HttpError(404, 'No user found with this email. Please sign up');
   }
 
-  const recoveryToken = createToken({ type: 'recovery' }, '1h');
-
-  await UserService.update(user.id, { recoveryToken });
+  const recoveryToken = createToken(user.id, 'recovery', '1h');
 
   await sendEmail({
     to: user.email,
@@ -178,39 +169,20 @@ export const sendRecovery = async (email: string) => {
 };
 
 export const checkRecovery = async (token: string) => {
-  const user = await UserService.findOne({ recoveryToken: token });
-
-  if (!user) {
-    throw new HttpError(
-      400,
-      'This link is invalid or already has been used. Please send another email to reset password'
-    );
-  }
-
-  verifyToken(
+  const decodedToken = verifyToken(
     token,
-    'This link has been expired. Please send another email to reset password'
+    'recovery',
+    'This recovery link is either invalid or expired. Please send another email to reset password.'
   );
 
-  return true;
+  return decodedToken.userId;
 };
 
-export const resetPassword = async (token: string, password: string) => {
-  const user = await UserService.findOne({ recoveryToken: token });
-
-  if (!user) {
-    throw new HttpError(
-      400,
-      'This link is invalid or already has been used. Please send another email to reset password'
-    );
-  }
-
+export const resetPassword = async (userId: string, password: string) => {
+  const user = await UserService.findById(userId);
   const hash = await bcrypt.hash(password, 12);
 
-  return await UserService.update(user.id, {
-    password: hash,
-    recoveryToken: '',
-  });
+  return await UserService.update(user.id, { password: hash });
 };
 
 export const verifyNativeAccount = async (

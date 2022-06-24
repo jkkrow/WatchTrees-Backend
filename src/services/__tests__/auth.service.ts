@@ -124,7 +124,7 @@ describe('AuthService', () => {
   });
 
   describe('checkRecovery', () => {
-    it('should return true', async () => {
+    it('should return userId', async () => {
       const token = await AuthService.sendRecovery(user.email);
       const result = await AuthService.checkRecovery(token);
 
@@ -138,8 +138,10 @@ describe('AuthService', () => {
 
   describe('resetPassword', () => {
     it('should update password', async () => {
-      const token = await AuthService.sendRecovery(user.email);
-      const updatedUser = await AuthService.resetPassword(token, 'newPassword');
+      const updatedUser = await AuthService.resetPassword(
+        user.id,
+        'newPassword'
+      );
 
       expect(updatedUser.password).not.toEqual(user.password);
     });
@@ -148,13 +150,6 @@ describe('AuthService', () => {
       await expect(
         AuthService.resetPassword('asdfasdf', 'newPassword')
       ).rejects.toThrow();
-    });
-
-    it('should reset recovery token', async () => {
-      const token = await AuthService.sendRecovery(user.email);
-      const updatedUser = await AuthService.resetPassword(token, 'newPassword');
-
-      expect(updatedUser.recoveryToken).toBeFalsy();
     });
   });
 

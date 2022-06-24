@@ -6,7 +6,7 @@ import app from '../../app';
 import * as VideoTreeService from '../../services/video-tree.service';
 import * as UserService from '../../services/user.service';
 import { User } from '../../models/user';
-import { createAccessToken } from '../../util/jwt';
+import { createToken } from '../../util/jwt';
 
 describe('VideoController', () => {
   let user: HydratedDocument<User>;
@@ -21,7 +21,7 @@ describe('VideoController', () => {
       'test@example.com',
       'password'
     );
-    accessToken = createAccessToken(user.id);
+    accessToken = createToken(user.id, 'access', '15m');
   });
   afterEach(clearDB);
   afterAll(closeDB);

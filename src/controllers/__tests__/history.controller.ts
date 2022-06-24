@@ -4,7 +4,7 @@ import { connectDB, closeDB } from '../../test/db';
 import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as HistoryService from '../../services/history.service';
-import { createAccessToken } from '../../util/jwt';
+import { createToken } from '../../util/jwt';
 
 describe('UserController', () => {
   let accessToken: string;
@@ -18,7 +18,7 @@ describe('UserController', () => {
       'test@example.com',
       'password'
     );
-    accessToken = createAccessToken(user.id);
+    accessToken = createToken(user.id, 'access', '15m');
   });
   afterAll(closeDB);
 

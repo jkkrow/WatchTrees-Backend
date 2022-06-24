@@ -8,7 +8,7 @@ import * as AuthService from '../../services/auth.service';
 import * as ChannelService from '../../services/channel.service';
 import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
-import { createRefreshToken, createAccessToken } from '../../util/jwt';
+import { createToken } from '../../util/jwt';
 
 describe('UserController', () => {
   let user: HydratedDocument<User>;
@@ -25,8 +25,8 @@ describe('UserController', () => {
       'password'
     );
 
-    refreshToken = createRefreshToken(user.id);
-    accessToken = createAccessToken(user.id);
+    refreshToken = createToken(user.id, 'refresh', '7d');
+    accessToken = createToken(user.id, 'access', '15m');
   });
   afterEach(clearDB);
   afterAll(closeDB);
@@ -185,7 +185,10 @@ describe('UserController', () => {
     });
 
     it('should return a json with message', async () => {
-      const spy = jest
+      const checkRecoverySpy = jest
+        .spyOn(AuthService, 'checkRecovery')
+        .mockReturnValueOnce({} as any);
+      const resetPasswordSpy = jest
         .spyOn(AuthService, 'resetPassword')
         .mockReturnValueOnce({} as any);
 
@@ -195,7 +198,8 @@ describe('UserController', () => {
         .expect('Content-Type', /json/)
         .expect(200);
 
-      expect(spy).toBeCalled();
+      expect(checkRecoverySpy).toBeCalled();
+      expect(resetPasswordSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();
     });
   });

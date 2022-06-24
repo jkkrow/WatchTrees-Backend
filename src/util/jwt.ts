@@ -2,26 +2,30 @@ import * as jwt from 'jsonwebtoken';
 
 import { HttpError } from '../models/error';
 
-export const createToken = (payload: string | object | Buffer, exp: string) => {
-  return jwt.sign(payload, process.env.JWT_KEY!, { expiresIn: exp });
+type TokenType = 'verification' | 'recovery' | 'refresh' | 'access';
+type TokenExp = '7d' | '1d' | '1h' | '15m';
+
+export const createToken = (userId: string, type: TokenType, exp: TokenExp) => {
+  return jwt.sign({ userId, type }, process.env.JWT_KEY!, { expiresIn: exp });
 };
 
-export const createRefreshToken = (userId: string) => {
-  return jwt.sign({ userId, type: 'refresh' }, process.env.JWT_KEY!, {
-    expiresIn: '7d',
-  });
-};
-
-export const createAccessToken = (userId: string) => {
-  return jwt.sign({ userId, type: 'access' }, process.env.JWT_KEY!, {
-    expiresIn: '15m',
-  });
-};
-
-export const verifyToken = (token: string, message?: string) => {
+export const verifyToken = (
+  token: string,
+  type: TokenType,
+  message?: string
+) => {
   try {
-    return jwt.verify(token, process.env.JWT_KEY!) as jwt.JwtPayload;
+    const decodedToken = jwt.verify(
+      token,
+      process.env.JWT_KEY!
+    ) as jwt.JwtPayload;
+
+    if (decodedToken.type !== type) {
+      throw new HttpError(401, 'Invalid token');
+    }
+
+    return decodedToken;
   } catch (err) {
-    throw new HttpError(401, message);
+    throw new HttpError(401, message || 'Invalid token');
   }
 };
