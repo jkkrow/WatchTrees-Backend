@@ -11,14 +11,14 @@ describe('UserService', () => {
       await expect(UserService.findById('asdfasfasf')).rejects.toThrow();
     });
 
-    it('should be failed if user is marked as deleted', async () => {
+    it('should be failed if there is no user', async () => {
       const user = await UserService.create(
         'native',
         'Test',
         'test@example.com',
         'password'
       );
-      await UserService.update(user.id, { deleted: true });
+      await UserService.remove(user.id);
 
       await expect(UserService.findById(user.id)).rejects.toThrow();
     });
@@ -29,20 +29,6 @@ describe('UserService', () => {
       const result = await UserService.findOne({ email: 'test@example.com' });
 
       expect(result).toBeDefined();
-    });
-
-    it('should be failed if user is marked as deleted', async () => {
-      const user = await UserService.create(
-        'native',
-        'Test',
-        'test@example.com',
-        'password'
-      );
-      await UserService.update(user.id, { deleted: true });
-
-      await expect(
-        UserService.findOne({ email: user.email })
-      ).rejects.toThrow();
     });
   });
 

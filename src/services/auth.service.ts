@@ -89,10 +89,6 @@ export const updatePassword = async (
 ) => {
   const user = await UserService.findById(id);
 
-  if (!user) {
-    throw new HttpError(404, 'User not found');
-  }
-
   const isValid = await bcrypt.compare(currentPassword, user.password);
 
   if (!isValid) {
@@ -224,10 +220,6 @@ export const verifyNativeAccount = async (
 ) => {
   const user = await UserService.findById(id);
 
-  if (!user) {
-    throw new HttpError(404, 'User not found');
-  }
-
   if (user.email !== email) {
     throw new HttpError(401, 'Invalid email or password');
   }
@@ -252,10 +244,6 @@ export const verifyGoogleAccount = async (id: string, tokenId: string) => {
 
   const payload = result.getPayload();
 
-  if (!user) {
-    throw new HttpError(404, 'User not found');
-  }
-
   if (!payload || payload.email !== user.email) {
     throw new HttpError(401, 'Invalid account email');
   }
@@ -264,8 +252,8 @@ export const verifyGoogleAccount = async (id: string, tokenId: string) => {
 };
 
 export const deleteAccount = async (id: string) => {
-  // Mark user as deleted
-  const user = await UserService.update(id, { deleted: true });
+  // Delete user
+  const user = await UserService.remove(id);
 
   // Handle user created contents
   await VideoTreeService.deleteByCreator(id);

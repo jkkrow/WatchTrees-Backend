@@ -12,7 +12,6 @@ export interface User {
   subscribers: Types.ObjectId[]; // ref to User Document
   verificationToken?: string;
   recoveryToken?: string;
-  deleted?: boolean;
 }
 
 export interface Channel {
@@ -35,7 +34,6 @@ const UserSchema = new Schema<User>(
     subscribers: [{ type: Types.ObjectId, ref: 'User' }],
     verificationToken: { type: String },
     recoveryToken: { type: String },
-    deleted: { type: Boolean },
   },
   { timestamps: true }
 );

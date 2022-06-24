@@ -187,10 +187,10 @@ describe('AuthService', () => {
   });
 
   describe('deleteAccount', () => {
-    it('should mark user as deleted', async () => {
-      const updatedUser = await AuthService.deleteAccount(user.id);
+    it('should delete user', async () => {
+      await AuthService.deleteAccount(user.id);
 
-      expect(updatedUser.deleted).toBeTruthy();
+      expect(UserService.findById(user.id)).rejects.toThrow();
     });
 
     it('should delete all created videos', async () => {

@@ -7,21 +7,15 @@ import { createToken } from '../util/jwt';
 export const findById = async (id: string) => {
   const user = await UserModel.findById(id);
 
-  if (user && user.deleted) {
-    throw new HttpError(400, 'This account has been terminated');
+  if (!user) {
+    throw new HttpError(404, 'User not found');
   }
 
   return user;
 };
 
 export const findOne = async (filter: FilterQuery<User>) => {
-  const user = await UserModel.findOne(filter);
-
-  if (user && user.deleted) {
-    throw new HttpError(400, 'This account has been terminated');
-  }
-
-  return user;
+  return await UserModel.findOne(filter);
 };
 
 export const create = async (
@@ -44,15 +38,17 @@ export const create = async (
 };
 
 export const update = async (id: string, updates: Partial<User>) => {
-  const user = await UserModel.findById(id);
-
-  if (!user) {
-    throw new HttpError(404, 'User not found');
-  }
+  const user = await findById(id);
 
   for (let key in updates) {
     (user as any)[key] = (updates as any)[key];
   }
 
   return await user.save();
+};
+
+export const remove = async (id: string) => {
+  const user = await findById(id);
+
+  return await user.remove();
 };

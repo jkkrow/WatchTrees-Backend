@@ -62,10 +62,6 @@ export const checkVerified: RequestHandler = async (req, res, next) => {
 
     const user = await UserService.findById(req.user.id);
 
-    if (!user) {
-      throw new HttpError(404, 'User not found');
-    }
-
     if (!user.isVerified) {
       throw new HttpError(403, 'Account need to be verified for this job');
     }
