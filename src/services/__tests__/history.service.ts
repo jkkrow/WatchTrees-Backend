@@ -1,11 +1,11 @@
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 import { WithId } from 'mongodb';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import * as HistoryService from '../history.service';
 import * as VideoTreeService from '../video-tree.service';
 import * as UserService from '../user.service';
-import { History, HistoryModel } from '../../models/history';
+import { HistoryDTO, HistoryModel } from '../../models/history';
 import { VideoTree } from '../../models/video-tree';
 import { User } from '../../models/user';
 
@@ -41,9 +41,8 @@ describe('HistoryService', () => {
     });
 
     it('should have history property in video item', async () => {
-      const history: History = {
-        user: user._id,
-        tree: tree._id as Types.ObjectId,
+      const history: HistoryDTO = {
+        tree: tree._id.toString(),
         activeNodeId: tree.root._id,
         progress: 10,
         totalProgress: 10,
@@ -63,10 +62,21 @@ describe('HistoryService', () => {
   });
 
   describe('put', () => {
+    it('should be failed if not video was found', async () => {
+      const history: HistoryDTO = {
+        tree: 'asdfasdfasdfasdfasdfasdf',
+        activeNodeId: 'asdfasdfasdfasdf',
+        progress: 10,
+        totalProgress: 10,
+        isEnded: false,
+      };
+
+      await expect(HistoryService.put(history, user.id)).rejects.toThrow();
+    });
+
     it('should create a new history if not existed', async () => {
-      const history: History = {
-        user: user._id,
-        tree: tree._id as Types.ObjectId,
+      const history: HistoryDTO = {
+        tree: tree._id.toString(),
         activeNodeId: tree.root._id,
         progress: 10,
         totalProgress: 10,
@@ -80,9 +90,8 @@ describe('HistoryService', () => {
     });
 
     it('should update a history if alread existed', async () => {
-      const history: History = {
-        user: user._id,
-        tree: tree._id as Types.ObjectId,
+      const history: HistoryDTO = {
+        tree: tree._id.toString(),
         activeNodeId: tree.root._id,
         progress: 10,
         totalProgress: 10,
@@ -102,16 +111,15 @@ describe('HistoryService', () => {
 
   describe('remove', () => {
     it('should remove a history', async () => {
-      const history: History = {
-        user: user._id,
-        tree: tree._id as Types.ObjectId,
+      const history: HistoryDTO = {
+        tree: tree._id.toString(),
         activeNodeId: tree.root._id,
         progress: 10,
         totalProgress: 10,
         isEnded: false,
       };
       await HistoryService.put(history, user.id);
-      await HistoryService.remove(history.tree._id.toString(), user.id);
+      await HistoryService.remove(history.tree, user.id);
       const histories = await HistoryModel.find({});
 
       expect(histories).toHaveLength(0);

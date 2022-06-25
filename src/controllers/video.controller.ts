@@ -1,5 +1,6 @@
 import * as VideoTreeService from '../services/video-tree.service';
 import * as UploadService from '../services/upload.service';
+import * as HistoryService from '../services/history.service';
 import { asyncHandler } from '../util/async-handler';
 
 export const createVideo = asyncHandler(async (req, res) => {
@@ -28,8 +29,14 @@ export const deleteVideo = asyncHandler(async (req, res) => {
 
   const videoTree = await VideoTreeService.remove(id, req.user.id);
 
+  // Delete video related resources
+
   const path = `videos/${req.user.id}/${videoTree.id}/`;
-  await UploadService.deleteDirectory(path);
+
+  await Promise.all([
+    HistoryService.deleteByVideoTree(id),
+    UploadService.deleteDirectory(path),
+  ]);
 
   res.json({ message: 'Video deleted successfully' });
 });

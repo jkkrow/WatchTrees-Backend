@@ -256,7 +256,7 @@ describe('VideoTreeService', () => {
       await VideoTreeService.deleteByCreator(user.id);
       const deletedTree1 = await VideoTreeModel.findById(tree._id);
 
-      expect(deletedTree1!.deleted).toBeTruthy();
+      expect(deletedTree1).toBeNull();
     });
 
     it('should also delete nodes by the user', async () => {

@@ -80,6 +80,10 @@ export const remove = async (id: string, userId: string) => {
   return await video.remove();
 };
 
+export const findById = async (id: string) => {
+  return await VideoTreeModel.findById(id);
+};
+
 export const findOne = async (id: string) => {
   const result = await VideoTreeModel.aggregate([
     { $match: { _id: new Types.ObjectId(id) } },

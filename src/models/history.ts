@@ -1,8 +1,15 @@
 import { model, Schema, Types } from 'mongoose';
 
-export interface History {
+export interface History extends HistoryParams {
   user: Types.ObjectId;
   tree: Types.ObjectId;
+}
+
+export interface HistoryDTO extends HistoryParams {
+  tree: string;
+}
+
+interface HistoryParams {
   activeNodeId: string;
   progress: number;
   totalProgress: number;

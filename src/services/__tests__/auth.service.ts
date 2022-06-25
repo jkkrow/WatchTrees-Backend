@@ -3,7 +3,6 @@ import { HydratedDocument } from 'mongoose';
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import * as AuthService from '../auth.service';
 import * as UserService from '../user.service';
-import * as VideoTreeService from '../video-tree.service';
 import { User } from '../../models/user';
 
 jest.mock('../../util/send-email.ts');
@@ -186,14 +185,6 @@ describe('AuthService', () => {
       await AuthService.deleteAccount(user.id);
 
       expect(UserService.findById(user.id)).rejects.toThrow();
-    });
-
-    it('should delete all created videos', async () => {
-      const spy = jest.spyOn(VideoTreeService, 'deleteByCreator');
-
-      await AuthService.deleteAccount(user.id);
-
-      expect(spy).toBeCalled();
     });
   });
 });

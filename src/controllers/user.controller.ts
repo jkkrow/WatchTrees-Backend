@@ -3,7 +3,9 @@ import { validationResult } from 'express-validator';
 import * as UserService from '../services/user.service';
 import * as AuthService from '../services/auth.service';
 import * as ChannelService from '../services/channel.service';
+import * as VideoTreeService from '../services/video-tree.service';
 import * as UploadService from '../services/upload.service';
+import * as HistoryService from '../services/history.service';
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
 import { createToken } from '../util/jwt';
@@ -240,10 +242,14 @@ export const deleteAccount = asyncHandler(async (req, res) => {
 
   await AuthService.deleteAccount(req.user.id);
 
+  // Delete user created contents
+
   const videoPath = `videos/${req.user.id}/`;
   const imagePath = `images/${req.user.id}/`;
 
   await Promise.all([
+    VideoTreeService.deleteByCreator(req.user.id),
+    HistoryService.deleteByUser(req.user.id),
     UploadService.deleteDirectory(videoPath),
     UploadService.deleteDirectory(imagePath),
   ]);

@@ -5,6 +5,8 @@ import { connectDB, clearDB, closeDB } from '../../test/db';
 import app from '../../app';
 import * as VideoTreeService from '../../services/video-tree.service';
 import * as UserService from '../../services/user.service';
+import * as HistoryService from '../../services/history.service';
+import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
@@ -97,8 +99,14 @@ describe('VideoController', () => {
     it('should return a message', async () => {
       await UserService.update(user.id, { isVerified: true });
 
-      const spy = jest
+      const treeSpy = jest
         .spyOn(VideoTreeService, 'remove')
+        .mockImplementationOnce(() => ({} as any));
+      const historySpy = jest
+        .spyOn(HistoryService, 'deleteByVideoTree')
+        .mockImplementationOnce(() => ({} as any));
+      const uploadSpy = jest
+        .spyOn(UploadService, 'deleteDirectory')
         .mockImplementationOnce(() => ({} as any));
 
       const res = await request(app)
@@ -106,7 +114,9 @@ describe('VideoController', () => {
         .set({ Authorization: 'Bearer ' + accessToken })
         .expect(200);
 
-      expect(spy).toBeCalled();
+      expect(treeSpy).toBeCalled();
+      expect(historySpy).toBeCalled();
+      expect(uploadSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();
     });
   });

@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
-import { HistoryModel, History } from '../models/history';
+import * as VideoTreeService from '../services/video-tree.service';
+import { HistoryModel, HistoryDTO } from '../models/history';
 import { rootNodePipe } from './pipelines/video-node.pipeline';
 import { creatorInfoPipe, favoritePipe } from './pipelines/video-tree.pipeline';
 
@@ -55,31 +56,21 @@ export const find = async ({
   };
 };
 
-export const put = async (history: History, userId: string) => {
-  const existingHistory = await HistoryModel.findOne({
-    user: userId,
-    tree: history.tree,
-  });
+export const put = async (history: HistoryDTO, userId: string) => {
+  const video = await VideoTreeService.findById(history.tree);
 
-  if (!existingHistory) {
-    const newHistory = new HistoryModel({
-      user: userId,
-      tree: history.tree,
-      activeNodeId: history.activeNodeId,
-      progress: history.progress,
-      totalProgress: history.totalProgress,
-      isEnded: history.isEnded,
-    });
-
-    return await newHistory.save();
+  if (!video) {
+    return;
   }
 
-  existingHistory.activeNodeId = history.activeNodeId;
-  existingHistory.progress = history.progress;
-  existingHistory.totalProgress = history.totalProgress;
-  existingHistory.isEnded = history.isEnded;
-
-  return await existingHistory.save();
+  return await HistoryModel.updateOne(
+    {
+      user: new Types.ObjectId(userId),
+      tree: new Types.ObjectId(history.tree),
+    },
+    { $set: history },
+    { upsert: true }
+  );
 };
 
 export const remove = async (treeId: string, userId: string) => {
@@ -93,4 +84,16 @@ export const remove = async (treeId: string, userId: string) => {
   }
 
   return await history.remove();
+};
+
+export const deleteByUser = async (userId: string) => {
+  return await HistoryModel.deleteMany({
+    user: new Types.ObjectId(userId),
+  });
+};
+
+export const deleteByVideoTree = async (treeId: string) => {
+  return await HistoryModel.deleteMany({
+    tree: new Types.ObjectId(treeId),
+  });
 };

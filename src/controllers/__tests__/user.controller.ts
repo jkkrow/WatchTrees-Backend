@@ -6,6 +6,7 @@ import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as AuthService from '../../services/auth.service';
 import * as ChannelService from '../../services/channel.service';
+import * as HistoryService from '../../services/history.service';
 import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
 import { createToken } from '../../util/jwt';
@@ -349,13 +350,17 @@ describe('UserController', () => {
       expect(verifyNativeAccountSpy).toBeCalled();
     });
 
-    it('should delete S3 objects that user uploaded', async () => {
+    it('should delete S3 objects and histories', async () => {
       const verifyAccountSpy = jest
         .spyOn(AuthService, 'verifyNativeAccount')
         .mockImplementationOnce(() => ({} as any));
       const deleteAccountSpy = jest
         .spyOn(AuthService, 'deleteAccount')
         .mockImplementationOnce(() => ({} as any));
+      const historySpy = jest
+        .spyOn(HistoryService, 'deleteByUser')
+        .mockImplementationOnce(() => ({} as any));
+
       const uploadSpy = jest
         .spyOn(UploadService, 'deleteDirectory')
         .mockImplementationOnce(() => ({} as any));
@@ -368,6 +373,7 @@ describe('UserController', () => {
 
       expect(verifyAccountSpy).toBeCalled();
       expect(deleteAccountSpy).toBeCalled();
+      expect(historySpy).toBeCalled();
       expect(uploadSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();
     });
