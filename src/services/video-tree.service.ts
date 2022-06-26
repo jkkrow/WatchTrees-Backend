@@ -167,7 +167,7 @@ export const findOneByCreator = async (id: string, userId: string) => {
 
 export const find = async ({
   match = {},
-  sort = {},
+  sort,
   page = 1,
   max = 12,
   userId,
@@ -183,12 +183,14 @@ export const find = async ({
   videos: VideoTreeClient[];
   count: number;
 }> => {
+  console.log(sort);
+
   const result = await VideoTreeModel.aggregate([
     { $match: match },
     {
       $facet: {
         videos: [
-          { $sort: { ...sort, _id: -1 } },
+          { $sort: sort || { _id: -1 } },
           { $skip: +max * (+page - 1) },
           { $limit: +max },
           ...rootNodePipe(),
@@ -223,7 +225,7 @@ export const findByCreator = async (
 
 export const findClient = async ({
   match = {},
-  sort = {},
+  sort,
   page,
   max,
   userId,
@@ -244,6 +246,16 @@ export const findClient = async ({
     page,
     max,
     userId,
+  });
+};
+
+export const findClientByFeatured = async (params: {
+  page: number | string;
+  max: number | string;
+}) => {
+  return await findClient({
+    sort: { updatedAt: -1 },
+    ...params,
   });
 };
 

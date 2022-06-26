@@ -162,6 +162,18 @@ describe('VideoController', () => {
     });
   });
 
+  describe('getFeaturedVideos', () => {
+    it('should return videos and count', async () => {
+      const res = await request(app)
+        .get(endpoint + 'client/featured')
+        .query({ page: 1, max: 10 })
+        .expect(200);
+
+      expect(res.body).toHaveProperty('videos');
+      expect(res.body).toHaveProperty('count');
+    });
+  });
+
   describe('getClientVideos', () => {
     it('should return videos and count', async () => {
       const res = await request(app)

@@ -65,6 +65,18 @@ export const getCreatedVideo = asyncHandler(async (req, res) => {
   res.json({ video });
 });
 
+export const getFeaturedVideos = asyncHandler(async (req, res) => {
+  const params = req.query as {
+    page: string;
+    max: string;
+    userId: string;
+  };
+
+  const result = await VideoTreeService.findClientByFeatured(params);
+
+  res.json({ videos: result.videos, count: result.count });
+});
+
 export const getClientVideos = asyncHandler(async (req, res) => {
   const params = req.query as {
     page: string;

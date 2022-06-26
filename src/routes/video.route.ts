@@ -9,6 +9,7 @@ import {
 const router = Router();
 
 router.get('/client', VideoController.getClientVideos);
+router.get('/client/featured', VideoController.getFeaturedVideos);
 router.get('/client/:id', VideoController.getClientVideo);
 
 router.get('/favorites', checkAccessToken, VideoController.getFavorites);
