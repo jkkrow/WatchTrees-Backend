@@ -1,4 +1,4 @@
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
 import { connectDB, closeDB, clearDB } from '../../test/db';
@@ -7,20 +7,21 @@ import * as UserService from '../user.service';
 import {
   VideoNodeModel,
   VideoNode,
-  VideoNodeRef,
+  VideoNodeDTO,
 } from '../../models/video-node';
 import { User } from '../../models/user';
+import { VideoTreeDTO } from '../../models/video-tree';
 
 describe('VideoNodeService', () => {
   let user: HydratedDocument<User>;
-  let root: HydratedDocument<VideoNodeRef>;
+  let root: HydratedDocument<VideoNode>;
   const createChild = async (parentId: string, userId: string) => {
-    const node: VideoNode = {
+    const node: VideoNodeDTO = {
       _id: uuidv4(),
       layer: 1,
       info: null,
       parentId: parentId,
-      creator: new Types.ObjectId(userId),
+      creator: userId,
       children: [],
     };
     await new VideoNodeModel(node).save();
@@ -109,12 +110,13 @@ describe('VideoNodeService', () => {
     it('should insert new nodes that not existed before', async () => {
       const child1 = await createChild(root.id, user.id);
       const child2 = await createChild(root.id, user.id);
-      const tree = {
+      const tree: VideoTreeDTO = {
+        _id: 'asdfasdfasdfasdfasdfasdf',
         root: {
           _id: root.id,
           parentId: root.parentId,
           layer: root.layer,
-          creator: root.creator,
+          creator: root.creator.toString(),
           info: root.info,
           children: [child1, child2],
         },
@@ -131,12 +133,13 @@ describe('VideoNodeService', () => {
     it('should update nodes if already existed', async () => {
       const child1 = await createChild(root.id, user.id);
       const child2 = await createChild(root.id, user.id);
-      const tree = {
+      const tree: VideoTreeDTO = {
+        _id: 'asdfasdfasdfasdfasdfasdf',
         root: {
           _id: root.id,
           parentId: root.parentId,
           layer: root.layer,
-          creator: root.creator,
+          creator: root.creator.toString(),
           info: root.info,
           children: [child1, child2],
         },
@@ -169,12 +172,13 @@ describe('VideoNodeService', () => {
     it('should delete nodes if not existing anymore', async () => {
       const child1 = await createChild(root.id, user.id);
       const child2 = await createChild(root.id, user.id);
-      const tree = {
+      const tree: VideoTreeDTO = {
+        _id: 'asdfasdfasdfasdfasdfasdf',
         root: {
           _id: root.id,
           parentId: root.parentId,
           layer: root.layer,
-          creator: root.creator,
+          creator: root.creator.toString(),
           info: root.info,
           children: [child1, child2],
         },

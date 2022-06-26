@@ -1,19 +1,18 @@
-import { model, Schema, Types } from 'mongoose';
+import { HydratedDocument, model, Schema, Types } from 'mongoose';
 
-export interface History extends HistoryParams {
+export interface HistoryDocument extends HydratedDocument<History> {}
+
+export interface History {
   user: Types.ObjectId;
   tree: Types.ObjectId;
-}
-
-export interface HistoryDTO extends HistoryParams {
-  tree: string;
-}
-
-interface HistoryParams {
   activeNodeId: string;
   progress: number;
   totalProgress: number;
   isEnded: boolean;
+}
+
+export interface HistoryDTO extends Omit<History, 'user' | 'tree'> {
+  tree: string;
 }
 
 const HistorySchema = new Schema<History>(

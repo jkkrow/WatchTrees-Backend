@@ -2,7 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Types } from 'mongoose';
 
 import { VideoNodeModel, VideoNode } from '../models/video-node';
-import { VideoTree } from '../models/video-tree';
+import { VideoTreeDTO } from '../models/video-tree';
+import { VideoNodeDTO } from '../models/video-node';
 import { traverseNodes } from '../util/tree';
 
 export const createRoot = async (userId: string) => {
@@ -18,10 +19,7 @@ export const createRoot = async (userId: string) => {
   return await node.save();
 };
 
-export const findByRoot = async (
-  rootId: string,
-  userId: string
-): Promise<VideoNode[]> => {
+export const findByRoot = async (rootId: string, userId: string) => {
   const result = await VideoNodeModel.aggregate([
     { $match: { _id: rootId, creator: new Types.ObjectId(userId) } },
     {
@@ -36,7 +34,11 @@ export const findByRoot = async (
     },
   ]);
 
-  return result.length ? [result[0], ...result[0].children] : [];
+  const videoNodes: VideoNode[] = result.length
+    ? [result[0], ...result[0].children]
+    : [];
+
+  return videoNodes;
 };
 
 export const findByCreator = async (userId: string) => {
@@ -62,7 +64,7 @@ export const deleteByCreator = async (userId: string) => {
   await VideoNodeModel.bulkWrite(deleteBulk);
 };
 
-export const updateByTree = async (newTree: VideoTree, userId: string) => {
+export const updateByTree = async (newTree: VideoTreeDTO, userId: string) => {
   const newNodes = traverseNodes(newTree.root);
   const savedNodes = await findByRoot(newTree.root._id, userId);
 
@@ -102,7 +104,7 @@ export const updateByTree = async (newTree: VideoTree, userId: string) => {
   return await VideoNodeModel.bulkWrite(bulkJobs);
 };
 
-const _getInsertJobs = (videoNodes: VideoNode[], userId: string) => {
+const _getInsertJobs = (videoNodes: VideoNodeDTO[], userId: string) => {
   const insertBulk = videoNodes.map((videoNode) => ({
     insertOne: {
       document: { ...videoNode, creator: new Types.ObjectId(userId) },
@@ -124,7 +126,7 @@ const _getDeleteJobs = (videoNodes: VideoNode[]) => {
   return deleteBulk;
 };
 
-const _getUpdateJobs = (savedNodes: VideoNode[], newNodes: VideoNode[]) => {
+const _getUpdateJobs = (savedNodes: VideoNode[], newNodes: VideoNodeDTO[]) => {
   const updateBulk: any[] = [];
 
   // Preserve converted videos

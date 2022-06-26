@@ -1,4 +1,6 @@
-import { Schema, Types, model } from 'mongoose';
+import { Schema, Types, model, HydratedDocument } from 'mongoose';
+
+export interface UserDocument extends HydratedDocument<User> {}
 
 export interface User {
   type: 'native' | 'google';

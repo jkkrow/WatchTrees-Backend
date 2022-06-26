@@ -1,4 +1,19 @@
-import { Schema, Types, model } from 'mongoose';
+import { Schema, Types, model, HydratedDocument } from 'mongoose';
+
+export interface VideoNodeDocument extends HydratedDocument<VideoNode> {}
+
+export interface VideoNode {
+  _id: string;
+  parentId: string | null;
+  layer: number;
+  creator: Types.ObjectId;
+  info: NodeInfo | null;
+}
+
+export interface VideoNodeDTO extends Omit<VideoNode, 'creator'> {
+  creator: string;
+  children: VideoNodeDTO[];
+}
 
 export interface NodeInfo {
   name: string;
@@ -13,19 +28,7 @@ export interface NodeInfo {
   url: string;
 }
 
-export interface VideoNode extends VideoNodeRef {
-  children: VideoNode[];
-}
-
-export interface VideoNodeRef {
-  _id: string;
-  parentId: string | null;
-  layer: number;
-  creator: Types.ObjectId;
-  info: NodeInfo | null;
-}
-
-const VideoNodeSchema = new Schema<VideoNodeRef>({
+const VideoNodeSchema = new Schema<VideoNode>({
   _id: { type: String },
   parentId: { type: String, ref: 'VideoNode', default: null },
   layer: { type: Number, required: true },
@@ -48,4 +51,4 @@ const VideoNodeSchema = new Schema<VideoNodeRef>({
   },
 });
 
-export const VideoNodeModel = model<VideoNodeRef>('VideoNode', VideoNodeSchema);
+export const VideoNodeModel = model<VideoNode>('VideoNode', VideoNodeSchema);

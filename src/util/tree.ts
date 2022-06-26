@@ -1,28 +1,34 @@
-import { VideoTree } from '../models/video-tree';
-import { VideoNode, NodeInfo } from '../models/video-node';
+import { VideoTreeDTO } from '../models/video-tree';
+import { VideoNode, VideoNodeDTO, NodeInfo } from '../models/video-node';
 
-export const findNodeById = (tree: VideoTree, id: string): VideoNode | null => {
-  let currentNode: VideoNode = tree.root;
-  const queue: VideoNode[] = [];
+export const findNodeById = (
+  tree: VideoTreeDTO,
+  id: string
+): VideoNodeDTO | null => {
+  let currentNode: VideoNodeDTO = tree.root;
+  const queue: VideoNodeDTO[] = [];
 
   queue.push(currentNode);
 
   while (queue.length) {
     currentNode = queue.shift()!;
 
-    if (currentNode._id === id) return currentNode;
+    if (currentNode._id === id) {
+      return currentNode;
+    }
 
-    if (currentNode.children.length)
+    if (currentNode.children.length) {
       currentNode.children.forEach((child) => queue.push(child));
+    }
   }
 
   return null;
 };
 
-export const traverseNodes = (root: VideoNode): VideoNode[] => {
+export const traverseNodes = (root: VideoNodeDTO): VideoNodeDTO[] => {
   let currentNode = root;
-  const queue: VideoNode[] = [];
-  const nodes: VideoNode[] = [];
+  const queue: VideoNodeDTO[] = [];
+  const nodes: VideoNodeDTO[] = [];
 
   queue.push(currentNode);
 
@@ -31,15 +37,16 @@ export const traverseNodes = (root: VideoNode): VideoNode[] => {
 
     nodes.push(currentNode);
 
-    if (currentNode.children.length)
+    if (currentNode.children.length) {
       currentNode.children.forEach((child) => queue.push(child));
+    }
   }
 
   return nodes;
 };
 
 export const validateNodes = (
-  root: VideoNode,
+  root: VideoNodeDTO,
   key: keyof NodeInfo | 'info',
   value: any = null,
   type = true
@@ -58,20 +65,26 @@ export const validateNodes = (
   });
 };
 
-export const buildTree = (nodes: VideoNode[]): VideoTree['root'] => {
+export const buildTree = (nodes: VideoNode[]): VideoNodeDTO => {
   const map: any = {};
-  let root: any = {};
+  let root: VideoNodeDTO = {
+    _id: '',
+    parentId: null,
+    layer: 0,
+    info: null,
+    creator: '',
+    children: [],
+  };
 
-  nodes.forEach((node, index) => {
+  const nodeDTOs: VideoNodeDTO[] = nodes.map((node, index) => {
     map[node._id] = index;
-    nodes[index].children = [];
+    const nodeDTO = { ...node, creator: node.creator.toString(), children: [] };
+    return nodeDTO;
   });
 
-  nodes.forEach((node, index) => {
-    node = nodes[index];
-
+  nodeDTOs.forEach((node) => {
     if (node.parentId) {
-      nodes[map[node.parentId]].children.push(node);
+      nodeDTOs[map[node.parentId]].children.push(node);
     } else {
       root = node;
     }

@@ -1,17 +1,16 @@
 import { HydratedDocument } from 'mongoose';
-import { WithId } from 'mongodb';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import * as HistoryService from '../history.service';
 import * as VideoTreeService from '../video-tree.service';
 import * as UserService from '../user.service';
 import { HistoryDTO, HistoryModel } from '../../models/history';
-import { VideoTree } from '../../models/video-tree';
+import { VideoTreeDTO } from '../../models/video-tree';
 import { User } from '../../models/user';
 
 describe('HistoryService', () => {
   let user: HydratedDocument<User>;
-  let tree: WithId<VideoTree>;
+  let tree: VideoTreeDTO;
 
   beforeAll(connectDB);
   beforeEach(async () => {

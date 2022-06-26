@@ -1,6 +1,27 @@
-import { Schema, Types, model } from 'mongoose';
+import { Schema, Types, model, HydratedDocument } from 'mongoose';
 
-import { VideoNode } from './video-node';
+import { VideoNodeDTO } from './video-node';
+
+export interface VideoTreeDocument extends HydratedDocument<VideoTree> {}
+
+export interface VideoTree {
+  root: string;
+  info: TreeInfo;
+  data: TreeData;
+}
+
+export interface VideoTreeDTO {
+  _id: string;
+  root: VideoNodeDTO;
+  info: TreeInfoDTO;
+  data: TreeDataDTO;
+}
+
+export interface VideoTreeClient extends VideoTreeDTO {
+  info: TreeInfoClient;
+  data: TreeDataClient;
+  history: History | null;
+}
 
 export interface TreeInfo {
   creator: Types.ObjectId; // ref to User Document
@@ -15,7 +36,11 @@ export interface TreeInfo {
   isEditing: boolean;
 }
 
-export interface TreeInfoWithCreator extends TreeInfo {
+export interface TreeInfoDTO extends Omit<TreeInfo, 'creator'> {
+  creator: string;
+}
+
+export interface TreeInfoClient extends TreeInfoDTO {
   creatorInfo: {
     name: string;
     picture: string;
@@ -27,29 +52,15 @@ export interface TreeData {
   favorites: Types.ObjectId[]; // ref to User Document;
 }
 
-export interface VideoTree {
-  root: VideoNode;
-  info: TreeInfo;
-  data: TreeData;
+export interface TreeDataDTO extends Omit<TreeData, 'favorites'> {
+  favorites: string[];
 }
 
-export interface VideoTreeRef {
-  root: string;
-  info: TreeInfo;
-  data: TreeData;
+export interface TreeDataClient extends TreeDataDTO {
+  isFavorite: boolean;
 }
 
-export interface VideoTreeClient extends VideoTree {
-  info: TreeInfoWithCreator;
-  history: History | null;
-  data: {
-    views: number;
-    favorites: Types.ObjectId[];
-    isFavorite: boolean;
-  };
-}
-
-const VideoTreeSchema = new Schema<VideoTreeRef>(
+const VideoTreeSchema = new Schema<VideoTree>(
   {
     root: { type: String, required: true, ref: 'VideoNode' },
     info: {
@@ -80,4 +91,4 @@ const VideoTreeSchema = new Schema<VideoTreeRef>(
   { timestamps: true }
 );
 
-export const VideoTreeModel = model<VideoTreeRef>('VideoTree', VideoTreeSchema);
+export const VideoTreeModel = model<VideoTree>('VideoTree', VideoTreeSchema);

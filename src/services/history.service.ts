@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 import * as VideoTreeService from '../services/video-tree.service';
 import { HistoryModel, HistoryDTO } from '../models/history';
+import { VideoTreeClient } from '../models/video-tree';
 import { rootNodePipe } from './pipelines/video-node.pipeline';
 import { creatorInfoPipe, favoritePipe } from './pipelines/video-tree.pipeline';
 
@@ -40,7 +41,7 @@ export const find = async ({
             },
           },
           { $unwind: '$video' },
-          { $project: { video: 1 } },
+          { $replaceRoot: { newRoot: '$video' } },
         ],
         totalCount: [{ $count: 'count' }],
       },
@@ -48,12 +49,10 @@ export const find = async ({
     { $unwind: '$totalCount' },
   ]);
 
-  return {
-    videos: result.length
-      ? result[0].videos.map((video: any) => video.video)
-      : [],
-    count: result.length ? result[0].totalCount.count : 0,
-  };
+  const videos: VideoTreeClient[] = result.length ? result[0].videos : [];
+  const count: number = result.length ? result[0].totalCount.count : 0;
+
+  return { videos, count };
 };
 
 export const put = async (history: HistoryDTO, userId: string) => {
