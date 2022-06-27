@@ -183,8 +183,6 @@ export const find = async ({
   videos: VideoTreeClient[];
   count: number;
 }> => {
-  console.log(sort);
-
   const result = await VideoTreeModel.aggregate([
     { $match: match },
     {

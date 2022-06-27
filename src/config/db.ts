@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 mongoose.Promise = global.Promise;
-let connection: any = null;
+let connection: typeof mongoose | null = null;
 
 export const connectDB = async () => {
   try {
