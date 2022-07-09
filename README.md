@@ -1,10 +1,38 @@
-# WatchTrees Backend
+<div align="center">
+  <a href="https://watchtrees.com">
+    <img src="https://raw.githubusercontent.com/jkkrow/watchtrees-frontend/main/public/logo.svg" alt="Logo" width="100" height="100">
+  </a>
+  <h2 align="center">WatchTrees</h2>
+  <p align="center">
+    A video streaming web application which provides on-demand videos (VOD) in adaptive media formats.
+    <br />
+    <a href="https://watchtrees.com">
+      <strong>Explore the live website »</strong>
+    </a>
+    <br />
+    <br />
+    <a href="https://github.com/jkkrow/watchtrees-frontend">Frontend App</a>
+    ·
+    <a href="https://github.com/jkkrow/watchtrees-backend">Backend API</a>
+    ·
+    <a href="https://github.com/jkkrow/watchtrees-lambda">Lambda Code</a>
+  </p>
+</div>
 
-A REST API for [WatchTrees](https://watchtrees.com) website. WatchTrees is a video streaming application which provides on-demand videos (VOD) in adaptive media formats.
+## Backend API
 
-## Live Website
+This repository is a REST API for [WatchTrees](https://watchtrees.com) to handle requests of frontend app.
 
-[https://watchtrees.com](https://watchtrees.com)
+### Built with
+
+- ![Typescript](https://img.shields.io/badge/Typescript-3178C6.svg?&style=for-the-badge&logo=Typescript&logoColor=white)
+- ![Node.js](https://img.shields.io/badge/Node.js-339933.svg?&style=for-the-badge&logo=Node.js&logoColor=white)
+- ![Express](https://img.shields.io/badge/Express-000000.svg?&style=for-the-badge&logo=Express&logoColor=white)
+- ![MongoDB](https://img.shields.io/badge/MongoDB-47A248.svg?&style=for-the-badge&logo=MongoDB&logoColor=white)
+- ![Amazon AWS](https://img.shields.io/badge/AWS-232F3E.svg?&style=for-the-badge&logo=Amazon+AWS&logoColor=white)
+- ![Docker](https://img.shields.io/badge/Docker-2496ED.svg?&style=for-the-badge&logo=Docker&logoColor=white)
+- ![Serverless](https://img.shields.io/badge/Serverless-FD5750.svg?&style=for-the-badge&logo=Serverless&logoColor=white)
+
 
 ## Features
 
@@ -18,17 +46,7 @@ This application has following features:
 
 - **Continuous Integration & Continuous Deployment (CI/CD)**: It automates build and deploy process with Github Action and Serverless Framework.
 
-## Tech Stack
-
-![Typescript](https://img.shields.io/badge/Typescript-3178C6.svg?&style=for-the-badge&logo=Typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933.svg?&style=for-the-badge&logo=Node.js&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000.svg?&style=for-the-badge&logo=Express&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248.svg?&style=for-the-badge&logo=MongoDB&logoColor=white)
-![Amazon AWS](https://img.shields.io/badge/AWS-232F3E.svg?&style=for-the-badge&logo=Amazon+AWS&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED.svg?&style=for-the-badge&logo=Docker&logoColor=white)
-![Serverless](https://img.shields.io/badge/Serverless-FD5750.svg?&style=for-the-badge&logo=Serverless&logoColor=white)
-
-## Get Started
+## Getting Started
 
 To start the project, clone the repository and install dependencies with following command:
 
@@ -84,4 +102,4 @@ npm run test
 Here are related applications of WatchTrees project.
 
 - [WatchTrees Frontend](https://github.com/jkkrow/watchtrees-frontend): A frontend app of WatchTrees created with React and Redux.
-- [WatchTrees Lambda](http://github.com/jkkrow/watchtrees-lambda): AWS Lambda function codes for running serverless jobs.
+- [WatchTrees Lambda](http://github.com/jkkrow/watchtrees-lambda): An AWS Lambda function code for running serverless jobs.
