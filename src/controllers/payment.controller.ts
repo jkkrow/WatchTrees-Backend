@@ -1,13 +1,7 @@
 import { asyncHandler } from '../util/async-handler';
 
-export const createCheckoutSession = asyncHandler(async (req, res) => {
-  console.log(req);
+export const webhookEventHandler = asyncHandler(async (req, res) => {
+  const webhookEvent = req.body;
 
-  res.redirect('303');
-});
-
-export const createPortalSession = asyncHandler(async (req, res) => {
-  console.log(req);
-
-  res.redirect('303');
+  console.log(webhookEvent);
 });

@@ -21,8 +21,6 @@ app.use('/api/users', UserRoute);
 app.use('/api/videos', VideoRoute);
 app.use('/api/histories', HistoryRoute);
 app.use('/api/upload', UploadRoute);
-
-// Stripe
 app.use('/api/payment', PaymentRoute);
 
 app.use('/health', (req, res) => {
