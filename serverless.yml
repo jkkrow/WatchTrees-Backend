@@ -1,4 +1,4 @@
-service: watchtrees-server
+service: watchtree-server
 
 provider:
   name: aws

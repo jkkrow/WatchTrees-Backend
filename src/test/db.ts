@@ -5,7 +5,7 @@ let mongodb: MongoMemoryServer;
 
 export const connectDB = async () => {
   mongodb = await MongoMemoryServer.create();
-  await mongoose.connect(mongodb.getUri(), { dbName: 'watchtrees' });
+  await mongoose.connect(mongodb.getUri(), { dbName: 'watchtree' });
 };
 
 export const clearDB = async () => {

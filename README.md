@@ -1,27 +1,27 @@
 <div align="center">
-  <a href="https://watchtrees.com">
-    <img src="https://raw.githubusercontent.com/jkkrow/watchtrees-frontend/main/public/logo.svg" alt="Logo" width="100" height="100">
+  <a href="https://watchtree.net">
+    <img src="https://raw.githubusercontent.com/jkkrow/watchtree-frontend/main/public/logo.svg" alt="Logo" width="100" height="100">
   </a>
-  <h2 align="center">WatchTrees</h2>
+  <h2 align="center">WatchTree</h2>
   <p align="center">
     A video streaming web application which provides on-demand videos (VOD) in adaptive media formats.
     <br />
-    <a href="https://watchtrees.com">
+    <a href="https://watchtree.net">
       <strong>Explore the live website »</strong>
     </a>
     <br />
     <br />
-    <a href="https://github.com/jkkrow/watchtrees-frontend">Frontend App</a>
+    <a href="https://github.com/jkkrow/watchtree-frontend">Frontend App</a>
     ·
-    <a href="https://github.com/jkkrow/watchtrees-backend">Backend API</a>
+    <a href="https://github.com/jkkrow/watchtree-backend">Backend API</a>
     ·
-    <a href="https://github.com/jkkrow/watchtrees-lambda">Lambda Code</a>
+    <a href="https://github.com/jkkrow/watchtree-lambda">Lambda Code</a>
   </p>
 </div>
 
 ## Backend API
 
-This repository is a REST API for [WatchTrees](https://watchtrees.com) to handle requests of frontend app.
+This repository is a REST API for [WatchTree](https://watchtree.net) to handle requests of frontend app.
 
 ### Built with
 
@@ -99,7 +99,7 @@ npm run test
 
 ## Related Apps
 
-Here are related applications of WatchTrees project.
+Here are related applications of WatchTree project.
 
-- [WatchTrees Frontend](https://github.com/jkkrow/watchtrees-frontend): A frontend app of WatchTrees created with React and Redux.
-- [WatchTrees Lambda](http://github.com/jkkrow/watchtrees-lambda): An AWS Lambda function code for running serverless jobs.
+- [WatchTree Frontend](https://github.com/jkkrow/watchtree-frontend): A frontend app of WatchTree created with React and Redux.
+- [WatchTree Lambda](http://github.com/jkkrow/watchtree-lambda): An AWS Lambda function code for running serverless jobs.
