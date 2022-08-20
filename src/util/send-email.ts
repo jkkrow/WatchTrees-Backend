@@ -1,49 +1,23 @@
-import { createTransport, SentMessageInfo, TransportOptions } from 'nodemailer';
-import { OAuth2Client } from 'google-auth-library';
+import { ServerClient } from 'postmark';
 
 interface Options {
   to: string;
   subject: string;
   message: string;
+  messageStream?: string;
 }
 
-export const sendEmail = async (options: Options): Promise<SentMessageInfo> => {
+const client = new ServerClient(process.env.EMAIL_SERVER_API_TOKEN!);
+
+export const sendEmail = async (options: Options) => {
   try {
-    const client = new OAuth2Client(
-      process.env.EMAIL_CLIENT_ID!,
-      process.env.EMAIL_CLIENT_SECRET!,
-      process.env.EMAIL_REDIRECT_URI!
-    );
-
-    client.setCredentials({
-      refresh_token: process.env.EMAIL_REFRESH_TOKEN!,
+    await client.sendEmail({
+      From: process.env.EMAIL_USERNAME_AUTH!,
+      To: options.to,
+      Subject: options.subject,
+      HtmlBody: options.message,
+      MessageStream: options.messageStream,
     });
-
-    const accessToken = await client.getAccessToken();
-
-    const transportOptions = {
-      service: process.env.EMAIL_SERVICE!,
-      auth: {
-        type: process.env.EMAIL_TYPE!,
-        user: process.env.EMAIL_USERNAME!,
-        clientId: process.env.EMAIL_CLIENT_ID!,
-        clientSecret: process.env.EMAIL_CLIENT_SECRET!,
-        refreshToken: process.env.EMAIL_REFRESH_TOKEN!,
-        accessToken: accessToken,
-      },
-    } as TransportOptions;
-
-    const transporter = createTransport(transportOptions);
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM!,
-      to: options.to,
-      subject: options.subject,
-      text: options.message,
-      html: options.message,
-    };
-
-    await transporter.sendMail(mailOptions);
   } catch (err) {
     throw new Error((err as Error).message);
   }
