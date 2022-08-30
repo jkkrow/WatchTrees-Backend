@@ -15,13 +15,13 @@ router.get(
   PaymentController.createClientToken
 );
 
+router.post('/subscriptions/webhooks', PaymentController.webhookHandler);
+
 router.post(
-  '/subscription/:plan',
+  '/subscriptions/:plan',
   checkAccessToken,
   checkVerified,
   PaymentController.createSubscription
 );
-
-// router.post('/webhook', PaymentController.webhookEventHandler);
 
 export default router;
