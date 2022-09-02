@@ -1,75 +1,96 @@
-import braintree from 'braintree';
-import { gateway } from '../config/braintree';
+import axios from 'axios';
+
 import { HttpError } from '../models/error';
 
-export const generateClientToken = async (userId: string) => {
-  const response = await gateway.clientToken.generate({
-    customerId: userId,
+const {
+  PAYPAL_API_URL,
+  PAYPAL_CLIENT_ID,
+  PAYPAL_APP_SECRET,
+  PAYPAL_WEBHOOK_ID,
+} = process.env;
+const base = PAYPAL_API_URL;
+
+export const generateAccessToken = async () => {
+  const { data } = await axios({
+    url: `${base}/v1/oauth2/token`,
+    method: 'post',
+    data: 'grant_type=client_credentials',
+    auth: { username: PAYPAL_CLIENT_ID!, password: PAYPAL_APP_SECRET! },
   });
 
-  if (response.errors) {
-    throw new HttpError(500, response.message);
-  }
-
-  return response.clientToken;
+  return data.access_token;
 };
 
-export const findPlanById = async (planId: string) => {
-  const { plans } = await gateway.plan.all();
-  const plan = plans.find((p) => p.id === planId);
+export const listPlans = async () => {
+  const accessToken = await generateAccessToken();
+  const { data } = await axios({
+    url: `${base}/v1/billing/plans`,
+    method: 'get',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 
-  if (!plan) {
-    throw new HttpError(404, 'No Plan found');
-  }
-
-  return plan;
+  return data.plans;
 };
 
 export const findPlanByName = async (planName: string) => {
-  const { plans } = await gateway.plan.all();
-  const plan = plans.find(
-    (p) => p.name.toLowerCase() === planName.toLowerCase()
+  const plans = await listPlans();
+  const selectedPlan = plans.find(
+    (plan: any) => plan.name.toLowerCase() === planName.toLowerCase()
   );
 
-  if (!plan) {
-    throw new HttpError(404, 'No Plan found');
-  }
-
-  return plan;
+  return selectedPlan;
 };
 
-export const createSubscription = async (planId: string, nonce: string) => {
-  const response = await gateway.subscription.create({
-    planId,
-    paymentMethodNonce: nonce,
+export const createSubscription = async (planId: string, userId: string) => {
+  const accessToken = await generateAccessToken();
+  const { data } = await axios({
+    url: `${base}/v1/billing/subscriptions`,
+    method: 'post',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    data: {
+      plan_id: planId,
+      custom_id: userId,
+    },
   });
 
-  if (response.errors) {
-    throw new HttpError(500, response.message);
+  if (!data) {
+    throw new HttpError(404, 'Subscription not found');
   }
 
-  return response.subscription;
+  return data;
 };
 
-export const parseWebhookNotification = async (
-  bt_signature: string,
-  bt_payload: string
-) => {
-  const webhook = await gateway.webhookNotification.parse(
-    bt_signature,
-    bt_payload
-  );
+export const findSubscriptionById = async (subscriptionId: string) => {
+  const accessToken = await generateAccessToken();
+  const { data } = await axios({
+    url: `${base}/v1/billing/subscriptions/${subscriptionId}`,
+    method: 'get',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 
-  return webhook;
+  return data;
 };
 
-export const getSubscriptionData = (subscription: braintree.Subscription) => {
-  if (!subscription.transactions) {
-    throw new HttpError(404, 'No transactions');
+export const verifyWebhookSignature = async (body: any, headers: any) => {
+  const accessToken = await generateAccessToken();
+  const { data } = await axios({
+    url: `${base}/v1/notifications/verify-webhook-signature`,
+    method: 'post',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    data: {
+      webhook_event: body,
+      webhook_id: PAYPAL_WEBHOOK_ID,
+      auth_algo: headers['paypal-auth-algo'],
+      cert_url: headers['paypal-cert-url'],
+      transmission_id: headers['paypal-transmission-id'],
+      transmission_sig: headers['paypal-transmission-sig'],
+      transmission_time: headers['paypal-transmission-time'],
+    },
+  });
+
+  if (data.verification_status !== 'SUCCESS') {
+    throw new HttpError(400, 'Webhook Notification not verified');
   }
 
-  const userId = subscription.transactions[0].customer.id;
-  const planId = subscription.planId;
-
-  return { userId, planId };
+  return data;
 };

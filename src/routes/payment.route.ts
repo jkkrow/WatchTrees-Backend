@@ -8,20 +8,13 @@ import {
 
 const router = Router();
 
-router.get(
-  '/client-token',
-  checkAccessToken,
-  checkVerified,
-  PaymentController.createClientToken
-);
-
-router.post('/subscriptions/webhooks', PaymentController.webhookHandler);
-
 router.post(
-  '/subscriptions/:plan',
+  '/subscriptions',
   checkAccessToken,
   checkVerified,
   PaymentController.createSubscription
 );
+
+router.post('/webhooks', PaymentController.webhookHandler);
 
 export default router;

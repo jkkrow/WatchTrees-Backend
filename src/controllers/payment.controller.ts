@@ -1,61 +1,35 @@
-import { asyncHandler } from '../util/async-handler';
-import { HttpError } from '../models/error';
 import * as UserService from '../services/user.service';
 import * as PaymentService from '../services/payment.service';
-
-export const createClientToken = asyncHandler(async (req, res) => {
-  if (!req.user) return;
-
-  const clientToken = await PaymentService.generateClientToken(req.user.id);
-
-  res.json({ clientToken });
-});
+import { asyncHandler } from '../util/async-handler';
 
 export const createSubscription = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
-  const { nonce } = req.body;
-  const { plan: planName } = req.params;
+  const { planName } = req.body;
 
   const plan = await PaymentService.findPlanByName(planName);
-  await PaymentService.createSubscription(plan.id, nonce);
+  const subscription = await PaymentService.createSubscription(
+    plan.id,
+    req.user.id
+  );
 
-  res.json({ message: 'Subscription created successfully!' });
+  res.json({ subscription });
 });
 
 export const webhookHandler = asyncHandler(async (req, res) => {
-  const webhook = await PaymentService.parseWebhookNotification(
-    req.body.bt_signature,
-    req.body.bt_payload
-  );
+  await PaymentService.verifyWebhookSignature(req.body, req.headers);
 
-  switch (webhook.kind) {
-    case 'subscription_charged_successfully': {
-      const { userId, planId } = PaymentService.getSubscriptionData(
-        webhook.subscription
-      );
+  const subscriptionId = req.body['billing_agreement_id'];
+  const userId = req.body.custom;
 
-      await PaymentService.findPlanById(planId);
-      await UserService.update(userId, { isPremium: true });
-
-      break;
-    }
-
-    case 'subscription_expired': {
-      const { userId, planId } = PaymentService.getSubscriptionData(
-        webhook.subscription
-      );
-
-      await PaymentService.findPlanById(planId);
-      await UserService.update(userId, { isPremium: false });
-
-      break;
-    }
-
-    default: {
-      throw new HttpError(400, 'No action registered for this event');
-    }
+  if (req.body.event_type === 'PAYMENT.SALE.COMPLETED') {
+    await PaymentService.findSubscriptionById(subscriptionId);
+    await UserService.update(userId, { isVerified: true });
   }
 
-  res.json({ message: `Handled webhook event: ${webhook.kind}` });
+  if (req.body.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') {
+    // Add handler for subscription cancelled
+  }
+
+  res.json({ message: 'Triggered webhook successfully' });
 });
