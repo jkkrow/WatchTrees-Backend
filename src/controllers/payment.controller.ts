@@ -1,4 +1,3 @@
-import * as UserService from '../services/user.service';
 import * as PaymentService from '../services/payment.service';
 import { asyncHandler } from '../util/async-handler';
 
@@ -16,20 +15,33 @@ export const createSubscription = asyncHandler(async (req, res) => {
   res.json({ subscription });
 });
 
-export const webhookHandler = asyncHandler(async (req, res) => {
+export const cancelSubscription = asyncHandler(async (req, res) => {
+  if (!req.user) return;
+
+  const { reason } = req.body;
+  const { id } = req.params;
+
+  await PaymentService.cancelSubscription(id, reason);
+
+  res.json({ message: 'Subscription cancelled successfully' });
+});
+
+export const subscriptionWebhookHandler = asyncHandler(async (req, res) => {
   await PaymentService.verifyWebhookSignature(req.body, req.headers);
 
-  const subscriptionId = req.body['billing_agreement_id'];
-  const userId = req.body.custom;
-
   if (req.body.event_type === 'PAYMENT.SALE.COMPLETED') {
-    await PaymentService.findSubscriptionById(subscriptionId);
-    await UserService.update(userId, { isVerified: true });
+    const subscriptionId = req.body.resource.billing_agreement_id;
+    const userId = req.body.resource.custom;
+
+    await PaymentService.updateUserPremium(subscriptionId, userId);
   }
 
   if (req.body.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') {
-    // Add handler for subscription cancelled
+    const planId = req.body.resource.plan_id;
+    const userId = req.body.resource.custom_id;
+
+    await PaymentService.cancelUserPremium(planId, userId);
   }
 
-  res.json({ message: 'Triggered webhook successfully' });
+  res.json({ message: 'Webhook triggered successfully' });
 });

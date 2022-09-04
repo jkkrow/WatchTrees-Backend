@@ -49,7 +49,7 @@ export const findByCreator = async (userId: string) => {
 
 export const deleteByRoot = async (rootId: string, userId: string) => {
   const savedNodes = await findByRoot(rootId, userId);
-  const deleteBulk = _getDeleteJobs(savedNodes);
+  const deleteBulk: any[] = _getDeleteJobs(savedNodes);
 
   const rootNode = savedNodes.find((node) => node._id === rootId);
   await VideoNodeModel.bulkWrite(deleteBulk);
@@ -59,7 +59,7 @@ export const deleteByRoot = async (rootId: string, userId: string) => {
 
 export const deleteByCreator = async (userId: string) => {
   const savedNodes = await findByCreator(userId);
-  const deleteBulk = _getDeleteJobs(savedNodes);
+  const deleteBulk: any[] = _getDeleteJobs(savedNodes);
 
   await VideoNodeModel.bulkWrite(deleteBulk);
 };

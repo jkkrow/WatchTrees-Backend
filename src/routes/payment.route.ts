@@ -3,6 +3,7 @@ import { Router } from 'express';
 import * as PaymentController from '../controllers/payment.controller';
 import {
   checkAccessToken,
+  checKPremium,
   checkVerified,
 } from '../middlewares/auth.middleware';
 
@@ -15,6 +16,16 @@ router.post(
   PaymentController.createSubscription
 );
 
-router.post('/webhooks', PaymentController.webhookHandler);
+router.post(
+  '/subscriptions/:id/cancel',
+  checkAccessToken,
+  checKPremium,
+  PaymentController.cancelSubscription
+);
+
+router.post(
+  '/subscriptions/webhooks',
+  PaymentController.subscriptionWebhookHandler
+);
 
 export default router;

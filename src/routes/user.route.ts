@@ -42,7 +42,7 @@ router.patch(
   UserController.resetPassword
 );
 
-// Get Token
+// Get Token & User Data
 router.get(
   '/refresh-token',
   checkRefreshToken,
@@ -53,6 +53,7 @@ router.get(
   checkRefreshToken,
   UserController.updateAccessToken
 );
+router.get('/data', checkAccessToken, UserController.getUserData);
 
 // Update User
 router.patch(

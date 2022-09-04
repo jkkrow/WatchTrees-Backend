@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+import * as UserService from './user.service';
 import { HttpError } from '../models/error';
 
 const {
@@ -32,6 +33,21 @@ export const listPlans = async () => {
   return data.plans;
 };
 
+export const findPlanById = async (planId: string) => {
+  const accessToken = await generateAccessToken();
+  const { data } = await axios({
+    url: `${base}/v1/billing/plans/${planId}`,
+    method: 'get',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!data) {
+    throw new HttpError(404, 'Plan not found');
+  }
+
+  return data;
+};
+
 export const findPlanByName = async (planName: string) => {
   const plans = await listPlans();
   const selectedPlan = plans.find(
@@ -39,6 +55,21 @@ export const findPlanByName = async (planName: string) => {
   );
 
   return selectedPlan;
+};
+
+export const findSubscriptionById = async (subscriptionId: string) => {
+  const accessToken = await generateAccessToken();
+  const { data } = await axios({
+    url: `${base}/v1/billing/subscriptions/${subscriptionId}`,
+    method: 'get',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!data) {
+    throw new HttpError(404, 'Subscription not found');
+  }
+
+  return data;
 };
 
 export const createSubscription = async (planId: string, userId: string) => {
@@ -53,19 +84,19 @@ export const createSubscription = async (planId: string, userId: string) => {
     },
   });
 
-  if (!data) {
-    throw new HttpError(404, 'Subscription not found');
-  }
-
   return data;
 };
 
-export const findSubscriptionById = async (subscriptionId: string) => {
+export const cancelSubscription = async (
+  subscriptionId: string,
+  reason?: string
+) => {
   const accessToken = await generateAccessToken();
   const { data } = await axios({
-    url: `${base}/v1/billing/subscriptions/${subscriptionId}`,
-    method: 'get',
+    url: `${base}/v1/billing/subscriptions/${subscriptionId}/cancel`,
+    method: 'post',
     headers: { Authorization: `Bearer ${accessToken}` },
+    data: { reason: reason || 'No reason' },
   });
 
   return data;
@@ -93,4 +124,33 @@ export const verifyWebhookSignature = async (body: any, headers: any) => {
   }
 
   return data;
+};
+
+export const updateUserPremium = async (
+  subscriptionId: string,
+  userId: string
+) => {
+  const subscription = await findSubscriptionById(subscriptionId);
+  const plan = await findPlanById(subscription.plan_id);
+
+  return await UserService.update(userId, {
+    premium: {
+      active: true,
+      name: plan.name,
+      expiredAt: subscription.billing_info.next_billing_time,
+    },
+  });
+};
+
+export const cancelUserPremium = async (planId: string, userId: string) => {
+  const plan = await findPlanById(planId);
+  const user = await UserService.findById(userId);
+
+  if (user.premium.name !== plan.name) {
+    return;
+  }
+
+  return await UserService.update(userId, {
+    premium: { ...user.premium, active: false },
+  });
 };

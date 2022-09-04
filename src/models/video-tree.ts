@@ -1,4 +1,4 @@
-import { Schema, Types, model, HydratedDocument } from 'mongoose';
+import { Schema, model, HydratedDocument } from 'mongoose';
 
 import { VideoNodeDTO } from './video-node';
 
@@ -24,7 +24,7 @@ export interface VideoTreeClient extends VideoTreeDTO {
 }
 
 export interface TreeInfo {
-  creator: Types.ObjectId; // ref to User Document
+  creator: Schema.Types.ObjectId; // ref to User Document
   title: string;
   tags: string[];
   description: string;
@@ -49,7 +49,7 @@ export interface TreeInfoClient extends TreeInfoDTO {
 
 export interface TreeData {
   views: number;
-  favorites: Types.ObjectId[]; // ref to User Document;
+  favorites: Schema.Types.ObjectId[]; // ref to User Document;
 }
 
 export interface TreeDataDTO extends Omit<TreeData, 'favorites'> {
@@ -64,7 +64,7 @@ const VideoTreeSchema = new Schema<VideoTree>(
   {
     root: { type: String, required: true, ref: 'VideoNode' },
     info: {
-      creator: { type: Types.ObjectId, required: true, ref: 'User' },
+      creator: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
       title: { type: String, default: 'Untitled' },
       tags: [{ type: String }],
       description: { type: String },
@@ -85,7 +85,7 @@ const VideoTreeSchema = new Schema<VideoTree>(
     },
     data: {
       views: { type: Number, required: true, default: 0 },
-      favorites: [{ type: Types.ObjectId, required: true, ref: 'User' }],
+      favorites: [{ type: Schema.Types.ObjectId, required: true, ref: 'User' }],
     },
   },
   { timestamps: true }

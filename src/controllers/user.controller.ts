@@ -30,7 +30,7 @@ export const signup = asyncHandler(async (req, res) => {
     email: user.email,
     picture: user.picture,
     isVerified: user.isVerified,
-    isPremium: user.isPremium,
+    premium: user.premium,
   };
 
   res.status(201).json({
@@ -58,10 +58,27 @@ export const signin = asyncHandler(async (req, res) => {
     email: user.email,
     picture: user.picture,
     isVerified: user.isVerified,
-    isPremium: user.isPremium,
+    premium: user.premium,
   };
 
   res.json({ accessToken, refreshToken, userData });
+});
+
+export const getUserData = asyncHandler(async (req, res) => {
+  if (!req.user) return;
+
+  const user = await UserService.findById(req.user.id);
+  const userData = {
+    _id: user.id,
+    type: user.type,
+    name: user.name,
+    email: user.email,
+    picture: user.picture,
+    isVerified: user.isVerified,
+    premium: user.premium,
+  };
+
+  res.json({ userData });
 });
 
 export const updateRefreshToken = asyncHandler(async (req, res) => {

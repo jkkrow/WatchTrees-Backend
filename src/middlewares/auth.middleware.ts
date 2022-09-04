@@ -1,67 +1,70 @@
-import { RequestHandler } from 'express';
-
 import * as UserService from '../services/user.service';
 import { HttpError } from '../models/error';
 import { verifyToken } from '../util/jwt';
+import { asyncHandler } from '../util/async-handler';
 
-export const checkAccessToken: RequestHandler = (req, res, next) => {
+export const checkAccessToken = asyncHandler((req, res, next) => {
   if (req.method === 'OPTIONS') return next();
 
-  try {
-    const { authorization } = req.headers;
+  const { authorization } = req.headers;
 
-    if (!authorization) {
-      throw new HttpError(403);
-    }
-
-    const token = authorization.split(' ')[1];
-    const decodedToken = verifyToken(token, 'access');
-
-    req.user = { id: decodedToken.userId };
-
-    next();
-  } catch (err) {
-    return next(err);
+  if (!authorization) {
+    throw new HttpError(403);
   }
-};
 
-export const checkRefreshToken: RequestHandler = async (req, res, next) => {
+  const token = authorization.split(' ')[1];
+  const decodedToken = verifyToken(token, 'access');
+
+  req.user = { id: decodedToken.userId };
+
+  next();
+});
+
+export const checkRefreshToken = asyncHandler(async (req, res, next) => {
   if (req.method === 'OPTIONS') return next();
 
-  try {
-    const { authorization } = req.headers;
+  const { authorization } = req.headers;
 
-    if (!authorization) {
-      throw new HttpError(403);
-    }
-
-    const token = authorization.split(' ')[1];
-    const decodedToken = verifyToken(token, 'refresh');
-
-    req.user = { id: decodedToken.userId };
-
-    next();
-  } catch (err) {
-    return next(err);
+  if (!authorization) {
+    throw new HttpError(403);
   }
-};
 
-export const checkVerified: RequestHandler = async (req, res, next) => {
-  try {
-    if (!req.user) {
-      throw new HttpError(403);
-    }
+  const token = authorization.split(' ')[1];
+  const decodedToken = verifyToken(token, 'refresh');
 
-    const user = await UserService.findById(req.user.id);
+  req.user = { id: decodedToken.userId };
 
-    if (!user.isVerified) {
-      throw new HttpError(403, 'Account needs to be verified for this job');
-    }
+  next();
+});
 
-    next();
-  } catch (err) {
-    return next(err);
+export const checkVerified = asyncHandler(async (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  if (!req.user) {
+    throw new HttpError(403);
   }
-};
 
-// export const checKPremium: RequestHandler = (req, res, next) => {};
+  const user = await UserService.findById(req.user.id);
+
+  if (!user.isVerified) {
+    throw new HttpError(403, 'Account needs to be verified for this job');
+  }
+
+  next();
+});
+
+export const checKPremium = asyncHandler(async (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  if (!req.user) {
+    throw new HttpError(403);
+  }
+
+  const user = await UserService.findById(req.user.id);
+  const isPremium =
+    user.premium.expiredAt && new Date(user.premium.expiredAt) > new Date();
+
+  if (!isPremium) {
+    throw new HttpError(403, 'Only premium users are allowed for this job');
+  }
+
+  next();
+});

@@ -1,4 +1,4 @@
-import { Schema, Types, model, HydratedDocument } from 'mongoose';
+import { Schema, model, HydratedDocument } from 'mongoose';
 
 export interface UserDocument extends HydratedDocument<User> {}
 
@@ -9,9 +9,15 @@ export interface User {
   password: string;
   picture: string;
   isVerified: boolean;
-  isPremium: boolean;
   isAdmin: boolean;
-  subscribers: Types.ObjectId[]; // ref to User Document
+  premium: Premium;
+  subscribers: Schema.Types.ObjectId[]; // ref to User Document
+}
+
+export interface Premium {
+  active: boolean;
+  name?: 'Standard' | 'Business' | 'Enterprise';
+  expiredAt?: Date;
 }
 
 export interface Channel {
@@ -29,9 +35,13 @@ const UserSchema = new Schema<User>(
     password: { type: String, required: true },
     picture: { type: String },
     isVerified: { type: Boolean, required: true, default: false },
-    isPremium: { type: Boolean, required: true, default: false },
     isAdmin: { type: Boolean, required: true, default: false },
-    subscribers: [{ type: Types.ObjectId, ref: 'User' }],
+    premium: {
+      active: { type: Boolean, required: true, default: false },
+      name: { type: String },
+      expiredAt: { type: Date },
+    },
+    subscribers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );

@@ -1,10 +1,10 @@
-import { HydratedDocument, model, Schema, Types } from 'mongoose';
+import { HydratedDocument, model, Schema } from 'mongoose';
 
 export interface HistoryDocument extends HydratedDocument<History> {}
 
 export interface History {
-  user: Types.ObjectId;
-  tree: Types.ObjectId;
+  user: Schema.Types.ObjectId;
+  tree: Schema.Types.ObjectId;
   activeNodeId: string;
   progress: number;
   totalProgress: number;
@@ -17,8 +17,8 @@ export interface HistoryDTO extends Omit<History, 'user' | 'tree'> {
 
 const HistorySchema = new Schema<History>(
   {
-    user: { type: Types.ObjectId, required: true, ref: 'User' },
-    tree: { type: Types.ObjectId, required: true, ref: 'VideoTree' },
+    user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+    tree: { type: Schema.Types.ObjectId, required: true, ref: 'VideoTree' },
     activeNodeId: { type: String, required: true },
     progress: { type: Number, required: true },
     totalProgress: { type: Number, required: true },
