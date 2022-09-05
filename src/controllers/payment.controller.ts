@@ -15,6 +15,16 @@ export const createSubscription = asyncHandler(async (req, res) => {
   res.json({ subscription });
 });
 
+export const captureSubscription = asyncHandler(async (req, res) => {
+  if (!req.user) return;
+
+  const { id } = req.params;
+
+  const premium = await PaymentService.captureSubscription(id);
+
+  res.json({ premium });
+});
+
 export const cancelSubscription = asyncHandler(async (req, res) => {
   if (!req.user) return;
 

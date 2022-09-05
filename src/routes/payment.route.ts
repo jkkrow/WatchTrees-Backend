@@ -17,6 +17,13 @@ router.post(
 );
 
 router.post(
+  '/subscriptions/:id/capture',
+  checkAccessToken,
+  checkVerified,
+  PaymentController.captureSubscription
+);
+
+router.post(
   '/subscriptions/:id/cancel',
   checkAccessToken,
   checKPremium,

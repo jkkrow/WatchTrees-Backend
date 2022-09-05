@@ -87,6 +87,22 @@ export const createSubscription = async (planId: string, userId: string) => {
   return data;
 };
 
+export const captureSubscription = async (subscriptionId: string) => {
+  const subscription = await findSubscriptionById(subscriptionId);
+  const plan = await findPlanById(subscription.plan_id);
+
+  const nextBillingTime = new Date(subscription.billing_info.next_billing_time);
+  const expiredAt = new Date(nextBillingTime.setUTCHours(23, 59, 59, 999));
+
+  const premium = {
+    active: true,
+    name: plan.name,
+    expiredAt,
+  };
+
+  return premium;
+};
+
 export const cancelSubscription = async (
   subscriptionId: string,
   reason?: string
@@ -133,11 +149,14 @@ export const updateUserPremium = async (
   const subscription = await findSubscriptionById(subscriptionId);
   const plan = await findPlanById(subscription.plan_id);
 
+  const nextBillingTime = new Date(subscription.billing_info.next_billing_time);
+  const expiredAt = new Date(nextBillingTime.setUTCHours(23, 59, 59, 999));
+
   return await UserService.update(userId, {
     premium: {
       active: true,
       name: plan.name,
-      expiredAt: subscription.billing_info.next_billing_time,
+      expiredAt,
     },
   });
 };
