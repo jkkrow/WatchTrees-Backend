@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import * as UserService from './user.service';
 import { HttpError } from '../models/error';
+import { UserPremium } from '../models/user';
 
 const {
   PAYPAL_API_URL,
@@ -94,10 +95,11 @@ export const captureSubscription = async (subscriptionId: string) => {
   const nextBillingTime = new Date(subscription.billing_info.next_billing_time);
   const expiredAt = new Date(nextBillingTime.setUTCHours(23, 59, 59, 999));
 
-  const premium = {
-    active: true,
+  const premium: UserPremium = {
+    id: subscriptionId,
     name: plan.name,
     expiredAt,
+    isCancelled: false,
   };
 
   return premium;
@@ -154,22 +156,38 @@ export const updateUserPremium = async (
 
   return await UserService.update(userId, {
     premium: {
-      active: true,
+      id: subscriptionId,
       name: plan.name,
       expiredAt,
+      isCancelled: false,
     },
   });
 };
 
-export const cancelUserPremium = async (planId: string, userId: string) => {
-  const plan = await findPlanById(planId);
+export const cancelUserPremium = async (
+  subscriptionId: string,
+  userId: string
+) => {
   const user = await UserService.findById(userId);
 
-  if (user.premium.name !== plan.name) {
+  if (!user.premium) {
+    throw new HttpError(403);
+  }
+
+  if (user.premium.isCancelled) {
+    throw new HttpError(400, 'Already cancelled premium account');
+  }
+
+  if (user.premium.id !== subscriptionId) {
     return;
   }
 
   return await UserService.update(userId, {
-    premium: { ...user.premium, active: false },
+    premium: {
+      id: user.premium.id,
+      name: user.premium.name,
+      expiredAt: user.premium.expiredAt,
+      isCancelled: true,
+    },
   });
 };

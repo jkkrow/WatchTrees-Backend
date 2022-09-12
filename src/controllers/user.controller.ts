@@ -149,6 +149,14 @@ export const resetPassword = asyncHandler(async (req, res) => {
   res.json({ message: 'Password has changed successfully' });
 });
 
+export const getPremiumData = asyncHandler(async (req, res) => {
+  if (!req.user) return;
+
+  const user = await UserService.findById(req.user.id);
+
+  res.json({ premium: user.premium });
+});
+
 export const updateUserName = asyncHandler(async (req, res) => {
   if (!req.user) return;
 

@@ -10,14 +10,15 @@ export interface User {
   picture: string;
   isVerified: boolean;
   isAdmin: boolean;
-  premium: Premium;
+  premium: UserPremium | null;
   subscribers: Schema.Types.ObjectId[]; // ref to User Document
 }
 
-export interface Premium {
-  active: boolean;
-  name?: 'Standard' | 'Business' | 'Enterprise';
-  expiredAt?: Date;
+export interface UserPremium {
+  id: string;
+  name: 'Standard' | 'Business' | 'Enterprise';
+  expiredAt: Date;
+  isCancelled: boolean;
 }
 
 export interface Channel {
@@ -37,9 +38,14 @@ const UserSchema = new Schema<User>(
     isVerified: { type: Boolean, required: true, default: false },
     isAdmin: { type: Boolean, required: true, default: false },
     premium: {
-      active: { type: Boolean, required: true, default: false },
-      name: { type: String },
-      expiredAt: { type: Date },
+      type: {
+        id: { type: String, required: true },
+        name: { type: String, required: true },
+        expiredAt: { type: Date, required: true },
+        isCancelled: { type: Boolean, required: true, default: false },
+      },
+      default: null,
+      _id: false,
     },
     subscribers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },

@@ -32,6 +32,7 @@ export const cancelSubscription = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   await PaymentService.cancelSubscription(id, reason);
+  await PaymentService.cancelUserPremium(id, req.user.id);
 
   res.json({ message: 'Subscription cancelled successfully' });
 });
@@ -47,10 +48,10 @@ export const subscriptionWebhookHandler = asyncHandler(async (req, res) => {
   }
 
   if (req.body.event_type === 'BILLING.SUBSCRIPTION.CANCELLED') {
-    const planId = req.body.resource.plan_id;
+    const subscriptionId = req.body.resource.id;
     const userId = req.body.resource.custom_id;
 
-    await PaymentService.cancelUserPremium(planId, userId);
+    await PaymentService.cancelUserPremium(subscriptionId, userId);
   }
 
   res.json({ message: 'Webhook triggered successfully' });

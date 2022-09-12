@@ -5,6 +5,7 @@ import * as UserController from '../controllers/user.controller';
 import {
   checkAccessToken,
   checkRefreshToken,
+  checKPremium,
 } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -54,6 +55,14 @@ router.get(
   UserController.updateAccessToken
 );
 router.get('/data', checkAccessToken, UserController.getUserData);
+
+// Premium
+router.get(
+  '/premium',
+  checkAccessToken,
+  checKPremium,
+  UserController.getPremiumData
+);
 
 // Update User
 router.patch(
