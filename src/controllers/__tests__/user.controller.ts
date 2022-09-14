@@ -11,6 +11,8 @@ import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
+jest.mock('../../util/send-email.ts');
+
 describe('UserController', () => {
   let user: HydratedDocument<User>;
   let refreshToken: string;
