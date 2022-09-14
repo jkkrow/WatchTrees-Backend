@@ -77,7 +77,7 @@ describe('UserController', () => {
     });
   });
 
-  describe('updateRefreshToken', () => {
+  describe('getRefreshToken', () => {
     it('should return refresh token and access token', async () => {
       const res = await request(app)
         .get(endpoint + 'refresh-token')
@@ -95,7 +95,7 @@ describe('UserController', () => {
     });
   });
 
-  describe('updateAccessToken', () => {
+  describe('getAccessToken', () => {
     it('should return access token', async () => {
       const res = await request(app)
         .get(endpoint + 'access-token')
@@ -202,6 +202,34 @@ describe('UserController', () => {
       expect(checkRecoverySpy).toBeCalled();
       expect(resetPasswordSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();
+    });
+  });
+
+  describe('getPremiumData', () => {
+    it('should failed without premium membership', async () => {
+      await request(app)
+        .get(endpoint + 'premium')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .expect(403);
+    });
+
+    it('should return premium data', async () => {
+      await UserService.update(user.id, {
+        isVerified: true,
+        premium: {
+          id: 'test',
+          name: 'Standard',
+          isCancelled: false,
+          expiredAt: new Date(new Date().getTime() + 360000),
+        },
+      });
+
+      const premium = await request(app)
+        .get(endpoint + 'premium')
+        .set({ Authorization: 'Bearer ' + accessToken })
+        .expect(200);
+
+      expect(premium).not.toBeNull();
     });
   });
 

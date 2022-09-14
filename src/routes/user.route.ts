@@ -44,16 +44,8 @@ router.patch(
 );
 
 // Get Token & User Data
-router.get(
-  '/refresh-token',
-  checkRefreshToken,
-  UserController.updateRefreshToken
-);
-router.get(
-  '/access-token',
-  checkRefreshToken,
-  UserController.updateAccessToken
-);
+router.get('/refresh-token', checkRefreshToken, UserController.getRefreshToken);
+router.get('/access-token', checkRefreshToken, UserController.getAccessToken);
 router.get('/data', checkAccessToken, UserController.getUserData);
 
 // Premium

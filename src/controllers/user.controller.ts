@@ -81,7 +81,7 @@ export const getUserData = asyncHandler(async (req, res) => {
   res.json({ userData });
 });
 
-export const updateRefreshToken = asyncHandler(async (req, res) => {
+export const getRefreshToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
   const refreshToken = createToken(req.user.id, 'refresh', '7d');
@@ -90,7 +90,7 @@ export const updateRefreshToken = asyncHandler(async (req, res) => {
   res.json({ accessToken, refreshToken });
 });
 
-export const updateAccessToken = asyncHandler(async (req, res) => {
+export const getAccessToken = asyncHandler(async (req, res) => {
   if (!req.user) return;
 
   const accessToken = createToken(req.user.id, 'access', '15m');
