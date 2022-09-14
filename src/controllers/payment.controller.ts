@@ -31,6 +31,7 @@ export const cancelSubscription = asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const { id } = req.params;
 
+  await PaymentService.verifySubscription(id, req.user.id);
   await PaymentService.cancelSubscription(id, reason);
   await PaymentService.cancelUserPremium(id, req.user.id);
 

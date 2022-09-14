@@ -123,6 +123,19 @@ export const cancelSubscription = async (
   return data;
 };
 
+export const verifySubscription = async (
+  subscriptionId: string,
+  userId: string
+) => {
+  const subscription = await findSubscriptionById(subscriptionId);
+
+  if (userId !== subscription.custom_id) {
+    throw new HttpError(403, 'Unauthorized action');
+  }
+
+  return subscription;
+};
+
 export const verifyWebhookSignature = async (body: any, headers: any) => {
   const accessToken = await generateAccessToken();
   const { data } = await axios({
