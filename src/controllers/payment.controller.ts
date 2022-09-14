@@ -20,7 +20,7 @@ export const captureSubscription = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  const premium = await PaymentService.captureSubscription(id);
+  const premium = await PaymentService.captureSubscription(id, req.user.id);
 
   res.json({ premium });
 });

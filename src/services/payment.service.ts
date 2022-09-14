@@ -88,21 +88,24 @@ export const createSubscription = async (planId: string, userId: string) => {
   return data;
 };
 
-export const captureSubscription = async (subscriptionId: string) => {
+export const captureSubscription = async (
+  subscriptionId: string,
+  userId: string
+) => {
   const subscription = await findSubscriptionById(subscriptionId);
-  const plan = await findPlanById(subscription.plan_id);
 
-  const nextBillingTime = new Date(subscription.billing_info.next_billing_time);
-  const expiredAt = new Date(nextBillingTime.setUTCHours(23, 59, 59, 999));
+  const payedAt = subscription.billing_info.last_payment.time;
+  const isPayedNow = new Date(new Date(payedAt).getTime() + 60000) > new Date();
+  const isActive = subscription.status === 'ACTIVE';
+  const isUserMatched = userId === subscription.custom_id;
 
-  const premium: UserPremium = {
-    id: subscriptionId,
-    name: plan.name,
-    expiredAt,
-    isCancelled: false,
-  };
+  if (!isPayedNow || !isActive || !isUserMatched) {
+    throw new HttpError(400, 'Invalid request');
+  }
 
-  return premium;
+  const user = await updateUserPremium(subscriptionId, userId);
+
+  return user.premium as UserPremium;
 };
 
 export const cancelSubscription = async (
