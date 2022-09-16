@@ -1,6 +1,7 @@
 import { HydratedDocument } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import * as HistoryService from '../history.service';
 import * as VideoTreeService from '../video-tree.service';
 import * as UserService from '../user.service';
@@ -14,12 +15,7 @@ describe('HistoryService', () => {
 
   beforeAll(connectDB);
   beforeEach(async () => {
-    user = await UserService.create(
-      'native',
-      'Test',
-      'test@example.com',
-      'password'
-    );
+    user = await UserService.create('native', 'Test', testEmail, 'password');
     tree = await VideoTreeService.create(user.id);
   });
   afterEach(clearDB);

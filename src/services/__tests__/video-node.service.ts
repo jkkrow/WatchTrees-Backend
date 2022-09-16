@@ -2,6 +2,7 @@ import { HydratedDocument } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
 import { connectDB, closeDB, clearDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import * as VideoNodeService from '../video-node.service';
 import * as UserService from '../user.service';
 import {
@@ -30,12 +31,7 @@ describe('VideoNodeService', () => {
 
   beforeAll(connectDB);
   beforeEach(async () => {
-    user = await UserService.create(
-      'native',
-      'Test',
-      'test@example.com',
-      'password'
-    );
+    user = await UserService.create('native', 'Test', testEmail, 'password');
     root = await VideoNodeService.createRoot(user.id);
   });
   afterEach(clearDB);
@@ -62,7 +58,7 @@ describe('VideoNodeService', () => {
       const anotherUser = await UserService.create(
         'native',
         'Test2',
-        'test2@example.com',
+        'noreply@watchtree.net',
         'password'
       );
       await VideoNodeService.createRoot(anotherUser.id);

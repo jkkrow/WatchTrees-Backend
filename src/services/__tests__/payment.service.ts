@@ -1,8 +1,9 @@
 import { HydratedDocument } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import * as PaymentService from '../payment.service';
-import * as AuthService from '../auth.service';
+import * as UserService from '../user.service';
 import { User } from '../../models/user';
 
 describe('UserService', () => {
@@ -10,7 +11,7 @@ describe('UserService', () => {
 
   beforeAll(connectDB);
   beforeEach(async () => {
-    user = await AuthService.signup('Test', 'test@example.com', 'password');
+    user = await UserService.create('native', 'Test', testEmail, 'password');
   });
   afterEach(clearDB);
   afterAll(closeDB);

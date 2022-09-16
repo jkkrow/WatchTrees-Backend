@@ -2,6 +2,7 @@ import request from 'supertest';
 import { HydratedDocument } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as AuthService from '../../services/auth.service';
@@ -11,8 +12,6 @@ import * as UploadService from '../../services/upload.service';
 import { User } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
-jest.mock('../../util/send-email.ts');
-
 describe('UserController', () => {
   let user: HydratedDocument<User>;
   let refreshToken: string;
@@ -21,12 +20,7 @@ describe('UserController', () => {
 
   beforeAll(connectDB);
   beforeEach(async () => {
-    user = await UserService.create(
-      'native',
-      'Test',
-      'test@example.com',
-      'password'
-    );
+    user = await UserService.create('native', 'Test', testEmail, 'password');
 
     refreshToken = createToken(user.id, 'refresh', '7d');
     accessToken = createToken(user.id, 'access', '15m');
@@ -51,7 +45,7 @@ describe('UserController', () => {
         .post(endpoint + 'signup')
         .send({
           name: 'Test',
-          email: 'test@example.com',
+          email: testEmail,
           password: 'abcD123$',
           confirmPassword: 'abcD123$',
         })
@@ -72,7 +66,7 @@ describe('UserController', () => {
 
       await request(app)
         .post(endpoint + 'signin')
-        .send({ email: 'test@example.com', password: 'password' })
+        .send({ email: testEmail, password: 'password' })
         .expect(200);
 
       expect(spy).toBeCalled();
@@ -122,7 +116,7 @@ describe('UserController', () => {
 
       const res = await request(app)
         .post(endpoint + 'verification')
-        .send({ email: 'test@example.com' })
+        .send({ email: testEmail })
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -375,7 +369,7 @@ describe('UserController', () => {
       await request(app)
         .post(endpoint + 'deletion')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ email: 'test@example.com', password: 'password' });
+        .send({ email: testEmail, password: 'password' });
 
       expect(verifyNativeAccountSpy).toBeCalled();
     });
@@ -395,7 +389,7 @@ describe('UserController', () => {
       const res = await request(app)
         .post(endpoint + 'deletion')
         .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ email: 'test@example.com', password: 'password' })
+        .send({ email: testEmail, password: 'password' })
         .expect(200);
 
       expect(verifyAccountSpy).toBeCalled();

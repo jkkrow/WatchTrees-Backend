@@ -2,6 +2,7 @@ import request from 'supertest';
 import { HydratedDocument } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import app from '../../app';
 import * as PaymentService from '../../services/payment.service';
 import * as UserService from '../../services/user.service';
@@ -15,12 +16,7 @@ describe('UploadController', () => {
 
   beforeAll(connectDB);
   beforeEach(async () => {
-    user = await UserService.create(
-      'native',
-      'Test',
-      'test@example.com',
-      'password'
-    );
+    user = await UserService.create('native', 'Test', testEmail, 'password');
     accessToken = createToken(user.id, 'access', '15m');
   });
   afterEach(clearDB);

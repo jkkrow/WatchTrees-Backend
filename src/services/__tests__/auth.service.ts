@@ -1,36 +1,29 @@
 import { HydratedDocument } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import * as AuthService from '../auth.service';
 import * as UserService from '../user.service';
 import { User } from '../../models/user';
-
-jest.mock('../../util/send-email.ts');
 
 describe('AuthService', () => {
   let user: HydratedDocument<User>;
 
   beforeAll(connectDB);
   beforeEach(async () => {
-    user = await AuthService.signup('Test', 'test@example.com', 'password');
+    user = await AuthService.signup('Test', testEmail, 'password');
   });
   afterEach(clearDB);
   afterAll(closeDB);
 
   describe('signup', () => {
     it('should create a new user', async () => {
-      const user = await AuthService.signup(
-        'Test2',
-        'test2@example.com',
-        'password'
-      );
-
       expect(user).toHaveProperty('_id');
     });
 
     it('should be failed if there is existing email', async () => {
       await expect(
-        AuthService.signup('Test', 'test@example.com', 'password')
+        AuthService.signup('Test', testEmail, 'password')
       ).rejects.toThrow();
     });
 
@@ -84,7 +77,7 @@ describe('AuthService', () => {
 
     it("should be failed if email doesn't exist", async () => {
       await expect(
-        AuthService.sendVerification('test2@example.com')
+        AuthService.sendVerification('noreply@watchtree.net')
       ).rejects.toThrow();
     });
 
@@ -117,7 +110,7 @@ describe('AuthService', () => {
 
     it("should be failed if email doesn't exist", async () => {
       await expect(
-        AuthService.sendRecovery('test2@example.com')
+        AuthService.sendRecovery('noreply@watchtree.net')
       ).rejects.toThrow();
     });
   });
@@ -155,7 +148,7 @@ describe('AuthService', () => {
   describe('verifyNativeAccount', () => {
     it('should take user id, email, and password', async () => {
       await expect(
-        AuthService.verifyNativeAccount(user.id, 'test@example.com', 'password')
+        AuthService.verifyNativeAccount(user.id, testEmail, 'password')
       ).resolves.not.toThrow();
     });
 
@@ -167,7 +160,7 @@ describe('AuthService', () => {
 
     it('should be failed if password not matched', async () => {
       await expect(
-        AuthService.verifyNativeAccount(user.id, 'test@example.com', 'pwd')
+        AuthService.verifyNativeAccount(user.id, testEmail, 'pwd')
       ).rejects.toThrow();
     });
   });
@@ -177,14 +170,6 @@ describe('AuthService', () => {
       await expect(
         AuthService.verifyGoogleAccount(user.id, 'asdfasdf')
       ).rejects.toThrow();
-    });
-  });
-
-  describe('deleteAccount', () => {
-    it('should delete user', async () => {
-      await AuthService.deleteAccount(user.id);
-
-      expect(UserService.findById(user.id)).rejects.toThrow();
     });
   });
 });

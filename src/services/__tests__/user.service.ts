@@ -1,4 +1,5 @@
 import { connectDB, clearDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import * as UserService from '../user.service';
 
 describe('UserService', () => {
@@ -15,7 +16,7 @@ describe('UserService', () => {
       const user = await UserService.create(
         'native',
         'Test',
-        'test@example.com',
+        testEmail,
         'password'
       );
       await UserService.remove(user.id);
@@ -26,7 +27,7 @@ describe('UserService', () => {
 
   describe('findOne', () => {
     it('should return a user by filter', async () => {
-      const result = await UserService.findOne({ email: 'test@example.com' });
+      const result = await UserService.findOne({ email: testEmail });
 
       expect(result).toBeDefined();
     });
@@ -37,7 +38,7 @@ describe('UserService', () => {
       const result = await UserService.create(
         'native',
         'Test',
-        'test@example.com',
+        testEmail,
         'password'
       );
 
@@ -50,7 +51,7 @@ describe('UserService', () => {
       const user = await UserService.create(
         'native',
         'Test',
-        'test@example.com',
+        testEmail,
         'password'
       );
 

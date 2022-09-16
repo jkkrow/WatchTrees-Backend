@@ -1,23 +1,22 @@
 import request from 'supertest';
+import { HydratedDocument } from 'mongoose';
 
 import { connectDB, closeDB } from '../../test/db';
+import { testEmail } from '../../test/variables';
 import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as HistoryService from '../../services/history.service';
+import { User } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
 describe('UserController', () => {
+  let user: HydratedDocument<User>;
   let accessToken: string;
   const endpoint = '/api/histories/';
 
   beforeAll(async () => {
     await connectDB();
-    const user = await UserService.create(
-      'native',
-      'Test',
-      'test@example.com',
-      'password'
-    );
+    user = await UserService.create('native', 'Test', testEmail, 'password');
     accessToken = createToken(user.id, 'access', '15m');
   });
   afterAll(closeDB);
