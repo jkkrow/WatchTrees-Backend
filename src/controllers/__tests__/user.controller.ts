@@ -384,9 +384,6 @@ describe('UserController', () => {
       const verifyAccountSpy = jest
         .spyOn(AuthService, 'verifyNativeAccount')
         .mockImplementationOnce(() => ({} as any));
-      const deleteAccountSpy = jest
-        .spyOn(AuthService, 'deleteAccount')
-        .mockImplementationOnce(() => ({} as any));
       const historySpy = jest
         .spyOn(HistoryService, 'deleteByUser')
         .mockImplementationOnce(() => ({} as any));
@@ -402,7 +399,6 @@ describe('UserController', () => {
         .expect(200);
 
       expect(verifyAccountSpy).toBeCalled();
-      expect(deleteAccountSpy).toBeCalled();
       expect(historySpy).toBeCalled();
       expect(uploadSpy).toBeCalled();
       expect(res.body.message).toBeTruthy();

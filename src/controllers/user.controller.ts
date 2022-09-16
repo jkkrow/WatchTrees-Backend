@@ -265,7 +265,7 @@ export const deleteAccount = asyncHandler(async (req, res) => {
     await AuthService.verifyNativeAccount(req.user.id, email, password);
   }
 
-  await AuthService.deleteAccount(req.user.id);
+  await UserService.remove(req.user.id);
 
   // Delete user created contents
 

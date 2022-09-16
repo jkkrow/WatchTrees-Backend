@@ -8,6 +8,7 @@ import VideoRoute from './routes/video.route';
 import HistoryRoute from './routes/history.route';
 import UploadRoute from './routes/upload.route';
 import PaymentRoute from './routes/payment.route';
+import EventRoute from './routes/event.route';
 import errorMiddleware from './middlewares/error.middleware';
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/api/videos', VideoRoute);
 app.use('/api/histories', HistoryRoute);
 app.use('/api/upload', UploadRoute);
 app.use('/api/payment', PaymentRoute);
+app.use('/api/events', EventRoute);
 
 app.use('/health', (req, res) => {
   res.json('ok');

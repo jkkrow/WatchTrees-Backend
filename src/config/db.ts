@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+import { MONGODB_URI } from './env';
+
 mongoose.Promise = global.Promise;
 let connection: typeof mongoose | null = null;
 
@@ -10,7 +12,7 @@ export const connectDB = async () => {
       return Promise.resolve(connection);
     }
 
-    connection = await mongoose.connect(process.env.MONGODB_URI!);
+    connection = await mongoose.connect(MONGODB_URI);
 
     console.log('MongoDB Connected');
 

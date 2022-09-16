@@ -3,13 +3,13 @@ import axios from 'axios';
 import * as UserService from './user.service';
 import { HttpError } from '../models/error';
 import { UserPremium } from '../models/user';
-
-const {
+import {
   PAYPAL_API_URL,
   PAYPAL_CLIENT_ID,
   PAYPAL_APP_SECRET,
   PAYPAL_WEBHOOK_ID,
-} = process.env;
+} from '../config/env';
+
 const base = PAYPAL_API_URL;
 
 export const generateAccessToken = async () => {
@@ -17,7 +17,7 @@ export const generateAccessToken = async () => {
     url: `${base}/v1/oauth2/token`,
     method: 'post',
     data: 'grant_type=client_credentials',
-    auth: { username: PAYPAL_CLIENT_ID!, password: PAYPAL_APP_SECRET! },
+    auth: { username: PAYPAL_CLIENT_ID, password: PAYPAL_APP_SECRET },
   });
 
   return data.access_token;

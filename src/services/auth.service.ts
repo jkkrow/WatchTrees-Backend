@@ -3,9 +3,10 @@ import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
 
 import * as UserService from './user.service';
+import * as EmailService from './email.service';
 import { HttpError } from '../models/error';
 import { createToken, verifyToken } from '../util/jwt';
-import { sendEmail } from '../util/send-email';
+import { CLIENT_URL, GOOGLE_CLIENT_ID } from '../config/env';
 
 export const signup = async (name: string, email: string, password: string) => {
   const existingEmail = await UserService.findOne({ email });
@@ -16,18 +17,6 @@ export const signup = async (name: string, email: string, password: string) => {
 
   const hash = await bcrypt.hash(password, 12);
   const user = await UserService.create('native', name, email, hash);
-  const verificationToken = createToken(user.id, 'verification', '1d');
-
-  await sendEmail({
-    to: user.email,
-    subject: 'Account verification link',
-    message: `
-      <h3>Verify your email address</h3>
-      <p>You've just created new account with this email address.</p>
-      <p>Please verify your email and complete signup process.</p>
-      <a href=${process.env.CLIENT_URL}/auth/verification/${verificationToken}>Verify email</a>
-      `,
-  });
 
   return user;
 };
@@ -49,11 +38,11 @@ export const signin = async (email: string, password: string) => {
 };
 
 export const googleSignin = async (tokenId: string) => {
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
   const result = await client.verifyIdToken({
     idToken: tokenId,
-    audience: process.env.GOOGLE_CLIENT_ID,
+    audience: GOOGLE_CLIENT_ID,
   });
 
   const payload = result.getPayload();
@@ -113,14 +102,14 @@ export const sendVerification = async (email: string) => {
 
   const verificationToken = createToken(user.id, 'verification', '1d');
 
-  await sendEmail({
+  await EmailService.sendEmail({
     to: user.email,
     subject: 'Account verification link',
     message: `
       <h3>Verify your email address</h3>
       <p>You've just created new account with this email address.</p>
       <p>Please verify your email and complete signup process.</p>
-      <a href=${process.env.CLIENT_URL}/auth/verification/${verificationToken}>Verify email</a>
+      <a href=${CLIENT_URL}/auth/verification/${verificationToken}>Verify email</a>
       `,
   });
 
@@ -152,7 +141,7 @@ export const sendRecovery = async (email: string) => {
 
   const recoveryToken = createToken(user.id, 'recovery', '1h');
 
-  await sendEmail({
+  await EmailService.sendEmail({
     to: user.email,
     subject: 'Reset password link',
     message: `
@@ -160,7 +149,7 @@ export const sendRecovery = async (email: string) => {
       <p>You've just requested the reset of the password for your account.</p>
       <p>Please click the following link to complete the process within one hour.</p>
       <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-      <a href=${process.env.CLIENT_URL}/auth/reset-password/${recoveryToken}>Reset Password</a>
+      <a href=${CLIENT_URL}/auth/reset-password/${recoveryToken}>Reset Password</a>
       `,
   });
 
@@ -206,11 +195,11 @@ export const verifyNativeAccount = async (
 
 export const verifyGoogleAccount = async (id: string, tokenId: string) => {
   const user = await UserService.findById(id);
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
   const result = await client.verifyIdToken({
     idToken: tokenId,
-    audience: process.env.GOOGLE_CLIENT_ID,
+    audience: GOOGLE_CLIENT_ID,
   });
 
   const payload = result.getPayload();
@@ -218,25 +207,6 @@ export const verifyGoogleAccount = async (id: string, tokenId: string) => {
   if (!payload || payload.email !== user.email) {
     throw new HttpError(401, 'Invalid account email');
   }
-
-  return user;
-};
-
-export const deleteAccount = async (id: string) => {
-  // Delete user
-  const user = await UserService.remove(id);
-
-  // Send email to inform that account has been deleted
-  await sendEmail({
-    to: user.email,
-    subject: 'Account deleted',
-    message: `
-      <h3>Your account has been deleted successfully</h3>
-      <p>Your account and created contents will no longer be available.</p>
-      <p>Also, you will no longer receive email from our services.</p>
-      <p>Thank you for using our services.</p>
-      `,
-  });
 
   return user;
 };
