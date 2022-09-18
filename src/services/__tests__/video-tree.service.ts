@@ -1,4 +1,3 @@
-import { HydratedDocument } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
@@ -7,11 +6,11 @@ import * as VideoTreeService from '../video-tree.service';
 import * as VideoNodeService from '../video-node.service';
 import * as UserService from '../user.service';
 import { VideoTreeModel } from '../../models/video-tree';
-import { User } from '../../models/user';
+import { UserDocument } from '../../models/user';
 import { traverseNodes } from '../../util/tree';
 
 describe('VideoTreeService', () => {
-  let user: HydratedDocument<User>;
+  let user: UserDocument;
 
   beforeAll(connectDB);
   beforeEach(async () => {

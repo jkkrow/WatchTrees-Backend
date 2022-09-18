@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { HydratedDocument, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import { testEmail } from '../../test/variables';
@@ -8,11 +8,11 @@ import * as VideoTreeService from '../../services/video-tree.service';
 import * as UserService from '../../services/user.service';
 import * as HistoryService from '../../services/history.service';
 import * as UploadService from '../../services/upload.service';
-import { User } from '../../models/user';
+import { UserDocument } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
 describe('VideoController', () => {
-  let user: HydratedDocument<User>;
+  let user: UserDocument;
   let accessToken: string;
   const endpoint = '/api/videos/';
 

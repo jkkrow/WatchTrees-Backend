@@ -1,13 +1,11 @@
-import { HydratedDocument } from 'mongoose';
-
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import { testEmail } from '../../test/variables';
 import * as ChannelService from '../channel.service';
 import * as UserService from '../user.service';
-import { User, Channel } from '../../models/user';
+import { UserDocument, User, Channel } from '../../models/user';
 
 describe('ChannelService', () => {
-  let user: HydratedDocument<User>;
+  let user: UserDocument;
 
   beforeAll(connectDB);
   beforeEach(async () => {

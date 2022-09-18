@@ -1,15 +1,37 @@
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
-import { AWS_EVENTBRIDGE_API_KEY } from '../config/env';
 
-export const verifyEventHeaders = asyncHandler((req, res, next) => {
-  if (req.method === 'OPTIONS') return next();
+export const checkApiKeyAuthentication = (apiKey: string) =>
+  asyncHandler((req, _, next) => {
+    if (req.method === 'OPTIONS') return next();
 
-  const { secret } = req.headers;
+    const { secret } = req.headers;
 
-  if (!secret || secret !== AWS_EVENTBRIDGE_API_KEY) {
-    throw new HttpError(403);
-  }
+    if (!secret || secret !== apiKey) {
+      throw new HttpError(401, 'Invalid auth credentials');
+    }
 
-  next();
-});
+    next();
+  });
+
+export const checkBasicAuthentication = (username: string, password: string) =>
+  asyncHandler((req, _, next) => {
+    if (req.method === 'OPTIONS') return next();
+
+    const { authorization } = req.headers;
+
+    if (!authorization) {
+      throw new HttpError(403);
+    }
+
+    const hash = authorization.split(' ')[1];
+    const [decodedUsername, decodedPassword] = Buffer.from(hash, 'base64')
+      .toString('utf-8')
+      .split(':');
+
+    if (username !== decodedUsername || password !== decodedPassword) {
+      throw new HttpError(401, 'Invalid auth credentials');
+    }
+
+    next();
+  });

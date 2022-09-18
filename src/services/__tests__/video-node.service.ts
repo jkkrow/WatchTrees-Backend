@@ -1,4 +1,3 @@
-import { HydratedDocument } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
 import { connectDB, closeDB, clearDB } from '../../test/db';
@@ -7,15 +6,15 @@ import * as VideoNodeService from '../video-node.service';
 import * as UserService from '../user.service';
 import {
   VideoNodeModel,
-  VideoNode,
   VideoNodeDTO,
+  VideoNodeDocument,
 } from '../../models/video-node';
-import { User } from '../../models/user';
+import { UserDocument } from '../../models/user';
 import { VideoTreeDTO } from '../../models/video-tree';
 
 describe('VideoNodeService', () => {
-  let user: HydratedDocument<User>;
-  let root: HydratedDocument<VideoNode>;
+  let user: UserDocument;
+  let root: VideoNodeDocument;
   const createChild = async (parentId: string, userId: string) => {
     const node: VideoNodeDTO = {
       _id: uuidv4(),

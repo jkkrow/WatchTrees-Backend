@@ -1,16 +1,15 @@
 import request from 'supertest';
-import { HydratedDocument } from 'mongoose';
 
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import { testEmail } from '../../test/variables';
 import app from '../../app';
 import * as PaymentService from '../../services/payment.service';
 import * as UserService from '../../services/user.service';
-import { User } from '../../models/user';
+import { UserDocument } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
 describe('UploadController', () => {
-  let user: HydratedDocument<User>;
+  let user: UserDocument;
   let accessToken: string;
   const endpoint = '/api/payment/';
 

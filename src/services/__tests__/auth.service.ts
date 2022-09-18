@@ -1,13 +1,11 @@
-import { HydratedDocument } from 'mongoose';
-
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import { testEmail } from '../../test/variables';
 import * as AuthService from '../auth.service';
 import * as UserService from '../user.service';
-import { User } from '../../models/user';
+import { UserDocument } from '../../models/user';
 
 describe('AuthService', () => {
-  let user: HydratedDocument<User>;
+  let user: UserDocument;
 
   beforeAll(connectDB);
   beforeEach(async () => {

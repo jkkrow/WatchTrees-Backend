@@ -1,5 +1,3 @@
-import { HydratedDocument } from 'mongoose';
-
 import { connectDB, clearDB, closeDB } from '../../test/db';
 import { testEmail } from '../../test/variables';
 import * as HistoryService from '../history.service';
@@ -7,10 +5,10 @@ import * as VideoTreeService from '../video-tree.service';
 import * as UserService from '../user.service';
 import { HistoryDTO, HistoryModel } from '../../models/history';
 import { VideoTreeDTO } from '../../models/video-tree';
-import { User } from '../../models/user';
+import { UserDocument } from '../../models/user';
 
 describe('HistoryService', () => {
-  let user: HydratedDocument<User>;
+  let user: UserDocument;
   let tree: VideoTreeDTO;
 
   beforeAll(connectDB);

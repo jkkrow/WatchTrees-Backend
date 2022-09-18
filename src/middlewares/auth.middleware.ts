@@ -3,7 +3,7 @@ import { HttpError } from '../models/error';
 import { verifyToken } from '../util/jwt';
 import { asyncHandler } from '../util/async-handler';
 
-export const checkAccessToken = asyncHandler((req, res, next) => {
+export const checkAccessToken = asyncHandler((req, _, next) => {
   if (req.method === 'OPTIONS') return next();
 
   const { authorization } = req.headers;
@@ -20,7 +20,7 @@ export const checkAccessToken = asyncHandler((req, res, next) => {
   next();
 });
 
-export const checkRefreshToken = asyncHandler(async (req, res, next) => {
+export const checkRefreshToken = asyncHandler(async (req, _, next) => {
   if (req.method === 'OPTIONS') return next();
 
   const { authorization } = req.headers;
@@ -37,7 +37,7 @@ export const checkRefreshToken = asyncHandler(async (req, res, next) => {
   next();
 });
 
-export const checkVerified = asyncHandler(async (req, res, next) => {
+export const checkVerified = asyncHandler(async (req, _, next) => {
   if (req.method === 'OPTIONS') return next();
   if (!req.user) {
     throw new HttpError(403);
@@ -52,7 +52,7 @@ export const checkVerified = asyncHandler(async (req, res, next) => {
   next();
 });
 
-export const checKPremium = asyncHandler(async (req, res, next) => {
+export const checKPremium = asyncHandler(async (req, _, next) => {
   if (req.method === 'OPTIONS') return next();
   if (!req.user) {
     throw new HttpError(403);
