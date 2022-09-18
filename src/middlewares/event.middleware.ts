@@ -21,7 +21,7 @@ export const checkBasicAuthentication = (username: string, password: string) =>
     const { authorization } = req.headers;
 
     if (!authorization) {
-      throw new HttpError(403);
+      throw new HttpError(401);
     }
 
     const hash = authorization.split(' ')[1];

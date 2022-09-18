@@ -4,6 +4,8 @@ import * as AuthService from '../auth.service';
 import * as UserService from '../user.service';
 import { UserDocument } from '../../models/user';
 
+jest.mock('../email.service.ts');
+
 describe('AuthService', () => {
   let user: UserDocument;
 
