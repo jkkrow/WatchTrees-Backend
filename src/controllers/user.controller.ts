@@ -35,7 +35,7 @@ export const signup = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     message:
-      'Verification email has sent. Please check your email and confirm signup.',
+      'Verification email has been sent. Please check your email and confirm signup.',
     accessToken,
     refreshToken,
     userData,
@@ -105,7 +105,7 @@ export const sendVerification = asyncHandler(async (req, res) => {
 
   res.json({
     message:
-      'Verification email has sent. Please check your email and confirm signup',
+      'Verification email has been sent. Please check your email and confirm signup',
   });
 });
 
@@ -122,7 +122,7 @@ export const sendRecovery = asyncHandler(async (req, res) => {
 
   await AuthService.sendRecovery(email);
 
-  res.json({ message: 'Recovery email has sent successfully' });
+  res.json({ message: 'Recovery email has been sent successfully' });
 });
 
 export const checkRecovery = asyncHandler(async (req, res) => {
