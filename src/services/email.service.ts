@@ -2,7 +2,7 @@ import { ServerClient } from 'postmark';
 
 import { BounceModel } from '../models/bounce';
 import { HttpError } from '../models/error';
-import { EMAIL_SERVER_API_TOKEN } from '../config/env';
+import { EMAIL_SERVER_API_TOKEN, EMAIL_FROM } from '../config/env';
 
 const client = new ServerClient(EMAIL_SERVER_API_TOKEN);
 
@@ -55,7 +55,7 @@ export const sendEmail = async (options: {
   await checkBounce(options.to);
 
   return await client.sendEmail({
-    From: options.from,
+    From: EMAIL_FROM.replace('@', options.from + '@'),
     To: options.to,
     Subject: options.subject,
     HtmlBody: options.message,

@@ -4,7 +4,7 @@ import * as EmailService from '../email.service';
 
 describe('EmailService', () => {
   const options = {
-    from: testEmail,
+    from: 'test',
     to: testEmail,
     subject: 'Test',
     message: 'testing',

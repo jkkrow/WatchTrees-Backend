@@ -6,11 +6,7 @@ import * as UserService from './user.service';
 import * as EmailService from './email.service';
 import { HttpError } from '../models/error';
 import { createToken, verifyToken } from '../util/jwt';
-import {
-  CLIENT_URL,
-  GOOGLE_CLIENT_ID,
-  EMAIL_USERNAME_AUTH,
-} from '../config/env';
+import { CLIENT_URL, GOOGLE_CLIENT_ID } from '../config/env';
 
 export const signup = async (name: string, email: string, password: string) => {
   const existingEmail = await UserService.findOne({ email });
@@ -107,7 +103,7 @@ export const sendVerification = async (email: string) => {
   const verificationToken = createToken(user.id, 'verification', '1d');
 
   await EmailService.sendEmail({
-    from: EMAIL_USERNAME_AUTH,
+    from: 'auth',
     to: user.email,
     subject: 'Account verification link',
     message: `
@@ -147,7 +143,7 @@ export const sendRecovery = async (email: string) => {
   const recoveryToken = createToken(user.id, 'recovery', '1h');
 
   await EmailService.sendEmail({
-    from: EMAIL_USERNAME_AUTH,
+    from: 'auth',
     to: user.email,
     subject: 'Reset password link',
     message: `

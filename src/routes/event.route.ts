@@ -12,4 +12,16 @@ router.post(
   EventController.userCreateEventHandler
 );
 
+router.post(
+  '/users/delete',
+  checkApiKeyAuthentication(AWS_EVENTBRIDGE_API_KEY),
+  EventController.userDeleteEventHandler
+);
+
+router.post(
+  '/video-trees/delete',
+  checkApiKeyAuthentication(AWS_EVENTBRIDGE_API_KEY),
+  EventController.videoTreeDeleteEventHandler
+);
+
 export default router;
