@@ -6,8 +6,6 @@ import app from '../../app';
 import * as UserService from '../../services/user.service';
 import * as AuthService from '../../services/auth.service';
 import * as ChannelService from '../../services/channel.service';
-import * as HistoryService from '../../services/history.service';
-import * as UploadService from '../../services/upload.service';
 import { UserDocument } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
@@ -371,30 +369,6 @@ describe('UserController', () => {
         .send({ email: testEmail, password: 'password' });
 
       expect(verifyNativeAccountSpy).toBeCalled();
-    });
-
-    it('should delete S3 objects and histories', async () => {
-      const verifyAccountSpy = jest
-        .spyOn(AuthService, 'verifyNativeAccount')
-        .mockImplementationOnce(() => ({} as any));
-      const historySpy = jest
-        .spyOn(HistoryService, 'deleteByUser')
-        .mockImplementationOnce(() => ({} as any));
-
-      const uploadSpy = jest
-        .spyOn(UploadService, 'deleteDirectory')
-        .mockImplementationOnce(() => ({} as any));
-
-      const res = await request(app)
-        .post(endpoint + 'deletion')
-        .set({ Authorization: 'Bearer ' + accessToken })
-        .send({ email: testEmail, password: 'password' })
-        .expect(200);
-
-      expect(verifyAccountSpy).toBeCalled();
-      expect(historySpy).toBeCalled();
-      expect(uploadSpy).toBeCalled();
-      expect(res.body.message).toBeTruthy();
     });
   });
 });
