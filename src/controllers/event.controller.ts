@@ -33,16 +33,11 @@ export const userDeleteEventHandler = asyncHandler(async (req, res) => {
     await PaymentService.cancelSubscription(user.premium.id);
   }
 
-  await EmailService.sendEmail({
+  await EmailService.sendEmailWithTemplate({
     from: 'noreply',
     to: user.email,
-    subject: 'Account deleted',
-    message: `
-      <h3>Your account has been deleted successfully</h3>
-      <p>Your account and created contents will no longer be available.</p>
-      <p>Also, you will no longer receive email from our services.</p>
-      <p>Thank you for using our services.</p>
-      `,
+    templateAlias: 'account-deletion',
+    templateModel: {},
   });
 
   res.json({ message: 'Webhook triggered successfully' });

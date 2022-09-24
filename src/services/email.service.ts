@@ -62,3 +62,21 @@ export const sendEmail = async (options: {
     MessageStream: options.messageStream,
   });
 };
+
+export const sendEmailWithTemplate = async (options: {
+  from: string;
+  to: string;
+  templateAlias: string;
+  templateModel: object;
+  messageStream?: string;
+}) => {
+  await checkBounce(options.to);
+
+  return await client.sendEmailWithTemplate({
+    From: EMAIL_FROM.replace('@', options.from + '@'),
+    To: options.to,
+    TemplateAlias: options.templateAlias,
+    TemplateModel: options.templateModel,
+    MessageStream: options.messageStream,
+  });
+};

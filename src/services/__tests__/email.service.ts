@@ -9,6 +9,12 @@ describe('EmailService', () => {
     subject: 'Test',
     message: 'testing',
   };
+  const templateOptions = {
+    from: 'test',
+    to: testEmail,
+    templateAlias: 'test',
+    templateModel: {},
+  };
 
   beforeAll(connectDB);
   afterEach(clearDB);
@@ -54,6 +60,29 @@ describe('EmailService', () => {
 
     it('should send email via email provider', async () => {
       const response = await EmailService.sendEmail(options);
+
+      expect(response.ErrorCode).toBeFalsy();
+    });
+  });
+
+  describe('sendEmailWithTemplate', () => {
+    it('should be failed if email is bounced', async () => {
+      await EmailService.createBounce(
+        testEmail,
+        'HardBounce',
+        'outbound',
+        new Date().toString()
+      );
+
+      await expect(
+        EmailService.sendEmailWithTemplate(templateOptions)
+      ).rejects.toThrow();
+    });
+
+    it('should send email via email provider', async () => {
+      const response = await EmailService.sendEmailWithTemplate(
+        templateOptions
+      );
 
       expect(response.ErrorCode).toBeFalsy();
     });

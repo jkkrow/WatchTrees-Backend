@@ -102,16 +102,14 @@ export const sendVerification = async (email: string) => {
 
   const verificationToken = createToken(user.id, 'verification', '1d');
 
-  await EmailService.sendEmail({
+  await EmailService.sendEmailWithTemplate({
     from: 'auth',
     to: user.email,
-    subject: 'Account verification link',
-    message: `
-      <h3>Verify your email address</h3>
-      <p>You've just created new account with this email address.</p>
-      <p>Please verify your email and complete signup process.</p>
-      <a href=${CLIENT_URL}/auth/verification/${verificationToken}>Verify email</a>
-      `,
+    templateAlias: 'account-verification',
+    templateModel: {
+      action_url: `${CLIENT_URL}/auth/verification/${verificationToken}`,
+      retry_url: `${CLIENT_URL}/user/account`,
+    },
   });
 
   return verificationToken;
@@ -142,17 +140,14 @@ export const sendRecovery = async (email: string) => {
 
   const recoveryToken = createToken(user.id, 'recovery', '1h');
 
-  await EmailService.sendEmail({
+  await EmailService.sendEmailWithTemplate({
     from: 'auth',
     to: user.email,
-    subject: 'Reset password link',
-    message: `
-      <h3>Reset your password.</h3>
-      <p>You've just requested the reset of the password for your account.</p>
-      <p>Please click the following link to complete the process within one hour.</p>
-      <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
-      <a href=${CLIENT_URL}/auth/reset-password/${recoveryToken}>Reset Password</a>
-      `,
+    templateAlias: 'password-reset',
+    templateModel: {
+      action_url: `${CLIENT_URL}/auth/reset-password/${recoveryToken}`,
+      retry_url: `${CLIENT_URL}/auth/recovery`,
+    },
   });
 
   return recoveryToken;

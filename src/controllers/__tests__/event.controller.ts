@@ -99,7 +99,7 @@ describe('EventController', () => {
     });
 
     it('should send an email to user', async () => {
-      const emailSpy = jest.spyOn(EmailService, 'sendEmail');
+      const emailSpy = jest.spyOn(EmailService, 'sendEmailWithTemplate');
 
       await request(app)
         .post(endpoint + 'users/delete')
