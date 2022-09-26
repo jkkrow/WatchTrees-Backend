@@ -11,7 +11,7 @@ import { createToken } from '../../util/jwt';
 describe('UserController', () => {
   let user: UserDocument;
   let accessToken: string;
-  const endpoint = '/api/histories/';
+  const endpoint = '/histories/';
 
   beforeAll(async () => {
     await connectDB();

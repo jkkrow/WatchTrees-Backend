@@ -12,7 +12,7 @@ import { createToken } from '../../util/jwt';
 describe('VideoController', () => {
   let user: UserDocument;
   let accessToken: string;
-  const endpoint = '/api/videos/';
+  const endpoint = '/videos/';
 
   beforeAll(connectDB);
   beforeEach(async () => {

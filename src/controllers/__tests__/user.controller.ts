@@ -13,7 +13,7 @@ describe('UserController', () => {
   let user: UserDocument;
   let refreshToken: string;
   let accessToken: string;
-  const endpoint = '/api/users/';
+  const endpoint = '/users/';
 
   beforeAll(connectDB);
   beforeEach(async () => {

@@ -18,7 +18,7 @@ jest.mock('../../services/history.service.ts');
 jest.mock('../../services/payment.service.ts');
 
 describe('EventController', () => {
-  const endpoint = '/api/events/';
+  const endpoint = '/events/';
 
   describe('userCreateEventHandler', () => {
     it('should be failed without api key', async () => {

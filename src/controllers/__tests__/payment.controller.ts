@@ -11,7 +11,7 @@ import { createToken } from '../../util/jwt';
 describe('UploadController', () => {
   let user: UserDocument;
   let accessToken: string;
-  const endpoint = '/api/payment/';
+  const endpoint = '/payment/';
 
   beforeAll(connectDB);
   beforeEach(async () => {

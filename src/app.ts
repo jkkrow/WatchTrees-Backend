@@ -20,13 +20,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // Routes
-app.use('/api/users', UserRoute);
-app.use('/api/videos', VideoRoute);
-app.use('/api/histories', HistoryRoute);
-app.use('/api/upload', UploadRoute);
-app.use('/api/payment', PaymentRoute);
-app.use('/api/email', EmailRoute);
-app.use('/api/events', EventRoute);
+app.use('/users', UserRoute);
+app.use('/videos', VideoRoute);
+app.use('/histories', HistoryRoute);
+app.use('/upload', UploadRoute);
+app.use('/payment', PaymentRoute);
+app.use('/email', EmailRoute);
+app.use('/events', EventRoute);
 
 app.use('/health', (req, res) => {
   res.json('ok');

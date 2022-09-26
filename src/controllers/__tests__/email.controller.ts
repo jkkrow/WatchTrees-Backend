@@ -10,7 +10,7 @@ import {
 } from '../../config/env';
 
 describe('EmailController', () => {
-  const endpoint = '/api/email/';
+  const endpoint = '/email/';
 
   beforeAll(connectDB);
   afterEach(clearDB);
