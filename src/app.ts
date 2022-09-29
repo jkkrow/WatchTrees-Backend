@@ -4,7 +4,7 @@ import 'dotenv/config';
 
 import { HttpError } from './models/error';
 import UserRoute from './routes/user.route';
-import VideoRoute from './routes/video.route';
+import VideoTreeRoute from './routes/video-tree.route';
 import HistoryRoute from './routes/history.route';
 import UploadRoute from './routes/upload.route';
 import PaymentRoute from './routes/payment.route';
@@ -21,7 +21,7 @@ app.use(cors());
 
 // Routes
 app.use('/users', UserRoute);
-app.use('/videos', VideoRoute);
+app.use('/video-trees', VideoTreeRoute);
 app.use('/histories', HistoryRoute);
 app.use('/upload', UploadRoute);
 app.use('/payment', PaymentRoute);

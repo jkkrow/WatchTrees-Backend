@@ -9,10 +9,10 @@ import * as UserService from '../../services/user.service';
 import { UserDocument } from '../../models/user';
 import { createToken } from '../../util/jwt';
 
-describe('VideoController', () => {
+describe('VideoTreeController', () => {
   let user: UserDocument;
   let accessToken: string;
-  const endpoint = '/videos/';
+  const endpoint = '/video-trees/';
 
   beforeAll(connectDB);
   beforeEach(async () => {
