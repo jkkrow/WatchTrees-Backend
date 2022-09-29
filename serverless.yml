@@ -5,6 +5,7 @@ provider:
   runtime: nodejs14.x
   region: ap-northeast-2
   stackName: watchtree-api
+  apiName: watchtree-api
 
 plugins:
   - serverless-plugin-typescript
@@ -12,6 +13,7 @@ plugins:
 
 functions:
   app:
+    name: watchtree-api
     handler: src/serverless.handler
     events:
       - http: ANY /
