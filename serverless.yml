@@ -1,9 +1,10 @@
-service: watchtree-server
+service: watchtree-api
 
 provider:
   name: aws
   runtime: nodejs14.x
   region: ap-northeast-2
+  stackName: watchtree-api
 
 plugins:
   - serverless-plugin-typescript
