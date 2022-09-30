@@ -1,4 +1,4 @@
-import { s3 } from '../config/aws';
+import { S3 } from '../config/aws';
 import { AWS_S3_BUCKET_NAME } from '../config/env';
 
 export const initiateMultipart = async (fileType: string, path: string) => {
@@ -8,7 +8,7 @@ export const initiateMultipart = async (fileType: string, path: string) => {
     ContentType: fileType,
   };
 
-  return await s3.createMultipartUpload(params).promise();
+  return await S3.createMultipartUpload(params).promise();
 };
 
 export const processMultipart = async (
@@ -26,7 +26,7 @@ export const processMultipart = async (
 
   for (let index = 0; index < partCount; index++) {
     presignedUrlPromises.push(
-      s3.getSignedUrlPromise('uploadPart', { ...params, PartNumber: index + 1 })
+      S3.getSignedUrlPromise('uploadPart', { ...params, PartNumber: index + 1 })
     );
   }
 
@@ -48,7 +48,7 @@ export const completeMultipart = async (
     MultipartUpload: { Parts: parts },
   };
 
-  return await s3.completeMultipartUpload(params).promise();
+  return await S3.completeMultipartUpload(params).promise();
 };
 
 export const cancelMultipart = async (uploadId: string, path: string) => {
@@ -58,7 +58,7 @@ export const cancelMultipart = async (uploadId: string, path: string) => {
     UploadId: uploadId,
   };
 
-  return await s3.abortMultipartUpload(params).promise();
+  return await S3.abortMultipartUpload(params).promise();
 };
 
 export const uploadObject = async (fileType: string, path: string) => {
@@ -68,7 +68,7 @@ export const uploadObject = async (fileType: string, path: string) => {
     ContentType: fileType,
   };
 
-  const presignedUrl = await s3.getSignedUrlPromise('putObject', params);
+  const presignedUrl = await S3.getSignedUrlPromise('putObject', params);
 
   return { presignedUrl, key: params.Key };
 };
@@ -79,7 +79,7 @@ export const deleteObject = async (path: string) => {
     Key: path,
   };
 
-  return await s3.deleteObject(params).promise();
+  return await S3.deleteObject(params).promise();
 };
 
 export const deleteDirectory = async (path: string) => {
@@ -96,10 +96,10 @@ export const deleteDirectory = async (path: string) => {
   };
 
   if (prefixes.length > 0) {
-    return s3.deleteObjects(deleteParams).promise();
+    return S3.deleteObjects(deleteParams).promise();
   }
 
-  return s3.deleteObject(params).promise();
+  return S3.deleteObject(params).promise();
 };
 
 export const getDirectoryPrefixes = async (path: string) => {
@@ -111,7 +111,7 @@ export const getDirectoryPrefixes = async (path: string) => {
     Delimiter: '/',
   };
 
-  const listedObjects = await s3.listObjectsV2(listParams).promise();
+  const listedObjects = await S3.listObjectsV2(listParams).promise();
   const listedContents = listedObjects.Contents;
   const listedPrefixes = listedObjects.CommonPrefixes;
 

@@ -24,4 +24,16 @@ router.post(
   EventController.videoTreeDeleteEventHandler
 );
 
+router.post(
+  '/videos/upload',
+  checkApiKeyAuthentication(AWS_EVENTBRIDGE_API_KEY),
+  EventController.videoFileUploadHandler
+);
+
+router.post(
+  '/videos/convert',
+  checkApiKeyAuthentication(AWS_EVENTBRIDGE_API_KEY),
+  EventController.videoFileConvertHandler
+);
+
 export default router;
