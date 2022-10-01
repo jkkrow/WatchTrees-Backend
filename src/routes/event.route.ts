@@ -1,7 +1,11 @@
 import { Router } from 'express';
 
 import * as EventController from '../controllers/event.controller';
-import { checkApiKeyAuthentication } from '../middlewares/event.middleware';
+import {
+  checkApiKeyAuthentication,
+  checkS3ObjectUser,
+} from '../middlewares/event.middleware';
+import { checKPremium } from '../middlewares/auth.middleware';
 import { AWS_EVENTBRIDGE_API_KEY } from '../config/env';
 
 const router = Router();
@@ -27,6 +31,8 @@ router.post(
 router.post(
   '/videos/upload',
   checkApiKeyAuthentication(AWS_EVENTBRIDGE_API_KEY),
+  checkS3ObjectUser,
+  checKPremium,
   EventController.videoFileUploadHandler
 );
 

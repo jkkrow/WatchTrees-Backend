@@ -1,5 +1,6 @@
 import { HttpError } from '../models/error';
 import { asyncHandler } from '../util/async-handler';
+import { APPLICATION_NAME } from '../config/env';
 
 export const checkApiKeyAuthentication = (apiKey: string) =>
   asyncHandler((req, _, next) => {
@@ -35,3 +36,27 @@ export const checkBasicAuthentication = (username: string, password: string) =>
 
     next();
   });
+
+export const checkS3ObjectUser = asyncHandler(async (req, _, next) => {
+  if (req.method === 'OPTIONS') return next();
+
+  const { detail } = req.body;
+  const sourceKey = detail.object.key.replace(/\+/g, ' ');
+  const userId = sourceKey.split('/')[1];
+
+  req.user = { id: userId };
+
+  next();
+});
+
+export const checkApplication = asyncHandler(async (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+
+  const { userMetadata } = req.body.detail;
+
+  if (userMetadata.application !== APPLICATION_NAME) {
+    res.json({ message: 'Application not matched' });
+  }
+
+  next();
+});

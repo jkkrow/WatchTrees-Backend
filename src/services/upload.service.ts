@@ -1,9 +1,9 @@
 import { S3 } from '../config/aws';
-import { AWS_S3_BUCKET_NAME } from '../config/env';
+import { AWS_S3_BUCKET_SOURCE } from '../config/env';
 
 export const initiateMultipart = async (fileType: string, path: string) => {
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
     ContentType: fileType,
   };
@@ -17,7 +17,7 @@ export const processMultipart = async (
   path: string
 ) => {
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
     UploadId: uploadId,
   };
@@ -42,7 +42,7 @@ export const completeMultipart = async (
   path: string
 ) => {
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
     UploadId: uploadId,
     MultipartUpload: { Parts: parts },
@@ -53,7 +53,7 @@ export const completeMultipart = async (
 
 export const cancelMultipart = async (uploadId: string, path: string) => {
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
     UploadId: uploadId,
   };
@@ -63,7 +63,7 @@ export const cancelMultipart = async (uploadId: string, path: string) => {
 
 export const uploadObject = async (fileType: string, path: string) => {
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
     ContentType: fileType,
   };
@@ -75,7 +75,7 @@ export const uploadObject = async (fileType: string, path: string) => {
 
 export const deleteObject = async (path: string) => {
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
   };
 
@@ -85,11 +85,11 @@ export const deleteObject = async (path: string) => {
 export const deleteDirectory = async (path: string) => {
   const prefixes = await getDirectoryPrefixes(path);
   const params = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Key: path,
   };
   const deleteParams = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Delete: {
       Objects: prefixes,
     },
@@ -106,7 +106,7 @@ export const getDirectoryPrefixes = async (path: string) => {
   const prefixes: { Key: string }[] = [];
   const promises: Promise<{ Key: string }[]>[] = [];
   const listParams = {
-    Bucket: AWS_S3_BUCKET_NAME,
+    Bucket: AWS_S3_BUCKET_SOURCE,
     Prefix: path,
     Delimiter: '/',
   };

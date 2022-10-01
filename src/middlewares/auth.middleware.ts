@@ -64,7 +64,7 @@ export const checKPremium = asyncHandler(async (req, _, next) => {
     user.premium &&
     new Date(user.premium.expiredAt) > new Date();
 
-  if (!isPremium) {
+  if (!isPremium && !user.isAdmin) {
     throw new HttpError(403, 'Only premium users are allowed for this job');
   }
 

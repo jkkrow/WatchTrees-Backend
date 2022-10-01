@@ -64,6 +64,13 @@ export const deleteByCreator = async (userId: string) => {
   await VideoNodeModel.bulkWrite(deleteBulk);
 };
 
+export const updateNodes = async (ids: string[], updates: any) => {
+  return await VideoNodeModel.updateMany(
+    { _id: { $in: ids } },
+    { $set: updates }
+  );
+};
+
 export const updateByTree = async (newTree: VideoTreeDTO, userId: string) => {
   const newNodes = traverseNodes(newTree.root);
   const savedNodes = await findByRoot(newTree.root._id, userId);

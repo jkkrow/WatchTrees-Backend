@@ -1,13 +1,13 @@
-import path from 'path';
-
 import * as AuthService from '../services/auth.service';
 import * as EmailService from '../services/email.service';
 import * as VideoTreeService from '../services/video-tree.service';
+import * as VideoNodeService from '../services/video-node.service';
 import * as UploadService from '../services/upload.service';
 import * as ConvertService from '../services/convert.service';
 import * as HistoryService from '../services/history.service';
 import * as PaymentService from '../services/payment.service';
 import { asyncHandler } from '../util/async-handler';
+import { traverseNodes } from '../util/tree';
 import { UserDocument } from '../models/user';
 import { VideoTreeDocument } from '../models/video-tree';
 
@@ -60,25 +60,14 @@ export const videoTreeDeleteEventHandler = asyncHandler(async (req, res) => {
 });
 
 export const videoFileUploadHandler = asyncHandler(async (req, res) => {
-  const { detail } = req.body;
+  const template = await ConvertService.getJobTemplate('watchtree-video');
 
-  const sourceKey = detail.object.key.replace(/\+/g, ' ');
-  const sourceBucket = detail.bucket.name;
-  const destinationBucket = sourceBucket.replace('source', 'media');
+  const { inputPath, outputPath, jobMetadata } = ConvertService.createMetadata(
+    req.body.detail
+  );
 
-  const { dir, base, name } = path.parse(sourceKey);
-  const inputPath = `s3://${sourceBucket}/${sourceKey}`;
-  const outputPath = `s3://${destinationBucket}/${dir}/${name}/`;
-  const jobMetadata = {
-    application: 'watchtree',
-    key: `${dir}/${name}/${name}`,
-    fileName: base,
-    treeId: sourceKey.split('/')[2],
-  };
-
-  const jobTemplate = await ConvertService.getJobTemplate('watchtree-video');
   const job = ConvertService.updateJobSettings(
-    jobTemplate,
+    template,
     inputPath,
     outputPath,
     jobMetadata
@@ -90,7 +79,18 @@ export const videoFileUploadHandler = asyncHandler(async (req, res) => {
 });
 
 export const videoFileConvertHandler = asyncHandler(async (req, res) => {
-  console.log(req.body);
+  const { key, fileName, treeId } = req.body.detail.userMetadata;
+  const CONVERT_EXT = 'mpd';
+
+  const videoTree = await VideoTreeService.findOne(treeId);
+  const matchingIds = traverseNodes(videoTree.root)
+    .filter((node) => node.info && node.info.name === fileName)
+    .map((node) => node._id);
+
+  await VideoNodeService.updateNodes(matchingIds, {
+    'info.url': `${key}.${CONVERT_EXT}`,
+    'info.isConverted': true,
+  });
 
   res.json({ message: 'Webhook triggered successfully' });
 });
