@@ -55,7 +55,7 @@ export const checkApplication = asyncHandler(async (req, res, next) => {
   const { userMetadata } = req.body.detail;
 
   if (userMetadata.application !== APPLICATION_NAME) {
-    res.json({ message: 'Application not matched' });
+    throw new HttpError(401, 'Application not matched');
   }
 
   next();

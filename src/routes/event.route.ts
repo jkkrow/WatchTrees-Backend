@@ -4,6 +4,7 @@ import * as EventController from '../controllers/event.controller';
 import {
   checkApiKeyAuthentication,
   checkS3ObjectUser,
+  checkApplication,
 } from '../middlewares/event.middleware';
 import { checKPremium } from '../middlewares/auth.middleware';
 import { AWS_EVENTBRIDGE_API_KEY } from '../config/env';
@@ -39,6 +40,7 @@ router.post(
 router.post(
   '/videos/convert',
   checkApiKeyAuthentication(AWS_EVENTBRIDGE_API_KEY),
+  checkApplication,
   EventController.videoFileConvertHandler
 );
 
