@@ -14,8 +14,6 @@
     <a href="https://github.com/jkkrow/watchtree-frontend">Frontend App</a>
     ·
     <a href="https://github.com/jkkrow/watchtree-backend">Backend API</a>
-    ·
-    <a href="https://github.com/jkkrow/watchtree-lambda">Lambda Code</a>
   </p>
 </div>
 
@@ -96,10 +94,3 @@ This application uses Jest library for testing. To execute a test job, run follo
 ```bash
 npm run test
 ```
-
-## Related Apps
-
-Here are related applications of WatchTree project.
-
-- [WatchTree Frontend](https://github.com/jkkrow/watchtree-frontend): A frontend app of WatchTree created with React and Redux.
-- [WatchTree Lambda](http://github.com/jkkrow/watchtree-lambda): An AWS Lambda function code for running serverless jobs.
