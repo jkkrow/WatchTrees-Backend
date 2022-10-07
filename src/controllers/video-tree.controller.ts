@@ -55,10 +55,9 @@ export const getCreatedVideo = asyncHandler(async (req, res) => {
 });
 
 export const getFeaturedVideos = asyncHandler(async (req, res) => {
-  const params = req.query as {
-    page: string;
-    max: string;
-    userId: string;
+  const params = {
+    ...(req.query as { page: string; max: string }),
+    userId: req.user?.id,
   };
 
   const result = await VideoTreeService.findClientByFeatured(params);
@@ -67,13 +66,15 @@ export const getFeaturedVideos = asyncHandler(async (req, res) => {
 });
 
 export const getClientVideos = asyncHandler(async (req, res) => {
-  const params = req.query as {
-    page: string;
-    max: string;
-    search: string;
-    channelId: string;
-    userId: string;
-    ids: string[];
+  const params = {
+    ...(req.query as {
+      page: string;
+      max: string;
+      search: string;
+      channelId: string;
+      ids: string[];
+    }),
+    userId: req.user?.id,
   };
 
   let result: any;
@@ -93,10 +94,9 @@ export const getClientVideos = asyncHandler(async (req, res) => {
 
 export const getClientVideo = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { userId } = req.query as { [key: string]: string };
 
   await VideoTreeService.incrementViews(id);
-  const video = await VideoTreeService.findClientOne(id, userId);
+  const video = await VideoTreeService.findClientOne(id, req.user?.id);
 
   res.json({ video });
 });

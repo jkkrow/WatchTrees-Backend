@@ -3,6 +3,21 @@ import { HttpError } from '../models/error';
 import { verifyToken } from '../util/jwt';
 import { asyncHandler } from '../util/async-handler';
 
+export const passAccessToken = asyncHandler((req, _, next) => {
+  if (req.method === 'OPTIONS') return next();
+
+  const { authorization } = req.headers;
+
+  if (authorization) {
+    const token = authorization.split(' ')[1];
+    const decodedToken = verifyToken(token, 'access');
+
+    req.user = { id: decodedToken.userId };
+  }
+
+  next();
+});
+
 export const checkAccessToken = asyncHandler((req, _, next) => {
   if (req.method === 'OPTIONS') return next();
 
