@@ -2,16 +2,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { Types } from 'mongoose';
 
 import { VideoNodeModel, VideoNode } from '../models/video-node';
-import { VideoTreeDTO } from '../models/video-tree';
-import { VideoNodeDTO } from '../models/video-node';
+import { VideoTreeDto } from '../models/video-tree';
+import { VideoNodeDto } from '../models/video-node';
 import { traverseNodes } from '../util/tree';
 
 export const createRoot = async (userId: string) => {
   const root = {
     _id: uuidv4(),
     parentId: null,
-    layer: 0,
     creator: userId,
+    level: 0,
     info: null,
   };
   const node = new VideoNodeModel(root);
@@ -71,17 +71,17 @@ export const updateNodes = async (ids: string[], updates: any) => {
   );
 };
 
-export const updateByTree = async (newTree: VideoTreeDTO, userId: string) => {
+export const updateByTree = async (newTree: VideoTreeDto, userId: string) => {
   const newNodes = traverseNodes(newTree.root);
   const savedNodes = await findByRoot(newTree.root._id, userId);
 
   // Node info only updated when finished uploading
-  for (let node of newNodes) {
-    if (!node.info) continue;
-    if (node.info.progress > 0 && node.info.progress < 100) {
-      node.info = null;
-    }
-  }
+  // for (let node of newNodes) {
+  //   if (!node.url) continue;
+  //   if (node.progress > 0 && node.progress < 100) {
+  //     node.url = '';
+  //   }
+  // }
 
   // Find created nodes
   const createdNodes = newNodes.filter(
@@ -111,7 +111,7 @@ export const updateByTree = async (newTree: VideoTreeDTO, userId: string) => {
   return await VideoNodeModel.bulkWrite(bulkJobs);
 };
 
-const _getInsertJobs = (videoNodes: VideoNodeDTO[], userId: string) => {
+const _getInsertJobs = (videoNodes: VideoNodeDto[], userId: string) => {
   const insertBulk = videoNodes.map((videoNode) => ({
     insertOne: {
       document: { ...videoNode, creator: new Types.ObjectId(userId) },
@@ -133,23 +133,19 @@ const _getDeleteJobs = (videoNodes: VideoNode[]) => {
   return deleteBulk;
 };
 
-const _getUpdateJobs = (savedNodes: VideoNode[], newNodes: VideoNodeDTO[]) => {
+const _getUpdateJobs = (savedNodes: VideoNode[], newNodes: VideoNodeDto[]) => {
   const updateBulk: any[] = [];
 
   // Preserve converted videos
   savedNodes.forEach((savedNode) => {
     newNodes.forEach((newNode) => {
-      if (!newNode.info || !savedNode.info) return;
-
-      const isConverted = savedNode.info.isConverted;
+      const isConverted = savedNode.url.split('.')[1] === 'mpd';
       const isSameNode = newNode._id === savedNode._id;
       const isSameFile =
-        newNode.info.name === savedNode.info.name &&
-        newNode.info.size === savedNode.info.size;
+        newNode.name === savedNode.name && newNode.size === savedNode.size;
 
       if (isConverted && (isSameNode || isSameFile)) {
-        newNode.info.isConverted = savedNode.info.isConverted;
-        newNode.info.url = savedNode.info.url;
+        newNode.url = savedNode.url;
       }
     });
   });
@@ -162,7 +158,17 @@ const _getUpdateJobs = (savedNodes: VideoNode[], newNodes: VideoNodeDTO[]) => {
       updateBulk.push({
         updateOne: {
           filter: { _id: savedNode._id },
-          update: { $set: { info: newNode.info } },
+          update: {
+            $set: {
+              name: newNode.name,
+              label: newNode.label,
+              size: newNode.size,
+              duration: newNode.duration,
+              selectionTimeStart: newNode.selectionTimeStart,
+              selectionTimeEnd: newNode.selectionTimeEnd,
+              url: newNode.url,
+            },
+          },
         },
       });
     });

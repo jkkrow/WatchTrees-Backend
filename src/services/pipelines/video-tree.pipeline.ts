@@ -5,15 +5,15 @@ export const creatorInfoPipe = () => {
     {
       $lookup: {
         from: 'users',
-        as: 'info.creatorInfo',
-        let: { creator: '$info.creator' },
+        as: 'creator',
+        let: { creator: '$creator' },
         pipeline: [
           { $match: { $expr: { $eq: ['$$creator', '$_id'] } } },
-          { $project: { _id: 0, name: 1, picture: 1 } },
+          { $project: { name: 1, picture: 1 } },
         ],
       },
     },
-    { $unwind: '$info.creatorInfo' },
+    { $unwind: '$creator' },
   ];
 };
 
@@ -21,9 +21,9 @@ export const favoritePipe = (userId?: string) => {
   return [
     {
       $addFields: {
-        'data.favorites': { $size: '$data.favorites' },
-        'data.isFavorite': userId
-          ? { $in: [new Types.ObjectId(userId), '$data.favorites'] }
+        favorites: { $size: '$favorites' },
+        isFavorite: userId
+          ? { $in: [new Types.ObjectId(userId), '$favorites'] }
           : false,
       },
     },

@@ -9,9 +9,9 @@ export const channelPipe = (userId?: string) => [
       pipeline: [
         {
           $match: {
-            $expr: { $eq: ['$$id', '$info.creator'] },
-            'info.isEditing': false,
-            'info.status': 'public',
+            $expr: { $eq: ['$$id', '$creator'] },
+            isEditing: false,
+            status: 'public',
           },
         },
       ],

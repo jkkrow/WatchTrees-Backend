@@ -4,7 +4,7 @@ import * as VideoNodeService from './video-node.service';
 import {
   VideoTreeModel,
   VideoTreeDocument,
-  VideoTreeDTO,
+  VideoTreeDto,
   VideoTreeClient,
 } from '../models/video-tree';
 import { HttpError } from '../models/error';
@@ -13,42 +13,52 @@ import { allNodesPipe, rootNodePipe } from './pipelines/video-node.pipeline';
 import { creatorInfoPipe, favoritePipe } from './pipelines/video-tree.pipeline';
 import { validateNodes, buildTree } from '../util/tree';
 
-export const create = async (userId: string): Promise<VideoTreeDTO> => {
+export const create = async (userId: string): Promise<VideoTreeDto> => {
   const root = await VideoNodeService.createRoot(userId);
 
   const videoTree = new VideoTreeModel({
     root: root._id,
-    info: { creator: userId },
+    creator: userId,
   });
 
   await videoTree.save();
 
-  const videoTreeDTO: VideoTreeDTO = {
+  const videoTreeDto: VideoTreeDto = {
     _id: videoTree.id,
     root: {
       _id: root.id,
-      layer: root.layer,
+      level: root.level,
       parentId: root.parentId,
-      info: root.info,
-      creator: root.creator.toString(),
+      name: root.name,
+      label: root.label,
+      duration: root.duration,
+      url: root.url,
+      size: root.size,
+      selectionTimeStart: root.selectionTimeStart,
+      selectionTimeEnd: root.selectionTimeEnd,
       children: [],
     },
-    info: {
-      ...videoTree.info,
-      creator: videoTree.info.creator.toString(),
-    },
-    data: {
-      ...videoTree.data,
-      favorites: videoTree.data.favorites.map((user) => user.toString()),
-    },
+    title: videoTree.title,
+    tags: videoTree.tags,
+    description: videoTree.description,
+    size: videoTree.size,
+    maxDuration: videoTree.maxDuration,
+    minDuration: videoTree.minDuration,
+    thumbnail: videoTree.thumbnail,
+    isEditing: videoTree.isEditing,
+    status: videoTree.status,
+    views: videoTree.views,
+    favorites: videoTree.favorites,
+    createdAt: videoTree.createdAt,
+    updatedAt: videoTree.updatedAt,
   };
 
-  return videoTreeDTO;
+  return videoTreeDto;
 };
 
 export const update = async (
   id: string,
-  uploadTree: VideoTreeDTO,
+  newTree: VideoTreeDto,
   userId: string
 ): Promise<VideoTreeDocument> => {
   const videoTree = await VideoTreeModel.findById(id);
@@ -57,21 +67,26 @@ export const update = async (
     throw new HttpError(404, 'Video not found');
   }
 
-  if (uploadTree.info.creator !== videoTree.info.creator.toString()) {
+  if (userId !== videoTree.creator.toString()) {
     throw new HttpError(403);
   }
 
   // Update Nodes
-  await VideoNodeService.updateByTree(uploadTree, userId);
+  await VideoNodeService.updateByTree(newTree, userId);
 
-  // Update Tree
-  videoTree.info = {
-    ...uploadTree.info,
-    creator: videoTree.info.creator,
-  };
+  // Update Tree *UpdateVideoTreeDto*
+  videoTree.title = newTree.title;
+  videoTree.tags = newTree.tags;
+  videoTree.description = newTree.description;
+  videoTree.size = newTree.size;
+  videoTree.maxDuration = newTree.maxDuration;
+  videoTree.minDuration = newTree.minDuration;
+  videoTree.thumbnail = newTree.thumbnail;
+  videoTree.isEditing = newTree.isEditing;
+  videoTree.status = newTree.status;
 
-  if (!videoTree.info.title || validateNodes(uploadTree.root, 'info')) {
-    videoTree.info.isEditing = true;
+  if (!videoTree.title || validateNodes(newTree.root, 'url', '')) {
+    videoTree.isEditing = true;
   }
 
   return await videoTree.save();
@@ -87,7 +102,7 @@ export const remove = async (
     throw new HttpError(404, 'Video not found');
   }
 
-  if (video.info.creator.toString() !== userId) {
+  if (userId !== video.creator.toString()) {
     throw new HttpError(403, 'Not authorized to remove video');
   }
 
@@ -102,7 +117,7 @@ export const findById = async (
   return await VideoTreeModel.findById(id);
 };
 
-export const findOne = async (id: string): Promise<VideoTreeDTO> => {
+export const findOne = async (id: string): Promise<VideoTreeDto> => {
   const result = await VideoTreeModel.aggregate([
     { $match: { _id: new Types.ObjectId(id) } },
     ...allNodesPipe(),
@@ -117,9 +132,9 @@ export const findOne = async (id: string): Promise<VideoTreeDTO> => {
     videoTreeWithNodeList.root,
     ...videoTreeWithNodeList.root.children,
   ]);
-  const videoTreeDTO: VideoTreeDTO = { ...videoTreeWithNodeList, root };
+  const videoTreeDto: VideoTreeDto = { ...videoTreeWithNodeList, root };
 
-  return videoTreeDTO;
+  return videoTreeDto;
 };
 
 export const findClientOne = async (
@@ -143,26 +158,40 @@ export const findClientOne = async (
     videoTreeWithNodeList.root,
     ...videoTreeWithNodeList.root.children,
   ]);
-  const videoTreeDTO: VideoTreeClient = { ...videoTreeWithNodeList, root };
+  const videoTreeDto: VideoTreeClient = { ...videoTreeWithNodeList, root };
 
   if (
-    videoTreeDTO.info.status === 'private' &&
-    videoTreeDTO.info.creator.toString() !== userId
+    videoTreeDto.status === 'private' &&
+    userId !== videoTreeDto.creator._id
   ) {
     throw new HttpError(403, 'Not authorized to video');
   }
 
-  return videoTreeDTO;
+  return videoTreeDto;
 };
 
 export const findOneByCreator = async (id: string, userId: string) => {
-  const video = await findOne(id);
+  const result = await VideoTreeModel.aggregate([
+    { $match: { _id: new Types.ObjectId(id) } },
+    ...allNodesPipe(),
+  ]);
 
-  if (video.info.creator.toString() !== userId) {
+  if (!result.length) {
+    throw new HttpError(404, 'Video not found');
+  }
+
+  if (userId !== result[0].creator.toString()) {
     throw new HttpError(403, 'Not authorized to this video');
   }
 
-  return video;
+  const videoTreeWithNodeList = result[0];
+  const root = buildTree([
+    videoTreeWithNodeList.root,
+    ...videoTreeWithNodeList.root.children,
+  ]);
+  const videoTreeDto: VideoTreeDto = { ...videoTreeWithNodeList, root };
+
+  return videoTreeDto;
 };
 
 export const find = async ({
@@ -214,7 +243,7 @@ export const findByCreator = async (
   max: number | string
 ) => {
   return await find({
-    match: { 'info.creator': new Types.ObjectId(creatorId) },
+    match: { creator: new Types.ObjectId(creatorId) },
     page,
     max,
     historyData: false,
@@ -236,8 +265,8 @@ export const findClient = async ({
 }) => {
   return await find({
     match: {
-      'info.status': 'public',
-      'info.isEditing': false,
+      status: 'public',
+      isEditing: false,
       ...match,
     },
     sort,
@@ -277,7 +306,7 @@ export const findClientByChannel = async (params: {
   userId?: string;
 }) => {
   return await findClient({
-    match: { 'info.creator': new Types.ObjectId(params.channelId) },
+    match: { creator: new Types.ObjectId(params.channelId) },
     ...params,
   });
 };
@@ -299,7 +328,7 @@ export const findClientByFavorites = async (
   params: { page: number | string; max: number | string }
 ) => {
   return await findClient({
-    match: { $expr: { $in: [new Types.ObjectId(id), '$data.favorites'] } },
+    match: { $expr: { $in: [new Types.ObjectId(id), '$favorites'] } },
     userId: id,
     ...params,
   });
@@ -310,11 +339,11 @@ export const updateFavorites = async (id: string, userId: string) => {
   return await VideoTreeModel.updateOne({ _id: id }, [
     {
       $set: {
-        'data.favorites': {
+        favorites: {
           $cond: [
-            { $in: [objectUserId, '$data.favorites'] },
-            { $setDifference: ['$data.favorites', [objectUserId]] },
-            { $concatArrays: ['$data.favorites', [objectUserId]] },
+            { $in: [objectUserId, '$favorites'] },
+            { $setDifference: ['$favorites', [objectUserId]] },
+            { $concatArrays: ['$favorites', [objectUserId]] },
           ],
         },
       },
@@ -323,13 +352,10 @@ export const updateFavorites = async (id: string, userId: string) => {
 };
 
 export const incrementViews = async (id: string) => {
-  return await VideoTreeModel.updateOne(
-    { _id: id },
-    { $inc: { 'data.views': 1 } }
-  );
+  return await VideoTreeModel.updateOne({ _id: id }, { $inc: { views: 1 } });
 };
 
 export const deleteByCreator = async (userId: string) => {
-  await VideoTreeModel.deleteMany({ 'info.creator': userId });
+  await VideoTreeModel.deleteMany({ creator: userId });
   await VideoNodeService.deleteByCreator(userId);
 };

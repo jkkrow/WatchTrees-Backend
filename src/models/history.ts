@@ -17,8 +17,18 @@ export interface HistoryDTO extends Omit<History, 'user' | 'tree'> {
 
 const HistorySchema = new Schema<History>(
   {
-    user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
-    tree: { type: Schema.Types.ObjectId, required: true, ref: 'VideoTree' },
+    user: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      index: true,
+    },
+    tree: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'VideoTree',
+      index: true,
+    },
     activeNodeId: { type: String, required: true },
     progress: { type: Number, required: true },
     totalProgress: { type: Number, required: true },

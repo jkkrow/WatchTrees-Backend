@@ -17,7 +17,7 @@ export const allNodesPipe = () => {
     {
       $lookup: {
         from: 'videonodes',
-        let: { root: '$root', creator: '$info.creator' },
+        let: { root: '$root', creator: '$creator' },
         as: 'root',
         pipeline: [
           { $match: { $expr: { $eq: ['$$root', '$_id'] } } },

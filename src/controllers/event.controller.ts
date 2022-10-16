@@ -49,7 +49,7 @@ export const userDeleteEventHandler = asyncHandler(async (req, res) => {
 export const videoTreeDeleteEventHandler = asyncHandler(async (req, res) => {
   const videoTree: VideoTreeDocument = req.body.detail.fullDocumentBeforeChange;
 
-  const path = `videos/${videoTree.info.creator}/${videoTree._id}/`;
+  const path = `videos/${videoTree.creator}/${videoTree._id}/`;
 
   await Promise.all([
     HistoryService.deleteByVideoTree(videoTree._id.toString()),
@@ -84,12 +84,11 @@ export const videoFileConvertHandler = asyncHandler(async (req, res) => {
 
   const videoTree = await VideoTreeService.findOne(treeId);
   const matchingIds = traverseNodes(videoTree.root)
-    .filter((node) => node.info && node.info.name === fileName)
+    .filter((node) => node.name === fileName)
     .map((node) => node._id);
 
   await VideoNodeService.updateNodes(matchingIds, {
-    'info.url': `${key}.${CONVERT_EXT}`,
-    'info.isConverted': true,
+    url: `${key}.${CONVERT_EXT}`,
   });
 
   res.json({ message: 'Webhook triggered successfully' });

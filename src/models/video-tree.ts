@@ -1,94 +1,72 @@
 import { Schema, model, HydratedDocument } from 'mongoose';
 
-import { VideoNodeDTO } from './video-node';
+import { VideoNodeDto } from './video-node';
 
 export interface VideoTreeDocument extends HydratedDocument<VideoTree> {}
 
 export interface VideoTree {
-  root: string;
-  info: TreeInfo;
-  data: TreeData;
-}
-
-export interface VideoTreeDTO {
-  _id: string;
-  root: VideoNodeDTO;
-  info: TreeInfoDTO;
-  data: TreeDataDTO;
-}
-
-export interface VideoTreeClient extends VideoTreeDTO {
-  info: TreeInfoClient;
-  data: TreeDataClient;
-  history: History | null;
-}
-
-export interface TreeInfo {
+  _id: Schema.Types.ObjectId;
+  root: string; // ref to VideoNode Document
   creator: Schema.Types.ObjectId; // ref to User Document
   title: string;
   tags: string[];
   description: string;
-  thumbnail: { name: string; url: string };
+  thumbnail: string;
   size: number;
   maxDuration: number;
   minDuration: number;
   status: 'public' | 'private';
   isEditing: boolean;
+  views: number;
+  favorites: Schema.Types.ObjectId[]; // ref to User Document;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface TreeInfoDTO extends Omit<TreeInfo, 'creator'> {
-  creator: string;
+export interface VideoTreeDto
+  extends Omit<VideoTree, '_id' | 'root' | 'creator'> {
+  _id: string;
+  root: VideoNodeDto;
 }
 
-export interface TreeInfoClient extends TreeInfoDTO {
-  creatorInfo: {
+export interface VideoTreeClient extends VideoTreeDto {
+  creator: {
+    _id: string;
     name: string;
     picture: string;
   };
-}
-
-export interface TreeData {
-  views: number;
-  favorites: Schema.Types.ObjectId[]; // ref to User Document;
-}
-
-export interface TreeDataDTO extends Omit<TreeData, 'favorites'> {
-  favorites: string[];
-}
-
-export interface TreeDataClient extends TreeDataDTO {
   isFavorite: boolean;
+  history: History | null;
 }
 
 const VideoTreeSchema = new Schema<VideoTree>(
   {
     root: { type: String, required: true, ref: 'VideoNode' },
-    info: {
-      creator: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
-      title: { type: String, default: 'Untitled' },
-      tags: [{ type: String }],
-      description: { type: String },
-      thumbnail: {
-        name: { type: String, default: '' },
-        url: { type: String, default: '' },
-      },
-      size: { type: Number, required: true, default: 0 },
-      maxDuration: { type: Number, required: true, default: 0 },
-      minDuration: { type: Number, required: true, default: 0 },
-      status: {
-        type: String,
-        required: true,
-        enum: ['public', 'private'],
-        default: 'public',
-      },
-      isEditing: { type: Boolean, required: true, default: true },
+    creator: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      index: true,
     },
-    data: {
-      views: { type: Number, required: true, default: 0 },
-      favorites: [{ type: Schema.Types.ObjectId, required: true, ref: 'User' }],
-    },
+    title: { type: String, default: 'Untitled' },
+    tags: [{ type: String }],
+    description: { type: String, default: '' },
+    thumbnail: { type: String, default: '' },
+    size: { type: Number, default: 0 },
+    maxDuration: { type: Number, default: 0 },
+    minDuration: { type: Number, default: 0 },
+    status: { type: String, enum: ['public', 'private'], default: 'public' },
+    isEditing: { type: Boolean, default: true },
+    views: { type: Number, default: 0 },
+    favorites: [{ type: Schema.Types.ObjectId, required: true, ref: 'User' }],
   },
   { timestamps: true }
+);
+
+VideoTreeSchema.index({ status: 1, isEditing: 1 });
+VideoTreeSchema.index(
+  { title: 'text', tags: 'text', description: 'text' },
+  { weights: { title: 3, tags: 2, description: 1 } }
 );
 
 export const VideoTreeModel = model<VideoTree>('VideoTree', VideoTreeSchema);
