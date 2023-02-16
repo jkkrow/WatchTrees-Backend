@@ -13,7 +13,7 @@ plugins:
 
 functions:
   app:
-    name: watchtree-api
+    name: watchtree-api-legacy
     handler: src/serverless.handler
     events:
       - http: ANY /
