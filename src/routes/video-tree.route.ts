@@ -2,15 +2,20 @@ import { Router } from 'express';
 
 import * as VideoTreeController from '../controllers/video-tree.controller';
 import {
+  passAccessToken,
   checkAccessToken,
   checkVerified,
 } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.get('/client', VideoTreeController.getClientVideos);
-router.get('/client/featured', VideoTreeController.getFeaturedVideos);
-router.get('/client/:id', VideoTreeController.getClientVideo);
+router.get('/client', passAccessToken, VideoTreeController.getClientVideos);
+router.get(
+  '/client/featured',
+  passAccessToken,
+  VideoTreeController.getFeaturedVideos
+);
+router.get('/client/:id', passAccessToken, VideoTreeController.getClientVideo);
 
 router.get('/favorites', checkAccessToken, VideoTreeController.getFavorites);
 router.patch(
